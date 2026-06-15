@@ -28,7 +28,20 @@ export async function getProfile(): Promise<Profile | null> {
     .eq("id", user.id)
     .single();
 
-  return (data as Profile) ?? null;
+  if (data) return data as Profile;
+
+  // Profile row nathi — auto-create from auth metadata
+  const meta = user.user_metadata ?? {};
+  const newProfile: Profile = {
+    id: user.id,
+    full_name: (meta.full_name as string) || null,
+    email: user.email || null,
+    role: (meta.role as Role) || "student",
+  };
+
+  await supabase.from("profiles").insert(newProfile);
+
+  return newProfile;
 }
 
 /** Require login. Redirects to /login if not authed. */
