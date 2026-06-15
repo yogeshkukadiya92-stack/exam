@@ -40,14 +40,25 @@ export default function EditExamButton({
 }) {
   const [open, setOpen] = useState(false);
   const [courseId, setCourseId] = useState(exam.course_id);
+  const [batchId, setBatchId] = useState(exam.batch_id);
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [ok, setOk] = useState(false);
   const batches = courses.find((c) => c.id === courseId)?.batches ?? [];
   const label = "block text-sm font-medium text-slate-700 mb-1.5";
+  const openModal = () => {
+    setCourseId(exam.course_id);
+    setBatchId(exam.batch_id);
+    setMessage(null);
+    setOk(false);
+    setOpen(true);
+  };
 
   return (
     <>
       <button
         type="button"
-        onClick={() => setOpen(true)}
+        onClick={openModal}
         className="btn-secondary flex items-center gap-1.5 text-xs"
       >
         <Pencil className="h-3.5 w-3.5" />
@@ -56,7 +67,20 @@ export default function EditExamButton({
 
       {open && (
         <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-900/30 px-4 py-8">
-          <form action={updateExam} className="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-xl">
+          <form
+            action={async (formData) => {
+              setBusy(true);
+              setMessage(null);
+              const result = await updateExam(formData);
+              setBusy(false);
+              setOk(result.ok);
+              setMessage(result.message);
+              if (result.ok) {
+                window.setTimeout(() => setOpen(false), 500);
+              }
+            }}
+            className="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-xl"
+          >
             <div className="mb-5 flex items-center justify-between">
               <h2 className="section-title">Edit exam</h2>
               <button
@@ -83,7 +107,13 @@ export default function EditExamButton({
                     name="course_id"
                     required
                     value={courseId}
-                    onChange={(e) => setCourseId(e.target.value)}
+                    onChange={(e) => {
+                      const nextCourseId = e.target.value;
+                      const nextBatches =
+                        courses.find((c) => c.id === nextCourseId)?.batches ?? [];
+                      setCourseId(nextCourseId);
+                      setBatchId(nextBatches[0]?.id ?? "");
+                    }}
                     className="input"
                   >
                     {courses.map((c) => (
@@ -95,7 +125,13 @@ export default function EditExamButton({
                 </div>
                 <div>
                   <label className={label}>Batch</label>
-                  <select name="batch_id" required defaultValue={exam.batch_id} className="input">
+                  <select
+                    name="batch_id"
+                    required
+                    value={batchId}
+                    onChange={(e) => setBatchId(e.target.value)}
+                    className="input"
+                  >
                     {batches.map((b) => (
                       <option key={b.id} value={b.id}>
                         {b.name}
@@ -152,10 +188,21 @@ export default function EditExamButton({
               </div>
 
               <div className="flex justify-end gap-2">
+                {message && (
+                  <p
+                    className={`mr-auto rounded-md px-3 py-2 text-sm ${
+                      ok ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"
+                    }`}
+                  >
+                    {message}
+                  </p>
+                )}
                 <button type="button" onClick={() => setOpen(false)} className="btn-secondary">
                   Cancel
                 </button>
-                <button className="btn-primary">Save changes</button>
+                <button disabled={busy} className="btn-primary disabled:opacity-40">
+                  {busy ? "Saving..." : "Save changes"}
+                </button>
               </div>
             </div>
           </form>
