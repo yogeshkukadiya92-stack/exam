@@ -48,6 +48,14 @@ function toMessage(error: unknown, fallback: string) {
   return fallback;
 }
 
+function createUserMessage(error: unknown) {
+  const message = toMessage(error, "Student banavta problem aavi.");
+  if (message.toLowerCase().includes("invalid api key")) {
+    return "Invalid API key: Railway ma SUPABASE_SERVICE_ROLE_KEY ni value Supabase Project Settings > API mathi service_role key sathe replace karo.";
+  }
+  return message;
+}
+
 function normalizeMessage(value: unknown) {
   if (typeof value !== "string") return null;
   const message = value.trim();
@@ -87,7 +95,7 @@ export async function createStudent(input: CreateStudentInput): Promise<{
     if (error || !data.user) {
       return {
         ok: false,
-        message: toMessage(error, "Student banavta problem aavi."),
+        message: createUserMessage(error),
       };
     }
 
@@ -182,7 +190,7 @@ export async function bulkImportStudents(
         studentId = existing.id;
       } else {
         failed++;
-        errors.push(`${s.email}: ${error.message}`);
+        errors.push(`${s.email}: ${createUserMessage(error)}`);
         continue;
       }
     } else {

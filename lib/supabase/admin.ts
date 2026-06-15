@@ -7,8 +7,8 @@ import { createClient } from "@supabase/supabase-js";
  * SUPABASE_SERVICE_ROLE_KEY .env.local ma rakho (NEXT_PUBLIC_ vagar).
  */
 export function createAdminClient() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const supabaseUrl = cleanEnv(process.env.NEXT_PUBLIC_SUPABASE_URL);
+  const serviceRoleKey = cleanEnv(process.env.SUPABASE_SERVICE_ROLE_KEY);
 
   if (!supabaseUrl || !serviceRoleKey) {
     throw new Error(
@@ -21,4 +21,8 @@ export function createAdminClient() {
     serviceRoleKey,
     { auth: { autoRefreshToken: false, persistSession: false } }
   );
+}
+
+function cleanEnv(value: string | undefined) {
+  return value?.trim().replace(/^['"]|['"]$/g, "");
 }
