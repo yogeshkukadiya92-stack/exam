@@ -67,18 +67,11 @@ export async function createStudent(input: CreateStudentInput): Promise<{
       return { ok: false, message: "Email ane 6+ char password aapo." };
     }
 
-    const { data: existingProfile, error: profileError } = await admin
+    const { data: existingProfile } = await admin
       .from("profiles")
       .select("id")
       .eq("email", input.email)
       .maybeSingle();
-
-    if (profileError) {
-      return {
-        ok: false,
-        message: `Duplicate check fail: ${toMessage(profileError, "Unknown error")}`,
-      };
-    }
 
     if (existingProfile) {
       return { ok: false, message: "Aa email par student pachi thi exist kare chhe." };
@@ -95,6 +88,23 @@ export async function createStudent(input: CreateStudentInput): Promise<{
       return {
         ok: false,
         message: toMessage(error, "Student banavta problem aavi."),
+      };
+    }
+
+    const { error: profileUpsertError } = await admin.from("profiles").upsert(
+      {
+        id: data.user.id,
+        full_name: input.full_name || null,
+        email: input.email,
+        role: "student",
+      },
+      { onConflict: "id" }
+    );
+
+    if (profileUpsertError) {
+      return {
+        ok: true,
+        message: `Student account bane gayo, pan profile sync fail: ${toMessage(profileUpsertError, "Unknown error")}`,
       };
     }
 
@@ -178,6 +188,22 @@ export async function bulkImportStudents(
     } else {
       studentId = data.user.id;
       created++;
+
+      const { error: profileUpsertError } = await admin.from("profiles").upsert(
+        {
+          id: studentId,
+          full_name: s.full_name || null,
+          email: s.email,
+          role: "student",
+        },
+        { onConflict: "id" }
+      );
+
+      if (profileUpsertError) {
+        errors.push(
+          `${s.email}: profile sync fail: ${toMessage(profileUpsertError, "Unknown error")}`
+        );
+      }
     }
 
     if (studentId && batchId) {
