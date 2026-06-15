@@ -191,6 +191,9 @@ export default function ExamRunner({
   };
 
   const answered = (qid: string) => (answers[qid]?.length ?? 0) > 0;
+  const answeredCount = questions.filter((x) => answered(x.id)).length;
+  const reviewCount = questions.filter((x) => flags[x.id]).length;
+  const notAnsweredCount = questions.length - answeredCount;
 
   return (
     <div {...blockEvents} className={proctoring ? "select-none" : ""}>
@@ -218,7 +221,7 @@ export default function ExamRunner({
         </span>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-[1fr_200px]">
+      <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
         {/* main */}
         <div className="rounded-xl border bg-white p-5">
           <div className="mb-2 flex items-center justify-between">
@@ -300,9 +303,50 @@ export default function ExamRunner({
         </div>
 
         {/* palette */}
-        <div className="rounded-xl border bg-white p-4">
-          <p className="mb-3 text-sm font-medium">Questions</p>
-          <div className="grid grid-cols-5 gap-2">
+        <div className="rounded-xl border bg-white p-4 lg:sticky lg:top-20 lg:max-h-[calc(100vh-7rem)] lg:overflow-hidden">
+          <div className="mb-3 flex items-center justify-between">
+            <p className="text-sm font-medium">Question palette</p>
+            <span className="text-xs text-gray-400">
+              {idx + 1}/{questions.length}
+            </span>
+          </div>
+
+          <div className="mb-3 grid grid-cols-3 gap-2 text-center text-xs">
+            <div className="rounded-lg bg-emerald-50 px-2 py-2 text-emerald-700">
+              <p className="font-semibold">{answeredCount}</p>
+              <p>Answered</p>
+            </div>
+            <div className="rounded-lg bg-amber-50 px-2 py-2 text-amber-700">
+              <p className="font-semibold">{reviewCount}</p>
+              <p>Review</p>
+            </div>
+            <div className="rounded-lg bg-slate-50 px-2 py-2 text-slate-600">
+              <p className="font-semibold">{notAnsweredCount}</p>
+              <p>Pending</p>
+            </div>
+          </div>
+
+          <div className="mb-3 grid grid-cols-2 gap-2 text-xs text-gray-500">
+            <span className="flex items-center gap-1.5">
+              <span className="h-3 w-3 rounded border border-emerald-400 bg-emerald-100" />
+              Answered
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="h-3 w-3 rounded border border-amber-400 bg-amber-100" />
+              Mark review
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="h-3 w-3 rounded border border-gray-200 bg-gray-50" />
+              Not answered
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="h-3 w-3 rounded border-2 border-gray-900 bg-white" />
+              Current
+            </span>
+          </div>
+
+          <div className="max-h-[52vh] overflow-y-auto rounded-lg border border-slate-100 p-2">
+            <div className="grid grid-cols-5 gap-2 sm:grid-cols-8 lg:grid-cols-6">
             {questions.map((x, i) => {
               const a = answered(x.id);
               const fl = flags[x.id];
@@ -325,6 +369,7 @@ export default function ExamRunner({
                 </button>
               );
             })}
+            </div>
           </div>
           <button
             onClick={doSubmit}
