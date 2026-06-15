@@ -1,0 +1,116 @@
+"use client";
+
+import { useState } from "react";
+import { addQuestion } from "./actions";
+
+export default function QuestionForm({ examId }: { examId: string }) {
+  const [type, setType] = useState<"single" | "multiple">("single");
+
+  const input =
+    "w-full rounded-md border px-3 py-2 text-sm outline-none focus:border-gray-400";
+
+  return (
+    <form
+      action={async (fd) => {
+        await addQuestion(fd);
+        // form reset (uncontrolled fields)
+        (document.getElementById("qform") as HTMLFormElement)?.reset();
+      }}
+      id="qform"
+      className="mb-6 space-y-4 rounded-xl border bg-white p-5"
+    >
+      <h2 className="font-medium">Question add karo</h2>
+      <input type="hidden" name="exam_id" value={examId} />
+
+      <textarea
+        name="question_text"
+        required
+        rows={2}
+        placeholder="Question lakho…"
+        className={input}
+      />
+
+      <div className="flex items-center gap-3 text-sm">
+        <span className="text-gray-500">Type:</span>
+        <select
+          name="type"
+          value={type}
+          onChange={(e) => setType(e.target.value as "single" | "multiple")}
+          className="rounded-md border px-2 py-1.5 text-sm"
+        >
+          <option value="single">Single correct</option>
+          <option value="multiple">Multiple correct</option>
+        </select>
+        <span className="text-xs text-gray-400">
+          {type === "single"
+            ? "(faqt ek option correct mark karo)"
+            : "(ek thi vadhare correct mark kari shako)"}
+        </span>
+      </div>
+
+      <div className="space-y-2">
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              name={`correct_${i}`}
+              className="h-4 w-4 shrink-0"
+              title="Correct?"
+            />
+            <input
+              name={`option_${i}`}
+              placeholder={`Option ${String.fromCharCode(65 + i)}`}
+              className={input}
+            />
+          </div>
+        ))}
+        <p className="text-xs text-gray-400">
+          Checkbox = correct answer. Ochama 2 option + 1 correct joiye.
+        </p>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label className="mb-1 block text-sm font-medium">Marks</label>
+          <input
+            name="marks"
+            type="number"
+            min={0}
+            step="0.01"
+            defaultValue={1}
+            className={input}
+          />
+        </div>
+        <div>
+          <label className="mb-1 block text-sm font-medium">
+            Negative marks
+          </label>
+          <input
+            name="negative_marks"
+            type="number"
+            min={0}
+            step="0.01"
+            defaultValue={0}
+            className={input}
+          />
+        </div>
+      </div>
+
+      <div>
+        <label className="mb-1 block text-sm font-medium">
+          Explanation (optional)
+        </label>
+        <textarea
+          name="explanation"
+          rows={2}
+          placeholder="Review vakhate dekhase…"
+          className={input}
+        />
+      </div>
+
+      <button className="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800">
+        Add question
+      </button>
+    </form>
+  );
+}
