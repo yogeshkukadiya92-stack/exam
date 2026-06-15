@@ -216,5 +216,6 @@ function toDateTimeLocal(value: string | null) {
   if (!value) return "";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
-  return date.toISOString().slice(0, 16);
+  const indiaTime = new Date(date.getTime() + 5.5 * 60 * 60 * 1000);
+  return indiaTime.toISOString().slice(0, 16);
 }

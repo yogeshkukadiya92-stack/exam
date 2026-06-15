@@ -19,6 +19,11 @@ function toMessage(error: unknown, fallback: string) {
   return fallback;
 }
 
+function indiaDateTimeLocalToIso(value: string) {
+  if (!value) return null;
+  return new Date(`${value}:00+05:30`).toISOString();
+}
+
 export async function createExam(formData: FormData) {
   const profile = await requireAdmin();
   const supabase = await createClient();
@@ -42,8 +47,8 @@ export async function createExam(formData: FormData) {
     shuffle_questions: formData.get("shuffle_questions") === "on",
     proctoring: formData.get("proctoring") === "on",
     max_attempts: Number(formData.get("max_attempts")) || 1,
-    start_time: startRaw ? new Date(startRaw).toISOString() : null,
-    end_time: endRaw ? new Date(endRaw).toISOString() : null,
+    start_time: indiaDateTimeLocalToIso(startRaw),
+    end_time: indiaDateTimeLocalToIso(endRaw),
     created_by: profile.id,
   });
 
@@ -82,8 +87,8 @@ export async function updateExam(formData: FormData): Promise<{
         shuffle_questions: formData.get("shuffle_questions") === "on",
         proctoring: formData.get("proctoring") === "on",
         max_attempts: Number(formData.get("max_attempts")) || 1,
-        start_time: startRaw ? new Date(startRaw).toISOString() : null,
-        end_time: endRaw ? new Date(endRaw).toISOString() : null,
+        start_time: indiaDateTimeLocalToIso(startRaw),
+        end_time: indiaDateTimeLocalToIso(endRaw),
       })
       .eq("id", id);
 

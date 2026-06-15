@@ -17,7 +17,7 @@ export default async function ExamIntro({
 
   const { data: exam } = await supabase
     .from("exams")
-    .select("id, title, instructions, duration_minutes, pass_marks, negative_marking, max_attempts, courses(name), batches(name), questions(count)")
+    .select("id, title, instructions, duration_minutes, pass_marks, negative_marking, max_attempts, start_time, end_time, courses(name), batches(name), questions(count)")
     .eq("id", examId)
     .single();
 
@@ -88,6 +88,17 @@ export default async function ExamIntro({
             </div>
           )}
 
+          {(exam.start_time || exam.end_time) && (
+            <div className="mt-4 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
+              {exam.start_time && (
+                <p>Start: {formatIndiaDateTime(exam.start_time as string)}</p>
+              )}
+              {exam.end_time && (
+                <p>End: {formatIndiaDateTime(exam.end_time as string)}</p>
+              )}
+            </div>
+          )}
+
           {exam.instructions && (
             <div className="mt-4 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
               {exam.instructions}
@@ -108,4 +119,12 @@ export default async function ExamIntro({
       </div>
     </div>
   );
+}
+
+function formatIndiaDateTime(value: string) {
+  return new Intl.DateTimeFormat("en-IN", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "Asia/Kolkata",
+  }).format(new Date(value));
 }
