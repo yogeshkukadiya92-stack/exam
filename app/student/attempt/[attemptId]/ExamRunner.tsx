@@ -83,6 +83,7 @@ export default function ExamRunner({
   const [saving, setSaving] = useState(false);
   const [violations, setViolations] = useState(0);
   const [autoSubmitting, setAutoSubmitting] = useState(false);
+  const [confirmSubmit, setConfirmSubmit] = useState(false);
   const [pending, startTransition] = useTransition();
   const submittedRef = useRef(false);
 
@@ -100,8 +101,14 @@ export default function ExamRunner({
   const doSubmit = () => {
     if (submittedRef.current) return;
     submittedRef.current = true;
+    setConfirmSubmit(false);
     setAutoSubmitting(true);
     startTransition(() => submitAttempt(attemptId));
+  };
+
+  const askSubmit = () => {
+    if (submittedRef.current) return;
+    setConfirmSubmit(true);
   };
 
   useEffect(() => {
@@ -210,6 +217,62 @@ export default function ExamRunner({
           {MAX_VIOLATIONS - violations} vaar pachi exam auto-submit thai jase.
         </div>
       )}
+      {confirmSubmit && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4">
+          <div className="w-full max-w-md rounded-xl bg-white p-5 shadow-xl">
+            <div className="mb-4 flex items-start gap-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-50 text-amber-600">
+                <AlertTriangle className="h-5 w-5" />
+              </div>
+              <div>
+                <h2 className="font-semibold text-slate-900">Submit exam?</h2>
+                <p className="mt-1 text-sm text-slate-500">
+                  Final submit pachi answer change nahi kari shako.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2 text-center text-sm">
+              <div className="rounded-lg bg-emerald-50 px-2 py-3 text-emerald-700">
+                <p className="text-lg font-semibold">{answeredCount}</p>
+                <p>Answered</p>
+              </div>
+              <div className="rounded-lg bg-amber-50 px-2 py-3 text-amber-700">
+                <p className="text-lg font-semibold">{reviewCount}</p>
+                <p>Review</p>
+              </div>
+              <div className="rounded-lg bg-slate-50 px-2 py-3 text-slate-600">
+                <p className="text-lg font-semibold">{notAnsweredCount}</p>
+                <p>Pending</p>
+              </div>
+            </div>
+
+            {notAnsweredCount > 0 && (
+              <p className="mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-700">
+                {notAnsweredCount} question pending chhe. Tame submit karva sure cho?
+              </p>
+            )}
+
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setConfirmSubmit(false)}
+                className="rounded-md border px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              >
+                Back to exam
+              </button>
+              <button
+                type="button"
+                onClick={doSubmit}
+                disabled={pending || autoSubmitting}
+                className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+              >
+                {pending || autoSubmitting ? "Submitting..." : "Final submit"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="mb-4 flex items-center justify-between">
         <h1 className="font-semibold">{title}</h1>
         <span
@@ -284,7 +347,7 @@ export default function ExamRunner({
             </button>
             {idx === questions.length - 1 ? (
               <button
-                onClick={doSubmit}
+                onClick={askSubmit}
                 disabled={pending || autoSubmitting}
                 className="rounded-md bg-emerald-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
               >
@@ -372,7 +435,7 @@ export default function ExamRunner({
             </div>
           </div>
           <button
-            onClick={doSubmit}
+            onClick={askSubmit}
             disabled={pending || autoSubmitting}
             className="mt-4 w-full rounded-md bg-emerald-600 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
           >
