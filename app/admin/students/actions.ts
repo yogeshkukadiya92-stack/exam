@@ -17,47 +17,77 @@ interface CreateStudentInput {
   batchId?: string | null;
 }
 
+function toMessage(error: unknown, fallback: string) {
+  if (error instanceof Error && error.message) return error.message;
+  if (typeof error === "string" && error.trim()) return error;
+  return fallback;
+}
+
 export async function createStudent(input: CreateStudentInput): Promise<{
   ok: boolean;
   message: string;
 }> {
-  await requireAdmin();
-  const admin = createAdminClient();
+  try {
+    await requireAdmin();
+    const admin = createAdminClient();
 
-  if (!input.email || !input.password || input.password.length < 6) {
-    return { ok: false, message: "Email ane 6+ char password aapo." };
-  }
+    if (!input.email || !input.password || input.password.length < 6) {
+      return { ok: false, message: "Email ane 6+ char password aapo." };
+    }
 
-  const { data, error } = await admin.auth.admin.createUser({
-    email: input.email,
-    password: input.password,
-    email_confirm: true,
-    user_metadata: { full_name: input.full_name, role: "student" },
-  });
+    const { data: existingProfile, error: profileError } = await admin
+      .from("profiles")
+      .select("id")
+      .eq("email", input.email)
+      .maybeSingle();
 
-  if (error || !data.user) {
-    return {
-      ok: false,
-      message: error?.message ?? "Student banavta problem aavi.",
-    };
-  }
-
-  if (input.batchId) {
-    const { error: enrErr } = await admin.from("enrollments").upsert(
-      { student_id: data.user.id, batch_id: input.batchId },
-      { onConflict: "student_id,batch_id", ignoreDuplicates: true }
-    );
-
-    if (enrErr) {
+    if (profileError) {
       return {
-        ok: true,
-        message: `Student bane gayo, pan batch enrollment fail: ${enrErr.message}`,
+        ok: false,
+        message: `Duplicate check fail: ${toMessage(profileError, "Unknown error")}`,
       };
     }
-  }
 
-  revalidatePath("/admin/students");
-  return { ok: true, message: "Student successfully add thai gayo." };
+    if (existingProfile) {
+      return { ok: false, message: "Aa email par student pachi thi exist kare chhe." };
+    }
+
+    const { data, error } = await admin.auth.admin.createUser({
+      email: input.email,
+      password: input.password,
+      email_confirm: true,
+      user_metadata: { full_name: input.full_name, role: "student" },
+    });
+
+    if (error || !data.user) {
+      return {
+        ok: false,
+        message: toMessage(error, "Student banavta problem aavi."),
+      };
+    }
+
+    if (input.batchId) {
+      const { error: enrErr } = await admin.from("enrollments").upsert(
+        { student_id: data.user.id, batch_id: input.batchId },
+        { onConflict: "student_id,batch_id", ignoreDuplicates: true }
+      );
+
+      if (enrErr) {
+        return {
+          ok: true,
+          message: `Student bane gayo, pan batch enrollment fail: ${toMessage(enrErr, "Unknown error")}`,
+        };
+      }
+    }
+
+    revalidatePath("/admin/students");
+    return { ok: true, message: "Student successfully add thai gayo." };
+  } catch (error) {
+    return {
+      ok: false,
+      message: toMessage(error, "Student create karva ma unknown error aavi."),
+    };
+  }
 }
 
 export async function bulkImportStudents(
@@ -75,6 +105,18 @@ export async function bulkImportStudents(
   for (const s of students) {
     if (!s.email || s.password.length < 6) {
       failed++;
+      continue;
+    }
+
+    const { data: existingProfile } = await admin
+      .from("profiles")
+      .select("id")
+      .eq("email", s.email)
+      .maybeSingle();
+
+    if (existingProfile) {
+      failed++;
+      errors.push(`${s.email}: already exists`);
       continue;
     }
 

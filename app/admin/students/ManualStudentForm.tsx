@@ -25,6 +25,7 @@ export default function ManualStudentForm({
     e.preventDefault();
     setBusy(true);
     setMessage(null);
+    setOk(false);
 
     const res = await createStudent({
       full_name: fullName.trim(),
@@ -35,7 +36,7 @@ export default function ManualStudentForm({
 
     setBusy(false);
     setOk(res.ok);
-    setMessage(res.message);
+    setMessage(typeof res.message === "string" ? res.message : JSON.stringify(res.message));
 
     if (res.ok) {
       setFullName("");
