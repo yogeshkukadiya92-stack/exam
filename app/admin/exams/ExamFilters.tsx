@@ -5,6 +5,7 @@ import Link from "next/link";
 import { FileText, BarChart3, Eye, EyeOff, Trash2, Search } from "lucide-react";
 import { deleteExam, togglePublish } from "./actions";
 import DuplicateExamButton from "./DuplicateExamButton";
+import ExamLinkButton from "./ExamLinkButton";
 
 interface Exam {
   id: string;
@@ -137,6 +138,7 @@ export default function ExamFilters({ exams, courses, batches }: Props) {
                   batches={batches}
                   currentBatchId={e.batch_id}
                 />
+                <ExamLinkButton examId={e.id} />
                 <form action={togglePublish}>
                   <input type="hidden" name="id" value={e.id} />
                   <input

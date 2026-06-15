@@ -7,6 +7,7 @@ import { revalidatePath } from "next/cache";
 export async function login(formData: FormData) {
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
+  const next = formData.get("next") as string | null;
 
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -15,7 +16,12 @@ export async function login(formData: FormData) {
     redirect("/login?error=" + encodeURIComponent(error.message));
   }
   revalidatePath("/", "layout");
-  redirect("/");
+  redirect(getSafeRedirect(next));
+}
+
+function getSafeRedirect(next: string | null) {
+  if (!next || !next.startsWith("/") || next.startsWith("//")) return "/";
+  return next;
 }
 
 export async function signup(formData: FormData) {

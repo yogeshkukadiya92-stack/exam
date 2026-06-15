@@ -4,9 +4,9 @@ import Link from "next/link";
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; message?: string }>;
+  searchParams: Promise<{ error?: string; message?: string; next?: string }>;
 }) {
-  const { error, message } = await searchParams;
+  const { error, message, next } = await searchParams;
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4">
@@ -34,6 +34,7 @@ export default async function LoginPage({
           )}
 
           <form action={login} className="space-y-4">
+            {next && <input type="hidden" name="next" value={next} />}
             <div>
               <label className="mb-1.5 block text-sm font-medium text-slate-700">
                 Email
