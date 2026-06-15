@@ -2,6 +2,62 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  ::selection {
+    @apply bg-indigo-600/20 text-indigo-900;
+  }
+
+  input, select, textarea {
+    @apply transition-all duration-200;
+  }
+
+  input:focus, select:focus, textarea:focus {
+    @apply ring-2 ring-indigo-500/20 border-indigo-400 !important;
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-2xl border border-slate-200/80 bg-white shadow-sm shadow-slate-100 transition-all duration-200;
+  }
+
+  .card-hover {
+    @apply card hover:shadow-md hover:shadow-slate-200/50 hover:border-slate-300/80;
+  }
+
+  .btn-primary {
+    @apply rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-indigo-200 transition-all duration-200 hover:from-indigo-700 hover:to-indigo-800 hover:shadow-md hover:shadow-indigo-300/50 active:scale-[0.98];
+  }
+
+  .btn-secondary {
+    @apply rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition-all duration-200 hover:bg-slate-50 hover:border-slate-300 hover:shadow active:scale-[0.98];
+  }
+
+  .btn-danger {
+    @apply rounded-xl border border-red-200 bg-white px-4 py-2 text-sm font-medium text-red-600 transition-all duration-200 hover:bg-red-50 hover:border-red-300 active:scale-[0.98];
+  }
+
+  .input {
+    @apply w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm outline-none placeholder:text-slate-400 transition-all duration-200;
+  }
+
+  .badge {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium;
+  }
+
+  .page-title {
+    @apply text-2xl font-bold tracking-tight text-slate-900;
+  }
+
+  .section-title {
+    @apply text-lg font-semibold text-slate-800;
+  }
+
+  .gradient-text {
+    @apply bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent;
+  }
+}
+
 @media print {
   body { background: #fff; }
   main { max-width: 100% !important; padding: 0 !important; }

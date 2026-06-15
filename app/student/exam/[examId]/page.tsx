@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { startAttempt } from "./actions";
+import { ArrowLeft, Clock, Target, RotateCcw, AlertTriangle, FileText } from "lucide-react";
 
 export default async function ExamIntro({
   params,
@@ -28,45 +29,82 @@ export default async function ExamIntro({
 
   return (
     <div className="mx-auto max-w-lg">
-      <Link href="/student" className="mb-3 inline-block text-sm text-gray-500 hover:text-gray-900">
-        ← My Exams
+      <Link
+        href="/student"
+        className="mb-4 inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-indigo-600 transition-colors"
+      >
+        <ArrowLeft className="h-4 w-4" /> My Exams
       </Link>
 
-      <div className="rounded-xl border bg-white p-6">
-        <h1 className="text-xl font-semibold">{exam.title}</h1>
-        <p className="text-sm text-gray-500">{course} · {batch}</p>
+      <div className="card overflow-hidden">
+        <div className="bg-gradient-to-r from-indigo-600 to-violet-600 px-6 py-5">
+          <h1 className="text-xl font-bold text-white">{exam.title}</h1>
+          <p className="mt-0.5 text-sm text-indigo-200">{course} · {batch}</p>
+        </div>
 
-        {error && (
-          <p className="mt-3 rounded-md bg-red-50 p-2 text-sm text-red-700">{error}</p>
-        )}
+        <div className="p-6">
+          {error && (
+            <div className="mb-4 flex items-center gap-2 rounded-xl bg-red-50 border border-red-200 p-3 text-sm text-red-700">
+              <AlertTriangle className="h-4 w-4 shrink-0" />
+              {error}
+            </div>
+          )}
 
-        <ul className="mt-4 space-y-1.5 text-sm text-gray-600">
-          <li>• Total questions: {qCount}</li>
-          <li>• Duration: {exam.duration_minutes} minutes</li>
-          <li>• Pass marks: {exam.pass_marks}</li>
-          <li>• Allowed attempts: {exam.max_attempts}</li>
-          <li className={exam.negative_marking ? "text-red-600" : ""}>
-            • Negative marking: {exam.negative_marking ? "Haan (khota answer par minus)" : "Nathi"}
-          </li>
-        </ul>
-
-        {exam.instructions && (
-          <div className="mt-4 rounded-md bg-gray-50 p-3 text-sm text-gray-600">
-            {exam.instructions}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-xl bg-slate-50 p-3.5">
+              <div className="flex items-center gap-2 text-slate-500">
+                <FileText className="h-4 w-4" />
+                <span className="text-xs font-medium uppercase tracking-wider">Questions</span>
+              </div>
+              <p className="mt-1 text-xl font-bold">{qCount}</p>
+            </div>
+            <div className="rounded-xl bg-slate-50 p-3.5">
+              <div className="flex items-center gap-2 text-slate-500">
+                <Clock className="h-4 w-4" />
+                <span className="text-xs font-medium uppercase tracking-wider">Duration</span>
+              </div>
+              <p className="mt-1 text-xl font-bold">{exam.duration_minutes} min</p>
+            </div>
+            <div className="rounded-xl bg-slate-50 p-3.5">
+              <div className="flex items-center gap-2 text-slate-500">
+                <Target className="h-4 w-4" />
+                <span className="text-xs font-medium uppercase tracking-wider">Pass marks</span>
+              </div>
+              <p className="mt-1 text-xl font-bold">{exam.pass_marks}</p>
+            </div>
+            <div className="rounded-xl bg-slate-50 p-3.5">
+              <div className="flex items-center gap-2 text-slate-500">
+                <RotateCcw className="h-4 w-4" />
+                <span className="text-xs font-medium uppercase tracking-wider">Attempts</span>
+              </div>
+              <p className="mt-1 text-xl font-bold">{exam.max_attempts}</p>
+            </div>
           </div>
-        )}
 
-        <p className="mt-4 rounded-md bg-amber-50 p-3 text-xs text-amber-700">
-          Start pachi timer chalu thai jase. Question palette thi navigate karo, answers
-          auto-save thay che, ane ant ma Submit karo.
-        </p>
+          {exam.negative_marking && (
+            <div className="mt-4 flex items-center gap-2 rounded-xl bg-red-50 border border-red-100 p-3 text-sm text-red-600">
+              <AlertTriangle className="h-4 w-4 shrink-0" />
+              Negative marking is enabled — wrong answers will deduct marks.
+            </div>
+          )}
 
-        <form action={startAttempt} className="mt-4">
-          <input type="hidden" name="exam_id" value={exam.id} />
-          <button className="w-full rounded-md bg-gray-900 py-2.5 text-sm font-medium text-white hover:bg-gray-800">
-            Start exam
-          </button>
-        </form>
+          {exam.instructions && (
+            <div className="mt-4 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
+              {exam.instructions}
+            </div>
+          )}
+
+          <div className="mt-4 rounded-xl bg-amber-50 border border-amber-100 p-3 text-xs text-amber-700">
+            Once started, the timer begins. Answers are auto-saved. Navigate using the question palette and submit when done.
+          </div>
+
+          <form action={startAttempt} className="mt-5">
+            <input type="hidden" name="exam_id" value={exam.id} />
+            <button className="btn-primary w-full text-base">
+              Start exam
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );

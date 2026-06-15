@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { BookOpen, Play, RotateCcw, Trophy } from "lucide-react";
 
 export default async function StudentExams() {
   const supabase = await createClient();
@@ -29,15 +30,26 @@ export default async function StudentExams() {
 
   return (
     <div>
-      <h1 className="mb-4 text-xl font-semibold">My Exams</h1>
+      <div className="mb-8">
+        <h1 className="page-title">My Exams</h1>
+        <p className="mt-1 text-sm text-slate-500">
+          View and attempt your assigned exams
+        </p>
+      </div>
 
       {available.length === 0 && (
-        <div className="rounded-xl border bg-white p-6 text-center text-gray-400">
-          Tamne haju koi exam assign nathi thayu.
+        <div className="card p-12 text-center">
+          <BookOpen className="mx-auto h-12 w-12 text-slate-300" />
+          <p className="mt-4 text-slate-500">
+            No exams assigned to you yet.
+          </p>
+          <p className="mt-1 text-sm text-slate-400">
+            Check back later or contact your instructor.
+          </p>
         </div>
       )}
 
-      <div className="space-y-2">
+      <div className="space-y-3">
         {available.map((e) => {
           const list = byExam.get(e.id) ?? [];
           const inProgress = list.find((a) => a.status === "in_progress");
@@ -50,31 +62,43 @@ export default async function StudentExams() {
           const batch = (e.batches as unknown as { name: string } | null)?.name;
 
           return (
-            <div key={e.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-white p-4">
-              <div>
-                <p className="font-medium">{e.title}</p>
-                <p className="text-sm text-gray-500">{course} · {batch}</p>
-                <p className="mt-0.5 text-xs text-gray-400">
-                  {e.duration_minutes} min
-                  {e.negative_marking ? " · negative marking" : ""}
-                  {best != null ? ` · best score: ${best}` : ""}
-                </p>
+            <div key={e.id} className="card-hover flex flex-wrap items-center justify-between gap-4 p-5">
+              <div className="min-w-0">
+                <p className="font-semibold text-slate-900">{e.title}</p>
+                <p className="mt-0.5 text-sm text-slate-500">{course} · {batch}</p>
+                <div className="mt-1.5 flex flex-wrap items-center gap-3 text-xs text-slate-400">
+                  <span>{e.duration_minutes} min</span>
+                  {e.negative_marking && (
+                    <span className="badge bg-red-50 text-red-600">Negative marking</span>
+                  )}
+                  {best != null && (
+                    <span className="badge bg-emerald-50 text-emerald-600">
+                      <Trophy className="h-3 w-3" />
+                      Best: {best}
+                    </span>
+                  )}
+                </div>
               </div>
               <div className="flex items-center gap-2">
                 {inProgress ? (
-                  <Link href={`/student/attempt/${inProgress.id}`}
-                    className="rounded-md bg-amber-500 px-4 py-2 text-sm font-medium text-white hover:bg-amber-600">
+                  <Link
+                    href={`/student/attempt/${inProgress.id}`}
+                    className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-amber-200 transition-all hover:shadow-md active:scale-[0.98]"
+                  >
+                    <RotateCcw className="h-4 w-4" />
                     Resume
                   </Link>
                 ) : (
-                  <Link href={`/student/exam/${e.id}`}
-                    className="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800">
+                  <Link href={`/student/exam/${e.id}`} className="btn-primary flex items-center gap-1.5">
+                    <Play className="h-4 w-4" />
                     Start
                   </Link>
                 )}
                 {submitted.length > 0 && (
-                  <Link href={`/student/attempt/${submitted[0].id}/result`}
-                    className="rounded-md border px-3 py-2 text-sm hover:bg-gray-100">
+                  <Link
+                    href={`/student/attempt/${submitted[0].id}/result`}
+                    className="btn-secondary text-sm"
+                  >
                     Result
                   </Link>
                 )}
