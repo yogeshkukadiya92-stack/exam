@@ -39,6 +39,16 @@ export default async function AttemptPage({
     proctoring: boolean;
   };
 
+  const deadline = Math.min(
+    new Date(attempt.started_at as string).getTime() + exam.duration_minutes * 60000,
+    exam.end_time ? new Date(exam.end_time).getTime() : Infinity
+  );
+
+  if (Date.now() >= deadline) {
+    await supabase.rpc("submit_attempt", { p_attempt_id: attemptId });
+    redirect(`/student/attempt/${attemptId}/result`);
+  }
+
   // Questions via secure RPC (correct answers VAGAR)
   const { data: questions } = await supabase.rpc("get_attempt_questions", {
     p_attempt_id: attemptId,

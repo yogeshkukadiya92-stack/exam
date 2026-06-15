@@ -82,6 +82,7 @@ export default function ExamRunner({
   const [flags, setFlags] = useState<Record<string, boolean>>(initialFlags);
   const [saving, setSaving] = useState(false);
   const [violations, setViolations] = useState(0);
+  const [autoSubmitting, setAutoSubmitting] = useState(false);
   const [pending, startTransition] = useTransition();
   const submittedRef = useRef(false);
 
@@ -99,6 +100,7 @@ export default function ExamRunner({
   const doSubmit = () => {
     if (submittedRef.current) return;
     submittedRef.current = true;
+    setAutoSubmitting(true);
     startTransition(() => submitAttempt(attemptId));
   };
 
@@ -152,6 +154,7 @@ export default function ExamRunner({
   const lowTime = left < 60;
 
   const save = async (qid: string, optionIds: string[], flag: boolean) => {
+    if (submittedRef.current) return;
     setSaving(true);
     await supabase.from("answers").upsert(
       {
@@ -166,6 +169,7 @@ export default function ExamRunner({
   };
 
   const pick = (optionId: string) => {
+    if (submittedRef.current) return;
     const cur = answers[q.id] ?? [];
     let next: string[];
     if (q.type === "multiple") {
@@ -180,6 +184,7 @@ export default function ExamRunner({
   };
 
   const toggleFlag = () => {
+    if (submittedRef.current) return;
     const next = !flags[q.id];
     setFlags((p) => ({ ...p, [q.id]: next }));
     save(q.id, answers[q.id] ?? [], next);
@@ -189,6 +194,12 @@ export default function ExamRunner({
 
   return (
     <div {...blockEvents} className={proctoring ? "select-none" : ""}>
+      {autoSubmitting && (
+        <div className="mb-3 flex items-center gap-2 rounded-md bg-amber-50 p-3 text-sm text-amber-700">
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          Time up. Exam auto-submit thai rahi chhe...
+        </div>
+      )}
       {proctoring && violations > 0 && (
         <div className="mb-3 flex items-center gap-2 rounded-md bg-red-50 p-3 text-sm text-red-700">
           <AlertTriangle className="h-4 w-4 shrink-0" />
@@ -233,9 +244,10 @@ export default function ExamRunner({
                 <button
                   key={o.id}
                   onClick={() => pick(o.id)}
+                  disabled={autoSubmitting}
                   className={`flex w-full items-center gap-3 rounded-lg border px-3 py-2.5 text-left text-sm transition ${
                     sel ? "border-gray-900 bg-gray-900 text-white" : "hover:bg-gray-50"
-                  }`}
+                  } disabled:cursor-not-allowed disabled:opacity-60`}
                 >
                   <span
                     className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-xs ${
@@ -252,7 +264,7 @@ export default function ExamRunner({
 
           <div className="mt-5 flex items-center justify-between">
             <button
-              disabled={idx === 0}
+              disabled={idx === 0 || autoSubmitting}
               onClick={() => setIdx((i) => i - 1)}
               className="flex items-center gap-1 rounded-md border px-3 py-1.5 text-sm hover:bg-gray-100 disabled:opacity-40"
             >
@@ -260,23 +272,25 @@ export default function ExamRunner({
             </button>
             <button
               onClick={toggleFlag}
+              disabled={autoSubmitting}
               className={`flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm ${
                 flags[q.id] ? "border-amber-400 bg-amber-50 text-amber-700" : "hover:bg-gray-100"
-              }`}
+              } disabled:opacity-50`}
             >
               <Flag className="h-4 w-4" /> {flags[q.id] ? "Flagged" : "Mark review"}
             </button>
             {idx === questions.length - 1 ? (
               <button
                 onClick={doSubmit}
-                disabled={pending}
+                disabled={pending || autoSubmitting}
                 className="rounded-md bg-emerald-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
               >
-                Submit
+                {autoSubmitting ? "Submitting..." : "Submit"}
               </button>
             ) : (
               <button
                 onClick={() => setIdx((i) => i + 1)}
+                disabled={autoSubmitting}
                 className="flex items-center gap-1 rounded-md border px-3 py-1.5 text-sm hover:bg-gray-100"
               >
                 Next <ChevronRight className="h-4 w-4" />
@@ -296,6 +310,7 @@ export default function ExamRunner({
                 <button
                   key={x.id}
                   onClick={() => setIdx(i)}
+                  disabled={autoSubmitting}
                   className={`flex h-9 w-9 items-center justify-center rounded-md border text-sm font-medium ${
                     i === idx ? "ring-2 ring-gray-900 ring-offset-1" : ""
                   } ${
@@ -313,10 +328,10 @@ export default function ExamRunner({
           </div>
           <button
             onClick={doSubmit}
-            disabled={pending}
+            disabled={pending || autoSubmitting}
             className="mt-4 w-full rounded-md bg-emerald-600 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
           >
-            {pending ? "Submitting…" : "Submit exam"}
+            {pending || autoSubmitting ? "Submitting..." : "Submit exam"}
           </button>
         </div>
       </div>
