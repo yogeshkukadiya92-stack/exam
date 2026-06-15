@@ -43,6 +43,90 @@ export async function deleteExam(formData: FormData) {
   revalidatePath("/admin/exams");
 }
 
+export async function duplicateExam(formData: FormData) {
+  const profile = await requireAdmin();
+  const supabase = await createClient();
+
+  const examId = formData.get("exam_id") as string;
+  const targetBatchId = (formData.get("batch_id") as string) || null;
+
+  const { data: source } = await supabase
+    .from("exams")
+    .select("*")
+    .eq("id", examId)
+    .single();
+  if (!source) return;
+
+  const { data: newExam } = await supabase
+    .from("exams")
+    .insert({
+      title: source.title + " (Copy)",
+      course_id: source.course_id,
+      batch_id: targetBatchId || source.batch_id,
+      instructions: source.instructions,
+      duration_minutes: source.duration_minutes,
+      pass_marks: source.pass_marks,
+      negative_marking: source.negative_marking,
+      shuffle_questions: source.shuffle_questions,
+      max_attempts: source.max_attempts,
+      start_time: null,
+      end_time: null,
+      is_published: false,
+      created_by: profile.id,
+    })
+    .select("id")
+    .single();
+
+  if (!newExam) return;
+
+  const { data: questions } = await supabase
+    .from("questions")
+    .select("*, options(*)")
+    .eq("exam_id", examId);
+
+  if (questions) {
+    for (const q of questions) {
+      const opts = (q.options ?? []) as {
+        option_text: string;
+        is_correct: boolean;
+        position: number;
+      }[];
+
+      const { data: newQ } = await supabase
+        .from("questions")
+        .insert({
+          exam_id: newExam.id,
+          section_id: null,
+          type: q.type,
+          question_text: q.question_text,
+          image_url: q.image_url,
+          marks: q.marks,
+          negative_marks: q.negative_marks,
+          difficulty: q.difficulty,
+          topic: q.topic,
+          explanation: q.explanation,
+          correct_text: q.correct_text,
+          position: q.position,
+        })
+        .select("id")
+        .single();
+
+      if (newQ && opts.length > 0) {
+        await supabase.from("options").insert(
+          opts.map((o) => ({
+            question_id: newQ.id,
+            option_text: o.option_text,
+            is_correct: o.is_correct,
+            position: o.position,
+          }))
+        );
+      }
+    }
+  }
+
+  revalidatePath("/admin/exams");
+}
+
 export async function togglePublish(formData: FormData) {
   await requireAdmin();
   const id = formData.get("id") as string;

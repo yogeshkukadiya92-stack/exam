@@ -70,3 +70,13 @@ export async function requireStudent(): Promise<Profile> {
 export function isAdmin(role: Role) {
   return role === "super_admin" || role === "teacher";
 }
+
+export function isSuperAdmin(role: Role) {
+  return role === "super_admin";
+}
+
+export async function requireSuperAdmin(): Promise<Profile> {
+  const profile = await requireUser();
+  if (profile.role !== "super_admin") redirect("/admin");
+  return profile;
+}

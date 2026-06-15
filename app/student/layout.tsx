@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { requireStudent } from "@/lib/auth";
+import { getAcademySettings } from "@/lib/settings";
 import { logout } from "../(auth)/actions";
 import { LogOut } from "lucide-react";
 
@@ -9,6 +10,7 @@ export default async function StudentLayout({
   children: React.ReactNode;
 }) {
   const profile = await requireStudent();
+  const settings = await getAcademySettings();
 
   return (
     <div className="min-h-screen">
@@ -19,7 +21,11 @@ export default async function StudentLayout({
               <span className="text-sm font-bold text-white">E</span>
             </div>
             <span className="text-lg font-bold tracking-tight">
-              Exam<span className="gradient-text">Hub</span>
+              {settings.name === "ExamHub" ? (
+                <>Exam<span className="gradient-text">Hub</span></>
+              ) : (
+                <span className="gradient-text">{settings.name}</span>
+              )}
             </span>
           </Link>
           <div className="flex items-center gap-3">

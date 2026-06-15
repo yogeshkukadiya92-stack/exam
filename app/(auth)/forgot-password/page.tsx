@@ -1,7 +1,8 @@
-import { login } from "../actions";
+import { forgotPassword } from "../actions";
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 
-export default async function LoginPage({
+export default async function ForgotPasswordPage({
   searchParams,
 }: {
   searchParams: Promise<{ error?: string; message?: string }>;
@@ -15,9 +16,9 @@ export default async function LoginPage({
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-600 shadow-lg shadow-indigo-200">
             <span className="text-lg font-bold text-white">E</span>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight">Welcome back</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Reset Password</h1>
           <p className="mt-1 text-sm text-slate-500">
-            Sign in to your ExamHub account
+            Enter your email and we&apos;ll send you a reset link
           </p>
         </div>
 
@@ -33,7 +34,7 @@ export default async function LoginPage({
             </div>
           )}
 
-          <form action={login} className="space-y-4">
+          <form action={forgotPassword} className="space-y-4">
             <div>
               <label className="mb-1.5 block text-sm font-medium text-slate-700">
                 Email
@@ -46,39 +47,18 @@ export default async function LoginPage({
                 className="input"
               />
             </div>
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                Password
-              </label>
-              <input
-                name="password"
-                type="password"
-                required
-                placeholder="Enter your password"
-                className="input"
-              />
-            </div>
-            <div className="flex items-center justify-end">
-              <Link
-                href="/forgot-password"
-                className="text-sm font-semibold text-indigo-600 hover:text-indigo-700"
-              >
-                Forgot password?
-              </Link>
-            </div>
             <button type="submit" className="btn-primary w-full">
-              Sign in
+              Send Reset Link
             </button>
           </form>
         </div>
 
-        <p className="mt-6 text-center text-sm text-slate-500">
-          Don&apos;t have an account?{" "}
+        <p className="mt-6 text-center">
           <Link
-            href="/signup"
-            className="font-semibold text-indigo-600 hover:text-indigo-700"
+            href="/login"
+            className="inline-flex items-center gap-1.5 text-sm font-semibold text-indigo-600 hover:text-indigo-700"
           >
-            Create account
+            <ArrowLeft className="h-4 w-4" /> Back to Sign In
           </Link>
         </p>
       </div>

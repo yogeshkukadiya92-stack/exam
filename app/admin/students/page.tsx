@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import StudentImport from "./StudentImport";
-import { Users } from "lucide-react";
+import StudentSearch from "./StudentSearch";
 
 export default async function StudentsPage() {
   const supabase = await createClient();
@@ -20,6 +20,14 @@ export default async function StudentsPage() {
       label: `${(b.courses as unknown as { name: string } | null)?.name ?? ""} — ${b.name}`,
     })) ?? [];
 
+  const studentList =
+    students?.map((s) => ({
+      id: s.id,
+      full_name: s.full_name,
+      email: s.email,
+      created_at: s.created_at,
+    })) ?? [];
+
   return (
     <div>
       <div className="mb-8 flex items-center justify-between">
@@ -32,40 +40,7 @@ export default async function StudentsPage() {
         <StudentImport batches={batchOptions} />
       </div>
 
-      <div className="card overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="border-b border-slate-100 bg-slate-50/50 text-left">
-            <tr>
-              <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
-                Name
-              </th>
-              <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
-                Email
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {students?.map((s) => (
-              <tr key={s.id} className="transition-colors hover:bg-slate-50/50">
-                <td className="px-5 py-3.5 font-medium text-slate-900">
-                  {s.full_name || "—"}
-                </td>
-                <td className="px-5 py-3.5 text-slate-500">{s.email}</td>
-              </tr>
-            ))}
-            {students?.length === 0 && (
-              <tr>
-                <td colSpan={2} className="px-5 py-12 text-center">
-                  <Users className="mx-auto h-10 w-10 text-slate-300" />
-                  <p className="mt-3 text-sm text-slate-500">
-                    No students yet. Use bulk import or let students sign up.
-                  </p>
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+      <StudentSearch students={studentList} />
     </div>
   );
 }

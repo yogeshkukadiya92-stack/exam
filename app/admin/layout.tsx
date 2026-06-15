@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { requireAdmin } from "@/lib/auth";
+import { requireAdmin, isSuperAdmin } from "@/lib/auth";
+import { getAcademySettings } from "@/lib/settings";
 import { logout } from "../(auth)/actions";
-import { LayoutDashboard, BookOpen, FileText, Users, LogOut } from "lucide-react";
+import { LayoutDashboard, BookOpen, FileText, Users, LogOut, Megaphone, Settings } from "lucide-react";
 
 export default async function AdminLayout({
   children,
@@ -9,12 +10,16 @@ export default async function AdminLayout({
   children: React.ReactNode;
 }) {
   const profile = await requireAdmin();
+  const settings = await getAcademySettings();
+  const superAdmin = isSuperAdmin(profile.role);
 
   const navItems = [
     { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
     { href: "/admin/courses", label: "Courses", icon: BookOpen },
     { href: "/admin/exams", label: "Exams", icon: FileText },
-    { href: "/admin/students", label: "Students", icon: Users },
+    { href: "/admin/announcements", label: "Announcements", icon: Megaphone },
+    ...(superAdmin ? [{ href: "/admin/students", label: "Students", icon: Users }] : []),
+    ...(superAdmin ? [{ href: "/admin/settings", label: "Settings", icon: Settings }] : []),
   ];
 
   return (
@@ -27,7 +32,11 @@ export default async function AdminLayout({
                 <span className="text-sm font-bold text-white">E</span>
               </div>
               <span className="text-lg font-bold tracking-tight">
-                Exam<span className="gradient-text">Hub</span>
+                {settings.name === "ExamHub" ? (
+                  <>Exam<span className="gradient-text">Hub</span></>
+                ) : (
+                  <span className="gradient-text">{settings.name}</span>
+                )}
               </span>
             </Link>
             <nav className="hidden items-center gap-1 sm:flex">

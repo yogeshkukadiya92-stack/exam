@@ -39,6 +39,25 @@ export async function signup(formData: FormData) {
   redirect("/login?message=" + encodeURIComponent("Account banyu! Have login karo."));
 }
 
+export async function forgotPassword(formData: FormData) {
+  const email = formData.get("email") as string;
+  const supabase = await createClient();
+
+  const origin = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3005";
+
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${origin}/reset-password`,
+  });
+
+  if (error) {
+    redirect("/forgot-password?error=" + encodeURIComponent(error.message));
+  }
+  redirect(
+    "/forgot-password?message=" +
+      encodeURIComponent("Check your email for a password reset link.")
+  );
+}
+
 export async function logout() {
   const supabase = await createClient();
   await supabase.auth.signOut();
