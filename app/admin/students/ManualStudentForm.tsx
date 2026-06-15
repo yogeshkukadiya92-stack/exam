@@ -120,15 +120,30 @@ export default function ManualStudentForm({
 }
 
 function formatMessage(value: unknown, fallback: string) {
-  if (value instanceof Error && value.message) return value.message;
-  if (typeof value === "string" && value.trim()) return value;
+  if (value instanceof Error) {
+    const message = normalizeMessage(value.message);
+    if (message) return message;
+  }
+
+  if (typeof value === "string") {
+    const message = normalizeMessage(value);
+    if (message) return message;
+  }
 
   try {
     const serialized = JSON.stringify(value);
-    if (serialized && serialized !== "{}") return serialized;
+    const message = normalizeMessage(serialized);
+    if (message) return message;
   } catch {
     // Ignore serialization errors and use the friendly fallback.
   }
 
   return fallback;
+}
+
+function normalizeMessage(value: unknown) {
+  if (typeof value !== "string") return null;
+  const message = value.trim();
+  if (!message || message === "{}" || message === "[]") return null;
+  return message;
 }

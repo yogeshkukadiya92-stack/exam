@@ -18,9 +18,41 @@ interface CreateStudentInput {
 }
 
 function toMessage(error: unknown, fallback: string) {
-  if (error instanceof Error && error.message) return error.message;
-  if (typeof error === "string" && error.trim()) return error;
+  if (error instanceof Error) {
+    const message = normalizeMessage(error.message);
+    if (message) return message;
+  }
+
+  if (typeof error === "string") {
+    const message = normalizeMessage(error);
+    if (message) return message;
+  }
+
+  if (error && typeof error === "object") {
+    const details = error as {
+      message?: unknown;
+      code?: unknown;
+      status?: unknown;
+      name?: unknown;
+    };
+    const parts = [
+      normalizeMessage(details.message),
+      details.code ? `code: ${String(details.code)}` : null,
+      details.status ? `status: ${String(details.status)}` : null,
+      details.name ? `type: ${String(details.name)}` : null,
+    ].filter(Boolean);
+
+    if (parts.length > 0) return parts.join(" | ");
+  }
+
   return fallback;
+}
+
+function normalizeMessage(value: unknown) {
+  if (typeof value !== "string") return null;
+  const message = value.trim();
+  if (!message || message === "{}" || message === "[]") return null;
+  return message;
 }
 
 export async function createStudent(input: CreateStudentInput): Promise<{
