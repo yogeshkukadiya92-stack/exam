@@ -5,6 +5,9 @@ import { addQuestion } from "./actions";
 
 export default function QuestionForm({ examId }: { examId: string }) {
   const [type, setType] = useState<"single" | "multiple">("single");
+  const [message, setMessage] = useState<string | null>(null);
+  const [ok, setOk] = useState(false);
+  const [busy, setBusy] = useState(false);
 
   const input =
     "w-full rounded-md border px-3 py-2 text-sm outline-none focus:border-gray-400";
@@ -12,9 +15,17 @@ export default function QuestionForm({ examId }: { examId: string }) {
   return (
     <form
       action={async (fd) => {
-        await addQuestion(fd);
-        // form reset (uncontrolled fields)
-        (document.getElementById("qform") as HTMLFormElement)?.reset();
+        setBusy(true);
+        setMessage(null);
+        const result = await addQuestion(fd);
+        setBusy(false);
+        setOk(result.ok);
+        setMessage(result.message);
+        if (result.ok) {
+          // form reset (uncontrolled fields)
+          (document.getElementById("qform") as HTMLFormElement)?.reset();
+          setType("single");
+        }
       }}
       id="qform"
       className="mb-6 space-y-4 rounded-xl border bg-white p-5"
@@ -108,8 +119,21 @@ export default function QuestionForm({ examId }: { examId: string }) {
         />
       </div>
 
-      <button className="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800">
-        Add question
+      {message && (
+        <p
+          className={`rounded-md p-2 text-sm ${
+            ok ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"
+          }`}
+        >
+          {message}
+        </p>
+      )}
+
+      <button
+        disabled={busy}
+        className="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-40"
+      >
+        {busy ? "Adding..." : "Add question"}
       </button>
     </form>
   );

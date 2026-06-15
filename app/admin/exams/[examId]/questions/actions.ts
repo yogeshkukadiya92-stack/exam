@@ -4,57 +4,102 @@ import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 
-export async function addQuestion(formData: FormData) {
-  await requireAdmin();
-  const supabase = await createClient();
-
-  const examId = formData.get("exam_id") as string;
-  const questionText = (formData.get("question_text") as string)?.trim();
-  const type = (formData.get("type") as string) || "single";
-  const marks = Number(formData.get("marks")) || 1;
-  const negativeMarks = Number(formData.get("negative_marks")) || 0;
-  const explanation = (formData.get("explanation") as string)?.trim() || null;
-
-  if (!examId || !questionText) return;
-
-  // Options aave che: option_0..option_3, correct_0..correct_3
-  const options: { option_text: string; is_correct: boolean; position: number }[] =
-    [];
-  for (let i = 0; i < 4; i++) {
-    const text = (formData.get(`option_${i}`) as string)?.trim();
-    if (!text) continue;
-    options.push({
-      option_text: text,
-      is_correct: formData.get(`correct_${i}`) === "on",
-      position: i,
-    });
+function toMessage(error: unknown, fallback: string) {
+  if (error instanceof Error && error.message) return error.message;
+  if (typeof error === "string" && error.trim()) return error;
+  if (error && typeof error === "object") {
+    const details = error as { message?: unknown; code?: unknown; details?: unknown };
+    const parts = [
+      typeof details.message === "string" ? details.message : null,
+      details.code ? `code: ${String(details.code)}` : null,
+      details.details ? String(details.details) : null,
+    ].filter(Boolean);
+    if (parts.length > 0) return parts.join(" | ");
   }
+  return fallback;
+}
 
-  if (options.length < 2) return; // ochama 2 option joiye
-  if (!options.some((o) => o.is_correct)) return; // ochama 1 correct joiye
+export async function addQuestion(formData: FormData): Promise<{
+  ok: boolean;
+  message: string;
+}> {
+  try {
+    await requireAdmin();
+    const supabase = await createClient();
 
-  // 1) question insert
-  const { data: q, error } = await supabase
-    .from("questions")
-    .insert({
-      exam_id: examId,
-      type,
-      question_text: questionText,
-      marks,
-      negative_marks: negativeMarks,
-      explanation,
-    })
-    .select("id")
-    .single();
+    const examId = formData.get("exam_id") as string;
+    const questionText = (formData.get("question_text") as string)?.trim();
+    const type = (formData.get("type") as string) || "single";
+    const marks = Number(formData.get("marks")) || 1;
+    const negativeMarks = Number(formData.get("negative_marks")) || 0;
+    const explanation = (formData.get("explanation") as string)?.trim() || null;
 
-  if (error || !q) return;
+    if (!examId || !questionText) {
+      return { ok: false, message: "Question text required chhe." };
+    }
 
-  // 2) options insert
-  await supabase
-    .from("options")
-    .insert(options.map((o) => ({ ...o, question_id: q.id })));
+    // Options aave che: option_0..option_3, correct_0..correct_3
+    const options: { option_text: string; is_correct: boolean; position: number }[] =
+      [];
+    for (let i = 0; i < 4; i++) {
+      const text = (formData.get(`option_${i}`) as string)?.trim();
+      if (!text) continue;
+      options.push({
+        option_text: text,
+        is_correct: formData.get(`correct_${i}`) === "on",
+        position: i,
+      });
+    }
 
-  revalidatePath(`/admin/exams/${examId}/questions`);
+    if (options.length < 2) {
+      return { ok: false, message: "Ochama 2 options add karo." };
+    }
+    if (!options.some((o) => o.is_correct)) {
+      return { ok: false, message: "Ochama 1 correct option select karo." };
+    }
+
+    // 1) question insert
+    const { data: q, error } = await supabase
+      .from("questions")
+      .insert({
+        exam_id: examId,
+        type,
+        question_text: questionText,
+        marks,
+        negative_marks: negativeMarks,
+        explanation,
+      })
+      .select("id")
+      .single();
+
+    if (error || !q) {
+      return {
+        ok: false,
+        message: `Question save fail: ${toMessage(error, "Unknown error")}`,
+      };
+    }
+
+    // 2) options insert
+    const { error: optionsError } = await supabase
+      .from("options")
+      .insert(options.map((o) => ({ ...o, question_id: q.id })));
+
+    if (optionsError) {
+      await supabase.from("questions").delete().eq("id", q.id);
+      return {
+        ok: false,
+        message: `Options save fail: ${toMessage(optionsError, "Unknown error")}`,
+      };
+    }
+
+    revalidatePath(`/admin/exams/${examId}/questions`);
+    return { ok: true, message: "Question add thai gayo." };
+  } catch (error) {
+    return {
+      ok: false,
+      message: toMessage(error, "Question add karva ma problem aavi."),
+    };
+  }
 }
 
 interface BulkQuestion {
