@@ -11,7 +11,9 @@ Aa Phase 1 che: **Foundation** — database, auth, ane role-based routing taiyar
 4. Pachi `supabase/phase4.sql` pan run karo (student exam flow na secure RPC functions)
 5. Pachi `supabase/phase5.sql` run karo (analytics function)
 6. Pachi `supabase/phase6.sql` run karo (proctoring column)
-7. Aa badha tables + RLS policies + functions banai dese
+7. Pachi `supabase/phase7.sql` run karo (settings + announcements + teacher scoping)
+8. Pachi `supabase/phase8.sql` run karo (auth profile trigger hardening)
+9. Aa badha tables + RLS policies + functions banai dese
 
 ## Step 2 — Project local ma setup
 ```bash
