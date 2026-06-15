@@ -6,13 +6,32 @@ import { FileText, BarChart3, Eye, EyeOff, Trash2, Search } from "lucide-react";
 import { deleteExam, togglePublish } from "./actions";
 import DuplicateExamButton from "./DuplicateExamButton";
 import ExamLinkButton from "./ExamLinkButton";
+import EditExamButton from "./EditExamButton";
+
+interface Batch {
+  id: string;
+  name: string;
+}
+
+interface Course {
+  id: string;
+  name: string;
+  batches: Batch[];
+}
 
 interface Exam {
   id: string;
   title: string;
+  instructions: string | null;
   is_published: boolean;
   duration_minutes: number;
+  pass_marks: number;
   negative_marking: boolean;
+  shuffle_questions: boolean;
+  proctoring: boolean;
+  max_attempts: number;
+  start_time: string | null;
+  end_time: string | null;
   course_id: string;
   batch_id: string;
   courseName: string;
@@ -22,7 +41,7 @@ interface Exam {
 
 interface Props {
   exams: Exam[];
-  courses: { id: string; name: string }[];
+  courses: Course[];
   batches: { id: string; label: string }[];
 }
 
@@ -139,6 +158,7 @@ export default function ExamFilters({ exams, courses, batches }: Props) {
                   currentBatchId={e.batch_id}
                 />
                 <ExamLinkButton examId={e.id} />
+                <EditExamButton exam={e} courses={courses} />
                 <form action={togglePublish}>
                   <input type="hidden" name="id" value={e.id} />
                   <input

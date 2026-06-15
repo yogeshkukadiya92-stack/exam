@@ -15,7 +15,7 @@ export default async function ExamsPage() {
   const { data: exams } = await supabase
     .from("exams")
     .select(
-      "id, title, is_published, duration_minutes, negative_marking, course_id, batch_id, courses(name), batches(name), questions(count)"
+      "id, title, instructions, is_published, duration_minutes, pass_marks, negative_marking, shuffle_questions, proctoring, max_attempts, start_time, end_time, course_id, batch_id, courses(name), batches(name), questions(count)"
     )
     .order("created_at", { ascending: false });
 
@@ -38,7 +38,14 @@ export default async function ExamsPage() {
       title: e.title,
       is_published: e.is_published,
       duration_minutes: e.duration_minutes,
+      pass_marks: Number(e.pass_marks) || 0,
       negative_marking: e.negative_marking,
+      shuffle_questions: e.shuffle_questions,
+      proctoring: e.proctoring,
+      max_attempts: e.max_attempts,
+      start_time: e.start_time,
+      end_time: e.end_time,
+      instructions: e.instructions,
       course_id: e.course_id,
       batch_id: e.batch_id,
       courseName:
@@ -74,7 +81,7 @@ export default async function ExamsPage() {
 
       <ExamFilters
         exams={examList}
-        courses={courseList}
+        courses={(courses as never) ?? []}
         batches={batchList}
       />
     </div>
