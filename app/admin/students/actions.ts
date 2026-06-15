@@ -10,6 +10,56 @@ interface BulkStudent {
   password: string;
 }
 
+interface CreateStudentInput {
+  full_name: string;
+  email: string;
+  password: string;
+  batchId?: string | null;
+}
+
+export async function createStudent(input: CreateStudentInput): Promise<{
+  ok: boolean;
+  message: string;
+}> {
+  await requireAdmin();
+  const admin = createAdminClient();
+
+  if (!input.email || !input.password || input.password.length < 6) {
+    return { ok: false, message: "Email ane 6+ char password aapo." };
+  }
+
+  const { data, error } = await admin.auth.admin.createUser({
+    email: input.email,
+    password: input.password,
+    email_confirm: true,
+    user_metadata: { full_name: input.full_name, role: "student" },
+  });
+
+  if (error || !data.user) {
+    return {
+      ok: false,
+      message: error?.message ?? "Student banavta problem aavi.",
+    };
+  }
+
+  if (input.batchId) {
+    const { error: enrErr } = await admin.from("enrollments").upsert(
+      { student_id: data.user.id, batch_id: input.batchId },
+      { onConflict: "student_id,batch_id", ignoreDuplicates: true }
+    );
+
+    if (enrErr) {
+      return {
+        ok: true,
+        message: `Student bane gayo, pan batch enrollment fail: ${enrErr.message}`,
+      };
+    }
+  }
+
+  revalidatePath("/admin/students");
+  return { ok: true, message: "Student successfully add thai gayo." };
+}
+
 export async function bulkImportStudents(
   batchId: string | null,
   students: BulkStudent[]

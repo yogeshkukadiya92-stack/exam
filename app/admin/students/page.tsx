@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import ManualStudentForm from "./ManualStudentForm";
 import StudentImport from "./StudentImport";
 import StudentSearch from "./StudentSearch";
 
@@ -39,6 +40,8 @@ export default async function StudentsPage() {
         </div>
         <StudentImport batches={batchOptions} />
       </div>
+
+      <ManualStudentForm batches={batchOptions} />
 
       <StudentSearch students={studentList} />
     </div>
