@@ -7,9 +7,18 @@ import { createClient } from "@supabase/supabase-js";
  * SUPABASE_SERVICE_ROLE_KEY .env.local ma rakho (NEXT_PUBLIC_ vagar).
  */
 export function createAdminClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    throw new Error(
+      "SUPABASE_SERVICE_ROLE_KEY missing chhe. Supabase Project Settings > API mathi service_role key .env.local ma add karo."
+    );
+  }
+
   return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    supabaseUrl,
+    serviceRoleKey,
     { auth: { autoRefreshToken: false, persistSession: false } }
   );
 }

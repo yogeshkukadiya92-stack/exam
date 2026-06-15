@@ -27,22 +27,28 @@ export default function ManualStudentForm({
     setMessage(null);
     setOk(false);
 
-    const res = await createStudent({
-      full_name: fullName.trim(),
-      email: email.trim(),
-      password,
-      batchId: batchId || null,
-    });
+    try {
+      const res = await createStudent({
+        full_name: fullName.trim(),
+        email: email.trim(),
+        password,
+        batchId: batchId || null,
+      });
 
-    setBusy(false);
-    setOk(res.ok);
-    setMessage(typeof res.message === "string" ? res.message : JSON.stringify(res.message));
+      setOk(res.ok);
+      setMessage(formatMessage(res.message, "Student create karva ma problem aavi."));
 
-    if (res.ok) {
-      setFullName("");
-      setEmail("");
-      setPassword("");
-      setBatchId("");
+      if (res.ok) {
+        setFullName("");
+        setEmail("");
+        setPassword("");
+        setBatchId("");
+      }
+    } catch (error) {
+      setOk(false);
+      setMessage(formatMessage(error, "Student create karva ma problem aavi."));
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -111,4 +117,18 @@ export default function ManualStudentForm({
       </button>
     </form>
   );
+}
+
+function formatMessage(value: unknown, fallback: string) {
+  if (value instanceof Error && value.message) return value.message;
+  if (typeof value === "string" && value.trim()) return value;
+
+  try {
+    const serialized = JSON.stringify(value);
+    if (serialized && serialized !== "{}") return serialized;
+  } catch {
+    // Ignore serialization errors and use the friendly fallback.
+  }
+
+  return fallback;
 }
