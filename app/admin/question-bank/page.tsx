@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { addBankQuestion, deleteBankQuestion } from "./actions";
+import QuestionBankExport from "./QuestionBankExport";
 import { BookOpen, Trash2 } from "lucide-react";
 
 export default async function QuestionBankPage({
@@ -26,11 +27,24 @@ export default async function QuestionBankPage({
 
   return (
     <div>
-      <div className="mb-8">
-        <h1 className="page-title">Question Bank</h1>
-        <p className="mt-1 text-sm text-slate-500">
-          Reusable questions by subject, topic, and difficulty.
-        </p>
+      <div className="mb-8 flex items-center justify-between">
+        <div>
+          <h1 className="page-title">Question Bank</h1>
+          <p className="mt-1 text-sm text-slate-500">
+            Reusable questions by subject, topic, and difficulty.
+          </p>
+        </div>
+        <QuestionBankExport
+          questions={(questions ?? []).map((q: any) => ({
+            subject: q.subject,
+            topic: q.topic,
+            difficulty: q.difficulty,
+            type: q.type,
+            question_text: q.question_text,
+            marks: q.marks,
+            negative_marks: q.negative_marks,
+          }))}
+        />
       </div>
 
       <form action={addBankQuestion} className="card mb-8 space-y-4 p-5">

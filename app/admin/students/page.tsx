@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import ManualStudentForm from "./ManualStudentForm";
 import StudentImport from "./StudentImport";
 import StudentSearch from "./StudentSearch";
+import StudentExport from "./StudentExport";
 
 export default async function StudentsPage() {
   const supabase = await createClient();
@@ -38,7 +39,10 @@ export default async function StudentsPage() {
             {students?.length ?? 0} total students
           </p>
         </div>
-        <StudentImport batches={batchOptions} />
+        <div className="flex items-center gap-2">
+          <StudentExport students={studentList} />
+          <StudentImport batches={batchOptions} />
+        </div>
       </div>
 
       <ManualStudentForm batches={batchOptions} />

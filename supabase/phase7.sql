@@ -145,5 +145,12 @@ create policy "Teachers view enrolled students"
   );
 
 -- ============================================================
+-- 6. CUSTOM BRANDING COLUMNS
+-- ============================================================
+alter table academy_settings add column if not exists footer_text text;
+alter table academy_settings add column if not exists website_url text;
+alter table academy_settings add column if not exists support_email text;
+
+-- ============================================================
 -- DONE
 -- ============================================================

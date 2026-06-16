@@ -62,7 +62,7 @@ export default async function LandingPage() {
   return (
     <div className="min-h-screen">
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/80 backdrop-blur-xl">
+      <header className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/80 backdrop-blur-xl dark:border-slate-700/80 dark:bg-slate-900/80">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
           <div className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-600 to-violet-600 shadow-sm shadow-indigo-200">
@@ -85,7 +85,7 @@ export default async function LandingPage() {
               <>
                 <Link
                   href="/login"
-                  className="rounded-lg px-4 py-2 text-sm font-medium text-slate-600 transition-colors hover:text-slate-900"
+                  className="rounded-lg px-4 py-2 text-sm font-medium text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
                 >
                   Sign In
                 </Link>
@@ -143,7 +143,7 @@ export default async function LandingPage() {
           <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
             Everything you need to run <span className="gradient-text">online exams</span>
           </h2>
-          <p className="mx-auto mt-3 max-w-lg text-slate-500">
+          <p className="mx-auto mt-3 max-w-lg text-slate-500 dark:text-slate-400">
             A complete platform designed for online academies and educational institutions.
           </p>
         </div>
@@ -155,15 +155,15 @@ export default async function LandingPage() {
               >
                 <f.icon className="h-6 w-6 text-white" />
               </div>
-              <h3 className="font-semibold text-slate-900">{f.title}</h3>
-              <p className="mt-2 text-sm text-slate-500">{f.desc}</p>
+              <h3 className="font-semibold text-slate-900 dark:text-slate-100">{f.title}</h3>
+              <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">{f.desc}</p>
             </div>
           ))}
         </div>
       </section>
 
       {/* How it works */}
-      <section className="border-t border-slate-200/80 bg-slate-50/50 px-4 py-16 sm:px-6 sm:py-24">
+      <section className="border-t border-slate-200/80 bg-slate-50/50 px-4 py-16 dark:border-slate-700/80 dark:bg-slate-800/50 sm:px-6 sm:py-24">
         <div className="mx-auto max-w-4xl text-center">
           <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
             How it works
@@ -174,8 +174,8 @@ export default async function LandingPage() {
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-indigo-600 to-violet-600 text-lg font-bold text-white shadow-sm shadow-indigo-200">
                   {s.num}
                 </div>
-                <h3 className="mt-4 font-semibold text-slate-900">{s.title}</h3>
-                <p className="mt-1 text-sm text-slate-500">{s.desc}</p>
+                <h3 className="mt-4 font-semibold text-slate-900 dark:text-slate-100">{s.title}</h3>
+                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{s.desc}</p>
               </div>
             ))}
           </div>
@@ -187,7 +187,7 @@ export default async function LandingPage() {
         <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
           Ready to get started?
         </h2>
-        <p className="mx-auto mt-3 max-w-md text-slate-500">
+        <p className="mx-auto mt-3 max-w-md text-slate-500 dark:text-slate-400">
           Join thousands of educators using {settings.name} to create and deliver secure online examinations.
         </p>
         <div className="mt-8 flex items-center justify-center gap-4">
@@ -209,10 +209,39 @@ export default async function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-slate-200/80 bg-white px-4 py-6 text-center sm:px-6">
-        <p className="text-sm text-slate-400">
-          &copy; {new Date().getFullYear()} {settings.name}. All rights reserved.
-        </p>
+      <footer className="border-t border-slate-200/80 bg-white px-4 py-8 dark:border-slate-700/80 dark:bg-slate-900 sm:px-6">
+        <div className="mx-auto max-w-6xl">
+          {settings.footer_text && (
+            <p className="mb-3 text-center text-sm text-slate-500 dark:text-slate-400">
+              {settings.footer_text}
+            </p>
+          )}
+          <div className="flex flex-col items-center gap-2 sm:flex-row sm:justify-between">
+            <p className="text-sm text-slate-400 dark:text-slate-500">
+              &copy; {new Date().getFullYear()} {settings.name}. All rights reserved.
+            </p>
+            <div className="flex items-center gap-4">
+              {settings.website_url && (
+                <a
+                  href={settings.website_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-slate-400 transition-colors hover:text-indigo-600 dark:text-slate-500 dark:hover:text-indigo-400"
+                >
+                  Website
+                </a>
+              )}
+              {settings.support_email && (
+                <a
+                  href={`mailto:${settings.support_email}`}
+                  className="text-sm text-slate-400 transition-colors hover:text-indigo-600 dark:text-slate-500 dark:hover:text-indigo-400"
+                >
+                  Support
+                </a>
+              )}
+            </div>
+          </div>
+        </div>
       </footer>
     </div>
   );
