@@ -15,6 +15,7 @@ export default function ManualStudentForm({
 }) {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [batchId, setBatchId] = useState("");
   const [busy, setBusy] = useState(false);
@@ -31,6 +32,7 @@ export default function ManualStudentForm({
       const res = await createStudent({
         full_name: fullName.trim(),
         email: email.trim(),
+        phone: phone.trim() || null,
         password,
         batchId: batchId || null,
       });
@@ -41,6 +43,7 @@ export default function ManualStudentForm({
       if (res.ok) {
         setFullName("");
         setEmail("");
+        setPhone("");
         setPassword("");
         setBatchId("");
       }
@@ -80,6 +83,13 @@ export default function ManualStudentForm({
 
       <div className="grid gap-3 md:grid-cols-2">
         <input
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          type="tel"
+          placeholder="Mobile number (e.g. +91 9876543210)"
+          className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:border-gray-400"
+        />
+        <input
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           type="password"
@@ -88,6 +98,9 @@ export default function ManualStudentForm({
           placeholder="Password"
           className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:border-gray-400"
         />
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-2">
         <select
           value={batchId}
           onChange={(e) => setBatchId(e.target.value)}

@@ -13,6 +13,7 @@ interface BulkStudent {
 interface CreateStudentInput {
   full_name: string;
   email: string;
+  phone?: string | null;
   password: string;
   batchId?: string | null;
 }
@@ -89,7 +90,7 @@ export async function createStudent(input: CreateStudentInput): Promise<{
       email: input.email,
       password: input.password,
       email_confirm: true,
-      user_metadata: { full_name: input.full_name, role: "student" },
+      user_metadata: { full_name: input.full_name, phone: input.phone || null, role: "student" },
     });
 
     if (error || !data.user) {
@@ -104,6 +105,7 @@ export async function createStudent(input: CreateStudentInput): Promise<{
         id: data.user.id,
         full_name: input.full_name || null,
         email: input.email,
+        phone: input.phone || null,
         role: "student",
       },
       { onConflict: "id" }
