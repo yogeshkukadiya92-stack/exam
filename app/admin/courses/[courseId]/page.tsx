@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createBatch, deleteBatch } from "../actions";
+import EditBatchButton from "./EditBatchButton";
 import { Plus, Trash2, ChevronRight } from "lucide-react";
 
 export default async function CourseBatchesPage({
@@ -73,13 +74,16 @@ export default async function CourseBatchesPage({
                   {studentCount} {studentCount === 1 ? "student" : "students"}
                 </p>
               </div>
-              <form action={deleteBatch}>
-                <input type="hidden" name="id" value={b.id} />
-                <input type="hidden" name="course_id" value={courseId} />
-                <button className="btn-danger flex items-center gap-1">
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
-              </form>
+              <div className="flex items-center gap-2">
+                <EditBatchButton id={b.id} courseId={courseId} name={b.name} />
+                <form action={deleteBatch}>
+                  <input type="hidden" name="id" value={b.id} />
+                  <input type="hidden" name="course_id" value={courseId} />
+                  <button className="btn-danger flex items-center gap-1">
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </form>
+              </div>
             </div>
           );
         })}

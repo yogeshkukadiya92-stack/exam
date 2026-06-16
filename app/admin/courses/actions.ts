@@ -40,6 +40,32 @@ export async function createBatch(formData: FormData) {
   revalidatePath(`/admin/courses/${courseId}`);
 }
 
+export async function updateCourse(formData: FormData) {
+  await requireAdmin();
+  const id = formData.get("id") as string;
+  const name = (formData.get("name") as string)?.trim();
+  const description = (formData.get("description") as string)?.trim() || null;
+  if (!name) return;
+
+  const supabase = await createClient();
+  await supabase.from("courses").update({ name, description }).eq("id", id);
+
+  revalidatePath("/admin/courses");
+}
+
+export async function updateBatch(formData: FormData) {
+  await requireAdmin();
+  const id = formData.get("id") as string;
+  const courseId = formData.get("course_id") as string;
+  const name = (formData.get("name") as string)?.trim();
+  if (!name) return;
+
+  const supabase = await createClient();
+  await supabase.from("batches").update({ name }).eq("id", id);
+
+  revalidatePath(`/admin/courses/${courseId}`);
+}
+
 export async function deleteBatch(formData: FormData) {
   await requireAdmin();
   const id = formData.get("id") as string;

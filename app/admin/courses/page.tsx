@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { createCourse, deleteCourse } from "./actions";
+import EditCourseButton from "./EditCourseButton";
 import { Plus, Layers, Trash2 } from "lucide-react";
 
 export default async function CoursesPage() {
@@ -69,6 +70,11 @@ export default async function CoursesPage() {
                 </p>
               </div>
               <div className="flex items-center gap-2">
+                <EditCourseButton
+                  id={c.id}
+                  name={c.name}
+                  description={(c.description as string | null)}
+                />
                 <Link href={`/admin/courses/${c.id}`} className="btn-secondary text-sm">
                   Batches
                 </Link>
