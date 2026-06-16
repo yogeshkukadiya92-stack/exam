@@ -1,12 +1,15 @@
 "use client";
 
+import { Download } from "lucide-react";
+
 export default function PrintButton() {
   return (
     <button
       onClick={() => window.print()}
-      className="rounded-md border px-3 py-1.5 text-sm hover:bg-gray-100 print:hidden"
+      className="btn-secondary flex items-center gap-1.5 text-sm print:hidden"
     >
-      ⬇ Download PDF
+      <Download className="h-3.5 w-3.5" />
+      Download PDF
     </button>
   );
 }

@@ -155,7 +155,7 @@ export default function ExamRunner({
     : {};
 
   if (questions.length === 0) {
-    return <p className="text-sm text-gray-500">Aa exam ma koi question nathi.</p>;
+    return <p className="text-sm text-slate-500 dark:text-slate-400">No questions in this exam.</p>;
   }
 
   const q = questions[idx];
@@ -230,51 +230,51 @@ export default function ExamRunner({
   return (
     <div {...blockEvents} className={proctoring ? "select-none" : ""}>
       {autoSubmitting && (
-        <div className="mb-3 flex items-center gap-2 rounded-md bg-amber-50 p-3 text-sm text-amber-700">
+        <div className="mb-3 flex items-center gap-2 rounded-xl bg-amber-50 border border-amber-200 p-3 text-sm text-amber-700 dark:bg-amber-950/30 dark:border-amber-800 dark:text-amber-400">
           <AlertTriangle className="h-4 w-4 shrink-0" />
-          Time up. Exam auto-submit thai rahi chhe...
+          Time is up! Your exam is being submitted automatically...
         </div>
       )}
       {proctoring && violations > 0 && (
-        <div className="mb-3 flex items-center gap-2 rounded-md bg-red-50 p-3 text-sm text-red-700">
+        <div className="mb-3 flex items-center gap-2 rounded-xl bg-red-50 border border-red-200 p-3 text-sm text-red-700 dark:bg-red-950/30 dark:border-red-800 dark:text-red-400">
           <AlertTriangle className="h-4 w-4 shrink-0" />
-          Warning: tab-switch detect thayu ({violations}/{MAX_VIOLATIONS}).
-          {MAX_VIOLATIONS - violations} vaar pachi exam auto-submit thai jase.
+          Warning: Tab switch detected ({violations}/{MAX_VIOLATIONS}).
+          {MAX_VIOLATIONS - violations} more and your exam will be auto-submitted.
         </div>
       )}
       {confirmSubmit && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4">
-          <div className="w-full max-w-md rounded-xl bg-white p-5 shadow-xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm px-4 animate-in fade-in duration-200">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl dark:bg-slate-800 dark:border dark:border-slate-700 animate-in zoom-in-95 duration-200">
             <div className="mb-4 flex items-start gap-3">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-50 text-amber-600">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-400">
                 <AlertTriangle className="h-5 w-5" />
               </div>
               <div>
-                <h2 className="font-semibold text-slate-900">Submit exam?</h2>
-                <p className="mt-1 text-sm text-slate-500">
-                  Final submit pachi answer change nahi kari shako.
+                <h2 className="font-semibold text-slate-900 dark:text-slate-100">Submit exam?</h2>
+                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                  Once submitted, you cannot change your answers.
                 </p>
               </div>
             </div>
 
             <div className="grid grid-cols-3 gap-2 text-center text-sm">
-              <div className="rounded-lg bg-emerald-50 px-2 py-3 text-emerald-700">
+              <div className="rounded-xl bg-emerald-50 px-2 py-3 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400">
                 <p className="text-lg font-semibold">{answeredCount}</p>
                 <p>Answered</p>
               </div>
-              <div className="rounded-lg bg-amber-50 px-2 py-3 text-amber-700">
+              <div className="rounded-xl bg-amber-50 px-2 py-3 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400">
                 <p className="text-lg font-semibold">{reviewCount}</p>
                 <p>Review</p>
               </div>
-              <div className="rounded-lg bg-slate-50 px-2 py-3 text-slate-600">
+              <div className="rounded-xl bg-slate-50 px-2 py-3 text-slate-600 dark:bg-slate-700/50 dark:text-slate-300">
                 <p className="text-lg font-semibold">{notAnsweredCount}</p>
                 <p>Pending</p>
               </div>
             </div>
 
             {notAnsweredCount > 0 && (
-              <p className="mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-700">
-                {notAnsweredCount} question pending chhe. Tame submit karva sure cho?
+              <p className="mt-3 rounded-xl bg-red-50 border border-red-100 p-3 text-sm text-red-700 dark:bg-red-950/30 dark:border-red-800 dark:text-red-400">
+                {notAnsweredCount} question{notAnsweredCount > 1 ? "s" : ""} not answered. Are you sure you want to submit?
               </p>
             )}
 
@@ -282,7 +282,7 @@ export default function ExamRunner({
               <button
                 type="button"
                 onClick={() => setConfirmSubmit(false)}
-                className="rounded-md border px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                className="btn-secondary"
               >
                 Back to exam
               </button>
@@ -290,7 +290,7 @@ export default function ExamRunner({
                 type="button"
                 onClick={doSubmit}
                 disabled={pending || autoSubmitting}
-                className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+                className="rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-emerald-700 active:scale-[0.98] disabled:opacity-50"
               >
                 {pending || autoSubmitting ? "Submitting..." : "Final submit"}
               </button>
@@ -299,33 +299,35 @@ export default function ExamRunner({
         </div>
       )}
       <div className="mb-4 flex items-center justify-between">
-        <h1 className="font-semibold">{title}</h1>
+        <h1 className="font-semibold text-slate-900 dark:text-slate-100">{title}</h1>
         <span
-          className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-sm font-medium ${
-            lowTime ? "bg-red-100 text-red-700" : "bg-gray-100 text-gray-700"
+          className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-semibold transition-colors ${
+            lowTime
+              ? "bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-400 animate-pulse"
+              : "bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200"
           }`}
         >
           <Clock className="h-4 w-4" /> {mm}:{ss}
         </span>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
+      <div className="grid gap-4 lg:grid-cols-[1fr_280px]">
         {/* main */}
-        <div className="rounded-xl border bg-white p-5">
+        <div className="card p-5">
           <div className="mb-2 flex items-center justify-between">
-            <span className="text-sm text-gray-500">
+            <span className="text-sm text-slate-500 dark:text-slate-400">
               Question {idx + 1} of {questions.length}
             </span>
-            <span className="text-xs text-gray-400">
-              {saving ? "saving…" : "saved"}
+            <span className={`text-xs transition-colors ${saving ? "text-amber-500" : "text-emerald-500 dark:text-emerald-400"}`}>
+              {saving ? "saving..." : "saved ✓"}
             </span>
           </div>
 
-          <p className="font-medium">{q.question_text}</p>
-          <p className="mt-1 text-xs text-gray-400">
+          <p className="font-medium text-slate-900 dark:text-slate-100">{q.question_text}</p>
+          <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
             +{q.marks} marks
-            {negativeMarking && q.negative_marks > 0 ? ` · -${q.negative_marks} wrong par` : ""}
-            {q.type === "multiple" ? " · ek thi vadhare select kari shako" : ""}
+            {negativeMarking && q.negative_marks > 0 ? ` · -${q.negative_marks} for wrong answer` : ""}
+            {q.type === "multiple" ? " · select one or more options" : ""}
           </p>
 
           <div className="mt-4 space-y-2">
@@ -340,7 +342,7 @@ export default function ExamRunner({
                 disabled={autoSubmitting}
                 rows={q.type === "descriptive" ? 6 : 3}
                 placeholder={q.type === "numerical" ? "Enter numerical answer" : "Enter answer"}
-                className="w-full rounded-lg border px-3 py-2.5 text-sm outline-none focus:border-gray-400 disabled:opacity-60"
+                className="input disabled:opacity-60"
               />
             ) : (
             q.options.map((o, i) => {
@@ -350,16 +352,20 @@ export default function ExamRunner({
                   key={o.id}
                   onClick={() => pick(o.id)}
                   disabled={autoSubmitting}
-                  className={`flex w-full items-center gap-3 rounded-lg border px-3 py-2.5 text-left text-sm transition ${
-                    sel ? "border-gray-900 bg-gray-900 text-white" : "hover:bg-gray-50"
+                  className={`flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left text-sm transition-all duration-200 ${
+                    sel
+                      ? "border-indigo-500 bg-indigo-600 text-white shadow-sm shadow-indigo-200 dark:shadow-indigo-900/30"
+                      : "border-slate-200 hover:bg-slate-50 hover:border-slate-300 text-slate-700 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700/50 dark:hover:border-slate-500"
                   } disabled:cursor-not-allowed disabled:opacity-60`}
                 >
                   <span
-                    className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-xs ${
-                      sel ? "border-white" : "border-gray-300"
+                    className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs font-medium transition-colors ${
+                      sel
+                        ? "border-white/50 bg-white/20 text-white"
+                        : "border-slate-300 text-slate-400 dark:border-slate-500 dark:text-slate-500"
                     }`}
                   >
-                    {sel ? <Check className="h-3 w-3" /> : String.fromCharCode(65 + i)}
+                    {sel ? <Check className="h-3.5 w-3.5" /> : String.fromCharCode(65 + i)}
                   </span>
                   {o.option_text}
                 </button>
@@ -367,28 +373,30 @@ export default function ExamRunner({
             }))}
           </div>
 
-          <div className="mt-5 flex items-center justify-between">
+          <div className="mt-5 flex items-center justify-between gap-2">
             <button
               disabled={idx === 0 || autoSubmitting}
               onClick={() => setIdx((i) => i - 1)}
-              className="flex items-center gap-1 rounded-md border px-3 py-1.5 text-sm hover:bg-gray-100 disabled:opacity-40"
+              className="btn-secondary flex items-center gap-1 disabled:opacity-40"
             >
               <ChevronLeft className="h-4 w-4" /> Prev
             </button>
             <button
               onClick={toggleFlag}
               disabled={autoSubmitting}
-              className={`flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm ${
-                flags[q.id] ? "border-amber-400 bg-amber-50 text-amber-700" : "hover:bg-gray-100"
+              className={`flex items-center gap-1.5 rounded-xl border px-4 py-2 text-sm font-medium transition-all ${
+                flags[q.id]
+                  ? "border-amber-400 bg-amber-50 text-amber-700 dark:border-amber-600 dark:bg-amber-950/30 dark:text-amber-400"
+                  : "border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700/50"
               } disabled:opacity-50`}
             >
-              <Flag className="h-4 w-4" /> {flags[q.id] ? "Flagged" : "Mark review"}
+              <Flag className="h-4 w-4" /> {flags[q.id] ? "Flagged" : "Review"}
             </button>
             {idx === questions.length - 1 ? (
               <button
                 onClick={askSubmit}
                 disabled={pending || autoSubmitting}
-                className="rounded-md bg-emerald-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+                className="rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-emerald-700 active:scale-[0.98] disabled:opacity-50"
               >
                 {autoSubmitting ? "Submitting..." : "Submit"}
               </button>
@@ -396,7 +404,7 @@ export default function ExamRunner({
               <button
                 onClick={() => setIdx((i) => i + 1)}
                 disabled={autoSubmitting}
-                className="flex items-center gap-1 rounded-md border px-3 py-1.5 text-sm hover:bg-gray-100"
+                className="btn-secondary flex items-center gap-1"
               >
                 Next <ChevronRight className="h-4 w-4" />
               </button>
@@ -405,49 +413,49 @@ export default function ExamRunner({
         </div>
 
         {/* palette */}
-        <div className="rounded-xl border bg-white p-4 lg:sticky lg:top-20 lg:max-h-[calc(100vh-7rem)] lg:overflow-hidden">
+        <div className="card p-4 lg:sticky lg:top-20 lg:max-h-[calc(100vh-7rem)] lg:overflow-hidden">
           <div className="mb-3 flex items-center justify-between">
-            <p className="text-sm font-medium">Question palette</p>
-            <span className="text-xs text-gray-400">
+            <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">Question palette</p>
+            <span className="text-xs text-slate-400 dark:text-slate-500">
               {idx + 1}/{questions.length}
             </span>
           </div>
 
           <div className="mb-3 grid grid-cols-3 gap-2 text-center text-xs">
-            <div className="rounded-lg bg-emerald-50 px-2 py-2 text-emerald-700">
+            <div className="rounded-xl bg-emerald-50 px-2 py-2 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400">
               <p className="font-semibold">{answeredCount}</p>
               <p>Answered</p>
             </div>
-            <div className="rounded-lg bg-amber-50 px-2 py-2 text-amber-700">
+            <div className="rounded-xl bg-amber-50 px-2 py-2 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400">
               <p className="font-semibold">{reviewCount}</p>
               <p>Review</p>
             </div>
-            <div className="rounded-lg bg-slate-50 px-2 py-2 text-slate-600">
+            <div className="rounded-xl bg-slate-50 px-2 py-2 text-slate-600 dark:bg-slate-700/50 dark:text-slate-300">
               <p className="font-semibold">{notAnsweredCount}</p>
               <p>Pending</p>
             </div>
           </div>
 
-          <div className="mb-3 grid grid-cols-2 gap-2 text-xs text-gray-500">
+          <div className="mb-3 grid grid-cols-2 gap-2 text-xs text-slate-500 dark:text-slate-400">
             <span className="flex items-center gap-1.5">
-              <span className="h-3 w-3 rounded border border-emerald-400 bg-emerald-100" />
+              <span className="h-3 w-3 rounded border border-emerald-400 bg-emerald-100 dark:bg-emerald-900/50" />
               Answered
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="h-3 w-3 rounded border border-amber-400 bg-amber-100" />
-              Mark review
+              <span className="h-3 w-3 rounded border border-amber-400 bg-amber-100 dark:bg-amber-900/50" />
+              Review
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="h-3 w-3 rounded border border-gray-200 bg-gray-50" />
+              <span className="h-3 w-3 rounded border border-slate-200 bg-slate-50 dark:border-slate-600 dark:bg-slate-700" />
               Not answered
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="h-3 w-3 rounded border-2 border-gray-900 bg-white" />
+              <span className="h-3 w-3 rounded border-2 border-indigo-500 bg-white dark:bg-slate-800" />
               Current
             </span>
           </div>
 
-          <div className="max-h-[52vh] overflow-y-auto rounded-lg border border-slate-100 p-2">
+          <div className="max-h-[52vh] overflow-y-auto rounded-xl border border-slate-100 p-2 dark:border-slate-700">
             <div className="grid grid-cols-5 gap-2 sm:grid-cols-8 lg:grid-cols-6">
             {questions.map((x, i) => {
               const a = isAnswered(x);
@@ -457,14 +465,14 @@ export default function ExamRunner({
                   key={x.id}
                   onClick={() => setIdx(i)}
                   disabled={autoSubmitting}
-                  className={`flex h-9 w-9 items-center justify-center rounded-md border text-sm font-medium ${
-                    i === idx ? "ring-2 ring-gray-900 ring-offset-1" : ""
+                  className={`flex h-9 w-9 items-center justify-center rounded-lg border text-sm font-medium transition-all ${
+                    i === idx ? "ring-2 ring-indigo-500 ring-offset-1 dark:ring-offset-slate-800" : ""
                   } ${
                     fl
-                      ? "border-amber-400 bg-amber-100 text-amber-700"
+                      ? "border-amber-400 bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-400 dark:border-amber-600"
                       : a
-                      ? "border-emerald-400 bg-emerald-100 text-emerald-700"
-                      : "border-gray-200 bg-gray-50 text-gray-500"
+                      ? "border-emerald-400 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400 dark:border-emerald-600"
+                      : "border-slate-200 bg-slate-50 text-slate-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-400"
                   }`}
                 >
                   {i + 1}
@@ -476,7 +484,7 @@ export default function ExamRunner({
           <button
             onClick={askSubmit}
             disabled={pending || autoSubmitting}
-            className="mt-4 w-full rounded-md bg-emerald-600 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+            className="mt-4 w-full rounded-xl bg-emerald-600 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-emerald-700 active:scale-[0.98] disabled:opacity-50"
           >
             {pending || autoSubmitting ? "Submitting..." : "Submit exam"}
           </button>

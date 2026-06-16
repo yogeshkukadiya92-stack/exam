@@ -51,45 +51,45 @@ export default async function ExamIntro({
           )}
 
           <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-xl bg-slate-50 p-3.5">
-              <div className="flex items-center gap-2 text-slate-500">
+            <div className="rounded-xl bg-slate-50 p-3.5 dark:bg-slate-700/50">
+              <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
                 <FileText className="h-4 w-4" />
                 <span className="text-xs font-medium uppercase tracking-wider">Questions</span>
               </div>
-              <p className="mt-1 text-xl font-bold">{qCount}</p>
+              <p className="mt-1 text-xl font-bold text-slate-900 dark:text-slate-100">{qCount}</p>
             </div>
-            <div className="rounded-xl bg-slate-50 p-3.5">
-              <div className="flex items-center gap-2 text-slate-500">
+            <div className="rounded-xl bg-slate-50 p-3.5 dark:bg-slate-700/50">
+              <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
                 <Clock className="h-4 w-4" />
                 <span className="text-xs font-medium uppercase tracking-wider">Duration</span>
               </div>
-              <p className="mt-1 text-xl font-bold">{exam.duration_minutes} min</p>
+              <p className="mt-1 text-xl font-bold text-slate-900 dark:text-slate-100">{exam.duration_minutes} min</p>
             </div>
-            <div className="rounded-xl bg-slate-50 p-3.5">
-              <div className="flex items-center gap-2 text-slate-500">
+            <div className="rounded-xl bg-slate-50 p-3.5 dark:bg-slate-700/50">
+              <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
                 <Target className="h-4 w-4" />
                 <span className="text-xs font-medium uppercase tracking-wider">Pass marks</span>
               </div>
-              <p className="mt-1 text-xl font-bold">{exam.pass_marks}</p>
+              <p className="mt-1 text-xl font-bold text-slate-900 dark:text-slate-100">{exam.pass_marks}</p>
             </div>
-            <div className="rounded-xl bg-slate-50 p-3.5">
-              <div className="flex items-center gap-2 text-slate-500">
+            <div className="rounded-xl bg-slate-50 p-3.5 dark:bg-slate-700/50">
+              <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
                 <RotateCcw className="h-4 w-4" />
                 <span className="text-xs font-medium uppercase tracking-wider">Attempts</span>
               </div>
-              <p className="mt-1 text-xl font-bold">{exam.max_attempts}</p>
+              <p className="mt-1 text-xl font-bold text-slate-900 dark:text-slate-100">{exam.max_attempts}</p>
             </div>
           </div>
 
           {exam.negative_marking && (
-            <div className="mt-4 flex items-center gap-2 rounded-xl bg-red-50 border border-red-100 p-3 text-sm text-red-600">
+            <div className="mt-4 flex items-center gap-2 rounded-xl bg-red-50 border border-red-100 p-3 text-sm text-red-600 dark:bg-red-950/30 dark:border-red-800 dark:text-red-400">
               <AlertTriangle className="h-4 w-4 shrink-0" />
               Negative marking is enabled — wrong answers will deduct marks.
             </div>
           )}
 
           {(exam.start_time || exam.end_time) && (
-            <div className="mt-4 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
+            <div className="mt-4 rounded-xl bg-slate-50 p-4 text-sm text-slate-600 dark:bg-slate-700/50 dark:text-slate-300">
               {exam.start_time && (
                 <p>Start: {formatIndiaDateTime(exam.start_time as string)}</p>
               )}
@@ -100,12 +100,12 @@ export default async function ExamIntro({
           )}
 
           {exam.instructions && (
-            <div className="mt-4 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
+            <div className="mt-4 rounded-xl bg-slate-50 p-4 text-sm text-slate-600 dark:bg-slate-700/50 dark:text-slate-300">
               {exam.instructions}
             </div>
           )}
 
-          <div className="mt-4 rounded-xl bg-amber-50 border border-amber-100 p-3 text-xs text-amber-700">
+          <div className="mt-4 rounded-xl bg-amber-50 border border-amber-100 p-3 text-xs text-amber-700 dark:bg-amber-950/30 dark:border-amber-800 dark:text-amber-400">
             Once started, the timer begins. Answers are auto-saved. Navigate using the question palette and submit when done.
           </div>
 

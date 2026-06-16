@@ -39,6 +39,7 @@ export async function parseQuestionsFile(file: File): Promise<ParsedQuestion[]> 
   const sheet = wb.Sheets[wb.SheetNames[0]];
   const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, {
     defval: "",
+    raw: false,
   });
 
   return rows.map((r, i) => {

@@ -107,7 +107,7 @@ export default async function StudentDashboard() {
               <div className="flex items-start gap-3">
                 <Megaphone className="mt-0.5 h-4 w-4 shrink-0 text-indigo-500" />
                 <div>
-                  <p className="font-medium text-slate-900">{a.title}</p>
+                  <p className="font-medium text-slate-900 dark:text-slate-100">{a.title}</p>
                   {a.content && (
                     <p className="mt-0.5 text-sm text-slate-500 line-clamp-2">
                       {a.content}
@@ -148,59 +148,61 @@ export default async function StudentDashboard() {
         <div className="mb-8">
           <h2 className="section-title mb-4">Recent Results</h2>
           <div className="card overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="border-b border-slate-100 bg-slate-50/50 text-left">
-                <tr>
-                  <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
-                    Exam
-                  </th>
-                  <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
-                    Score
-                  </th>
-                  <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
-                    Date
-                  </th>
-                  <th className="px-5 py-3" />
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {recentResults.map((a) => {
-                  const examTitle =
-                    exams?.find((e) => e.id === a.exam_id)?.title ?? "Exam";
-                  return (
-                    <tr
-                      key={a.id}
-                      className="transition-colors hover:bg-slate-50/50"
-                    >
-                      <td className="px-5 py-3.5 font-medium text-slate-900">
-                        {examTitle}
-                      </td>
-                      <td className="px-5 py-3.5">
-                        <span className="badge bg-indigo-50 text-indigo-700">
-                          {a.total_score ?? 0}
-                        </span>
-                      </td>
-                      <td className="px-5 py-3.5 text-slate-500">
-                        {a.submitted_at
-                          ? new Date(a.submitted_at).toLocaleDateString(
-                              "en-IN",
-                              { day: "numeric", month: "short" }
-                            )
-                          : "—"}
-                      </td>
-                      <td className="px-5 py-3.5 text-right">
-                        <Link
-                          href={`/student/attempt/${a.id}/result`}
-                          className="text-sm font-medium text-indigo-600 hover:text-indigo-700"
-                        >
-                          View
-                        </Link>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="border-b border-slate-100 bg-slate-50/50 text-left dark:border-slate-700 dark:bg-slate-700/30">
+                  <tr>
+                    <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                      Exam
+                    </th>
+                    <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                      Score
+                    </th>
+                    <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 hidden sm:table-cell">
+                      Date
+                    </th>
+                    <th className="px-5 py-3" />
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+                  {recentResults.map((a) => {
+                    const examTitle =
+                      exams?.find((e) => e.id === a.exam_id)?.title ?? "Exam";
+                    return (
+                      <tr
+                        key={a.id}
+                        className="transition-colors hover:bg-slate-50/50 dark:hover:bg-slate-700/30"
+                      >
+                        <td className="px-5 py-3.5 font-medium text-slate-900 dark:text-slate-100">
+                          {examTitle}
+                        </td>
+                        <td className="px-5 py-3.5">
+                          <span className="badge bg-indigo-50 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-400">
+                            {a.total_score ?? 0}
+                          </span>
+                        </td>
+                        <td className="px-5 py-3.5 text-slate-500 dark:text-slate-400 hidden sm:table-cell">
+                          {a.submitted_at
+                            ? new Date(a.submitted_at).toLocaleDateString(
+                                "en-IN",
+                                { day: "numeric", month: "short" }
+                              )
+                            : "—"}
+                        </td>
+                        <td className="px-5 py-3.5 text-right">
+                          <Link
+                            href={`/student/attempt/${a.id}/result`}
+                            className="text-sm font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300"
+                          >
+                            View
+                          </Link>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}
