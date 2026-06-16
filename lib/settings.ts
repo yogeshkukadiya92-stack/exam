@@ -27,7 +27,7 @@ export async function getAcademySettings(): Promise<AcademySettings> {
     const supabase = await createClient();
     const { data } = await supabase
       .from("academy_settings")
-      .select("id, name, logo_url, tagline, primary_color, footer_text, website_url, support_email")
+      .select("*")
       .limit(1)
       .single();
     if (data) return { ...defaults, ...data } as AcademySettings;
