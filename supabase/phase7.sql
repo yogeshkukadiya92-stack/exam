@@ -145,7 +145,19 @@ create policy "Teachers view enrolled students"
   );
 
 -- ============================================================
--- 6. CUSTOM BRANDING COLUMNS
+-- 6. USERS CAN VIEW OWN PROFILE (critical for auth to work)
+-- ============================================================
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies where tablename = 'profiles' and policyname = 'Users can view own profile'
+  ) then
+    execute 'create policy "Users can view own profile" on profiles for select using (id = auth.uid())';
+  end if;
+end $$;
+
+-- ============================================================
+-- 7. CUSTOM BRANDING COLUMNS
 -- ============================================================
 alter table academy_settings add column if not exists footer_text text;
 alter table academy_settings add column if not exists website_url text;

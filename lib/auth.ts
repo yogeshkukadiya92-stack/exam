@@ -39,7 +39,17 @@ export async function getProfile(): Promise<Profile | null> {
     role: (meta.role as Role) || "student",
   };
 
-  await supabase.from("profiles").insert(newProfile);
+  const { error: insertError } = await supabase.from("profiles").insert(newProfile);
+
+  // If insert failed (e.g. profile exists but RLS blocked SELECT), re-fetch
+  if (insertError) {
+    const { data: retry } = await supabase
+      .from("profiles")
+      .select("id, full_name, email, role")
+      .eq("id", user.id)
+      .single();
+    if (retry) return retry as Profile;
+  }
 
   return newProfile;
 }
