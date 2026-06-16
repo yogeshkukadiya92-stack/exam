@@ -7,6 +7,7 @@ interface Student {
   id: string;
   full_name: string | null;
   email: string | null;
+  phone: string | null;
   created_at: string;
 }
 
@@ -18,7 +19,8 @@ export default function StudentSearch({ students }: { students: Student[] }) {
     const q = term.toLowerCase();
     return (
       s.full_name?.toLowerCase().includes(q) ||
-      s.email?.toLowerCase().includes(q)
+      s.email?.toLowerCase().includes(q) ||
+      s.phone?.toLowerCase().includes(q)
     );
   });
 
@@ -45,6 +47,9 @@ export default function StudentSearch({ students }: { students: Student[] }) {
               <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
                 Email
               </th>
+              <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                Phone
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -57,11 +62,12 @@ export default function StudentSearch({ students }: { students: Student[] }) {
                   {s.full_name || "—"}
                 </td>
                 <td className="px-5 py-3.5 text-slate-500">{s.email}</td>
+                <td className="px-5 py-3.5 text-slate-500">{s.phone || "—"}</td>
               </tr>
             ))}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={2} className="px-5 py-12 text-center">
+                <td colSpan={3} className="px-5 py-12 text-center">
                   <Users className="mx-auto h-10 w-10 text-slate-300" />
                   <p className="mt-3 text-sm text-slate-500">
                     {term

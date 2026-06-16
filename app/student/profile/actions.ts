@@ -10,10 +10,11 @@ export async function updateProfile(formData: FormData) {
   const supabase = await createClient();
 
   const full_name = (formData.get("full_name") as string)?.trim() || null;
+  const phone = (formData.get("phone") as string)?.trim() || null;
 
   await supabase
     .from("profiles")
-    .update({ full_name })
+    .update({ full_name, phone })
     .eq("id", profile.id);
 
   revalidatePath("/student", "layout");

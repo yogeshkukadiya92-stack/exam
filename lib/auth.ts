@@ -7,6 +7,7 @@ export interface Profile {
   id: string;
   full_name: string | null;
   email: string | null;
+  phone: string | null;
   role: Role;
 }
 
@@ -24,7 +25,7 @@ export async function getProfile(): Promise<Profile | null> {
 
   const { data } = await supabase
     .from("profiles")
-    .select("id, full_name, email, role")
+    .select("id, full_name, email, phone, role")
     .eq("id", user.id)
     .single();
 
@@ -36,6 +37,7 @@ export async function getProfile(): Promise<Profile | null> {
     id: user.id,
     full_name: (meta.full_name as string) || null,
     email: user.email || null,
+    phone: (meta.phone as string) || null,
     role: (meta.role as Role) || "student",
   };
 
@@ -45,7 +47,7 @@ export async function getProfile(): Promise<Profile | null> {
   if (insertError) {
     const { data: retry } = await supabase
       .from("profiles")
-      .select("id, full_name, email, role")
+      .select("id, full_name, email, phone, role")
       .eq("id", user.id)
       .single();
     if (retry) return retry as Profile;

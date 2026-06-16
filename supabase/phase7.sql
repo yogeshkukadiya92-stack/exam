@@ -160,7 +160,12 @@ begin
 end $$;
 
 -- ============================================================
--- 7. CUSTOM BRANDING COLUMNS
+-- 7. PHONE COLUMN ON PROFILES
+-- ============================================================
+alter table profiles add column if not exists phone text;
+
+-- ============================================================
+-- 8. CUSTOM BRANDING COLUMNS
 -- ============================================================
 alter table academy_settings add column if not exists footer_text text;
 alter table academy_settings add column if not exists website_url text;

@@ -44,6 +44,17 @@ export default async function SignupPage({
             </div>
             <div>
               <label className="mb-1.5 block text-sm font-medium text-slate-700">
+                Mobile Number
+              </label>
+              <input
+                name="phone"
+                type="tel"
+                placeholder="+91 9876543210"
+                className="input"
+              />
+            </div>
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-slate-700">
                 Email
               </label>
               <input

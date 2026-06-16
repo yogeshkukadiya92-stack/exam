@@ -34,8 +34,7 @@ export async function signup(formData: FormData) {
     email,
     password,
     options: {
-      // role default 'student' — admin pachi DB ma badli shakay
-      data: { full_name: fullName, role: "student" },
+      data: { full_name: fullName, phone: (formData.get("phone") as string)?.trim() || null, role: "student" },
     },
   });
 

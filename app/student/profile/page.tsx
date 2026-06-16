@@ -58,6 +58,18 @@ export default async function ProfilePage({
             </div>
             <div>
               <label className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                Mobile Number
+              </label>
+              <input
+                name="phone"
+                type="tel"
+                defaultValue={profile.phone ?? ""}
+                placeholder="+91 9876543210"
+                className="input"
+              />
+            </div>
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">
                 Email
               </label>
               <input
