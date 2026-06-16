@@ -41,14 +41,24 @@ export default async function ExamResultsPage({
     .single();
   if (!exam) notFound();
 
-  const { data, error } = await supabase.rpc("get_exam_analytics_v2", {
+  const advancedAnalytics = await supabase.rpc("get_exam_analytics_v2", {
     p_exam_id: examId,
   });
-  if (error) notFound();
 
-  const { summary, attempts, questions } = data as Analytics;
-  const sections = (data as Analytics).sections ?? [];
-  const topics = (data as Analytics).topics ?? [];
+  let analytics = advancedAnalytics.data as Analytics | null;
+
+  if (advancedAnalytics.error || !analytics) {
+    const legacyAnalytics = await supabase.rpc("get_exam_analytics", {
+      p_exam_id: examId,
+    });
+
+    if (legacyAnalytics.error || !legacyAnalytics.data) notFound();
+    analytics = legacyAnalytics.data as Analytics;
+  }
+
+  const { summary, attempts, questions } = analytics;
+  const sections = analytics.sections ?? [];
+  const topics = analytics.topics ?? [];
   const passRate =
     summary.total_attempts > 0
       ? Math.round((summary.pass_count / summary.total_attempts) * 100)
