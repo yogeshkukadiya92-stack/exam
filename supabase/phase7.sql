@@ -8,12 +8,15 @@
 -- 1. HELPER FUNCTION: is_super_admin()
 -- ============================================================
 create or replace function is_super_admin()
-returns boolean as $$
-  select exists (
+returns boolean
+language plpgsql security definer stable as $$
+begin
+  return exists (
     select 1 from profiles
     where id = auth.uid() and role = 'super_admin'
   );
-$$ language sql security definer stable;
+end;
+$$;
 
 -- ============================================================
 -- 2. ACADEMY_SETTINGS TABLE
@@ -76,6 +79,18 @@ end $$;
 -- 5. TEACHER ROLE SCOPING — RLS POLICY CHANGES
 -- ============================================================
 
+-- Helper: is_teacher() — security definer to avoid RLS recursion on profiles
+create or replace function is_teacher()
+returns boolean
+language plpgsql security definer stable as $$
+begin
+  return exists (
+    select 1 from profiles
+    where id = auth.uid() and role = 'teacher'
+  );
+end;
+$$;
+
 -- --- COURSES ---
 drop policy if exists "Admins manage courses" on courses;
 
@@ -84,14 +99,8 @@ create policy "Super admins manage all courses"
 
 create policy "Teachers manage own courses"
   on courses for all
-  using (
-    exists(select 1 from profiles where id = auth.uid() and role = 'teacher')
-    and created_by = auth.uid()
-  )
-  with check (
-    exists(select 1 from profiles where id = auth.uid() and role = 'teacher')
-    and created_by = auth.uid()
-  );
+  using (is_teacher() and created_by = auth.uid())
+  with check (is_teacher() and created_by = auth.uid());
 
 -- --- EXAMS ---
 drop policy if exists "Admins manage exams" on exams;
@@ -101,14 +110,8 @@ create policy "Super admins manage all exams"
 
 create policy "Teachers manage own exams"
   on exams for all
-  using (
-    exists(select 1 from profiles where id = auth.uid() and role = 'teacher')
-    and created_by = auth.uid()
-  )
-  with check (
-    exists(select 1 from profiles where id = auth.uid() and role = 'teacher')
-    and created_by = auth.uid()
-  );
+  using (is_teacher() and created_by = auth.uid())
+  with check (is_teacher() and created_by = auth.uid());
 
 -- --- BATCHES ---
 drop policy if exists "Admins manage batches" on batches;
@@ -119,11 +122,11 @@ create policy "Super admins manage all batches"
 create policy "Teachers manage batches of own courses"
   on batches for all
   using (
-    exists(select 1 from profiles where id = auth.uid() and role = 'teacher')
+    is_teacher()
     and course_id in (select id from courses where created_by = auth.uid())
   )
   with check (
-    exists(select 1 from profiles where id = auth.uid() and role = 'teacher')
+    is_teacher()
     and course_id in (select id from courses where created_by = auth.uid())
   );
 
@@ -135,7 +138,7 @@ create policy "Super admins view all profiles"
 
 create policy "Teachers view enrolled students"
   on profiles for select using (
-    exists(select 1 from profiles p where p.id = auth.uid() and p.role = 'teacher')
+    is_teacher()
     and id in (
       select e.student_id from enrollments e
       join batches b on b.id = e.batch_id
