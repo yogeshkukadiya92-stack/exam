@@ -57,13 +57,15 @@ export default async function AttemptPage({
   // Existing answers (resume mate)
   const { data: saved } = await supabase
     .from("answers")
-    .select("question_id, selected_option_ids, marked_for_review")
+    .select("question_id, selected_option_ids, text_answer, marked_for_review")
     .eq("attempt_id", attemptId);
 
   const initialAnswers: Record<string, string[]> = {};
+  const initialTextAnswers: Record<string, string> = {};
   const initialFlags: Record<string, boolean> = {};
   saved?.forEach((a) => {
     initialAnswers[a.question_id] = (a.selected_option_ids as string[]) ?? [];
+    if (a.text_answer) initialTextAnswers[a.question_id] = a.text_answer;
     if (a.marked_for_review) initialFlags[a.question_id] = true;
   });
 
@@ -79,6 +81,7 @@ export default async function AttemptPage({
       proctoring={exam.proctoring}
       questions={(questions as RawQuestion[]) ?? []}
       initialAnswers={initialAnswers}
+      initialTextAnswers={initialTextAnswers}
       initialFlags={initialFlags}
     />
   );

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import QuestionForm from "./QuestionForm";
 import ExcelQuestionUpload from "./ExcelQuestionUpload";
+import QuestionBankPicker from "./QuestionBankPicker";
 import { deleteQuestion } from "./actions";
 import { ChevronRight, Trash2, FileText } from "lucide-react";
 
@@ -28,6 +29,12 @@ export default async function ExamQuestionsPage({
     .eq("exam_id", examId)
     .order("created_at", { ascending: true });
 
+  const { data: bankQuestions } = await supabase
+    .from("question_bank")
+    .select("id, question_text, subject, topic, difficulty, type, marks")
+    .order("created_at", { ascending: false })
+    .limit(100);
+
   const totalMarks =
     questions?.reduce((sum, q) => sum + Number(q.marks), 0) ?? 0;
 
@@ -50,6 +57,10 @@ export default async function ExamQuestionsPage({
       </div>
 
       <ExcelQuestionUpload examId={examId} />
+      <QuestionBankPicker
+        examId={examId}
+        questions={(bankQuestions as never) ?? []}
+      />
       <QuestionForm examId={examId} />
 
       <div className="space-y-3">

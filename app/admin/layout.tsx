@@ -2,7 +2,7 @@ import Link from "next/link";
 import { requireAdmin, isSuperAdmin } from "@/lib/auth";
 import { getAcademySettings } from "@/lib/settings";
 import { logout } from "../(auth)/actions";
-import { LayoutDashboard, BookOpen, FileText, Users, LogOut, Megaphone, Settings } from "lucide-react";
+import { LayoutDashboard, BookOpen, FileText, Users, LogOut, Megaphone, Settings, Library } from "lucide-react";
 
 export default async function AdminLayout({
   children,
@@ -17,6 +17,7 @@ export default async function AdminLayout({
     { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
     { href: "/admin/courses", label: "Courses", icon: BookOpen },
     { href: "/admin/exams", label: "Exams", icon: FileText },
+    { href: "/admin/question-bank", label: "Bank", icon: Library },
     { href: "/admin/announcements", label: "Announcements", icon: Megaphone },
     ...(superAdmin ? [{ href: "/admin/students", label: "Students", icon: Users }] : []),
     ...(superAdmin ? [{ href: "/admin/settings", label: "Settings", icon: Settings }] : []),

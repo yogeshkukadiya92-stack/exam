@@ -15,7 +15,7 @@ export default async function ExamsPage() {
   const { data: exams } = await supabase
     .from("exams")
     .select(
-      "id, title, instructions, is_published, duration_minutes, pass_marks, negative_marking, shuffle_questions, proctoring, max_attempts, start_time, end_time, course_id, batch_id, courses(name), batches(name), questions(count)"
+      "id, title, instructions, is_published, duration_minutes, pass_marks, negative_marking, shuffle_questions, proctoring, show_correct_answers, show_explanations, result_visible, max_attempts, start_time, end_time, course_id, batch_id, courses(name), batches(name), questions(count)"
     )
     .order("created_at", { ascending: false });
 
@@ -42,6 +42,9 @@ export default async function ExamsPage() {
       negative_marking: e.negative_marking,
       shuffle_questions: e.shuffle_questions,
       proctoring: e.proctoring,
+      show_correct_answers: e.show_correct_answers ?? true,
+      show_explanations: e.show_explanations ?? true,
+      result_visible: e.result_visible ?? true,
       max_attempts: e.max_attempts,
       start_time: e.start_time,
       end_time: e.end_time,

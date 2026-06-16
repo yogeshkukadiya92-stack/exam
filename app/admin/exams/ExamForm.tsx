@@ -135,6 +135,18 @@ export default function ExamForm({ courses }: { courses: Course[] }) {
           <input type="checkbox" name="proctoring" className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
           Anti-cheat (proctoring)
         </label>
+        <label className="flex items-center gap-2.5 text-sm font-medium text-slate-700 cursor-pointer">
+          <input type="checkbox" name="show_correct_answers" defaultChecked className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
+          Show correct answers
+        </label>
+        <label className="flex items-center gap-2.5 text-sm font-medium text-slate-700 cursor-pointer">
+          <input type="checkbox" name="show_explanations" defaultChecked className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
+          Show explanations
+        </label>
+        <label className="flex items-center gap-2.5 text-sm font-medium text-slate-700 cursor-pointer">
+          <input type="checkbox" name="result_visible" defaultChecked className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
+          Result visible
+        </label>
       </div>
 
       <button className="btn-primary">Create exam</button>

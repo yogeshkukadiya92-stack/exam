@@ -30,9 +30,10 @@ export async function addQuestion(formData: FormData): Promise<{
     const examId = formData.get("exam_id") as string;
     const questionText = (formData.get("question_text") as string)?.trim();
     const type = (formData.get("type") as string) || "single";
-    const marks = Number(formData.get("marks")) || 1;
-    const negativeMarks = Number(formData.get("negative_marks")) || 0;
-    const explanation = (formData.get("explanation") as string)?.trim() || null;
+  const marks = Number(formData.get("marks")) || 1;
+  const negativeMarks = Number(formData.get("negative_marks")) || 0;
+  const explanation = (formData.get("explanation") as string)?.trim() || null;
+  const correctText = (formData.get("correct_text") as string)?.trim() || null;
 
     if (!examId || !questionText) {
       return { ok: false, message: "Question text required chhe." };
@@ -51,11 +52,16 @@ export async function addQuestion(formData: FormData): Promise<{
       });
     }
 
-    if (options.length < 2) {
+    const isMcq = type === "single" || type === "multiple" || type === "true_false";
+
+    if (isMcq && options.length < 2) {
       return { ok: false, message: "Ochama 2 options add karo." };
     }
-    if (!options.some((o) => o.is_correct)) {
+    if (isMcq && !options.some((o) => o.is_correct)) {
       return { ok: false, message: "Ochama 1 correct option select karo." };
+    }
+    if (!isMcq && type !== "descriptive" && !correctText) {
+      return { ok: false, message: "Correct answer required chhe." };
     }
 
     // 1) question insert
@@ -68,6 +74,7 @@ export async function addQuestion(formData: FormData): Promise<{
         marks,
         negative_marks: negativeMarks,
         explanation,
+        correct_text: correctText,
       })
       .select("id")
       .single();
@@ -80,16 +87,18 @@ export async function addQuestion(formData: FormData): Promise<{
     }
 
     // 2) options insert
-    const { error: optionsError } = await supabase
-      .from("options")
-      .insert(options.map((o) => ({ ...o, question_id: q.id })));
+    if (options.length > 0) {
+      const { error: optionsError } = await supabase
+        .from("options")
+        .insert(options.map((o) => ({ ...o, question_id: q.id })));
 
-    if (optionsError) {
-      await supabase.from("questions").delete().eq("id", q.id);
-      return {
-        ok: false,
-        message: `Options save fail: ${toMessage(optionsError, "Unknown error")}`,
-      };
+      if (optionsError) {
+        await supabase.from("questions").delete().eq("id", q.id);
+        return {
+          ok: false,
+          message: `Options save fail: ${toMessage(optionsError, "Unknown error")}`,
+        };
+      }
     }
 
     revalidatePath(`/admin/exams/${examId}/questions`);

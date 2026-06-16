@@ -51,6 +51,7 @@ export default function ExamRunner({
   proctoring,
   questions: rawQuestions,
   initialAnswers,
+  initialTextAnswers,
   initialFlags,
 }: {
   attemptId: string;
@@ -63,6 +64,7 @@ export default function ExamRunner({
   proctoring: boolean;
   questions: Question[];
   initialAnswers: Record<string, string[]>;
+  initialTextAnswers: Record<string, string>;
   initialFlags: Record<string, boolean>;
 }) {
   const supabase = createClient();
@@ -79,6 +81,7 @@ export default function ExamRunner({
 
   const [idx, setIdx] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string[]>>(initialAnswers);
+  const [textAnswers, setTextAnswers] = useState<Record<string, string>>(initialTextAnswers);
   const [flags, setFlags] = useState<Record<string, boolean>>(initialFlags);
   const [saving, setSaving] = useState(false);
   const [violations, setViolations] = useState(0);
@@ -175,6 +178,22 @@ export default function ExamRunner({
     setSaving(false);
   };
 
+  const saveText = async (qid: string, value: string, flag: boolean) => {
+    if (submittedRef.current) return;
+    setSaving(true);
+    await supabase.from("answers").upsert(
+      {
+        attempt_id: attemptId,
+        question_id: qid,
+        text_answer: value,
+        selected_option_ids: [],
+        marked_for_review: flag,
+      },
+      { onConflict: "attempt_id,question_id" }
+    );
+    setSaving(false);
+  };
+
   const pick = (optionId: string) => {
     if (submittedRef.current) return;
     const cur = answers[q.id] ?? [];
@@ -198,7 +217,13 @@ export default function ExamRunner({
   };
 
   const answered = (qid: string) => (answers[qid]?.length ?? 0) > 0;
-  const answeredCount = questions.filter((x) => answered(x.id)).length;
+  const isTextQuestion = (type: string) =>
+    type === "fill_blank" || type === "numerical" || type === "descriptive";
+  const isAnswered = (question: Question) =>
+    isTextQuestion(question.type)
+      ? Boolean(textAnswers[question.id]?.trim())
+      : answered(question.id);
+  const answeredCount = questions.filter((x) => isAnswered(x)).length;
   const reviewCount = questions.filter((x) => flags[x.id]).length;
   const notAnsweredCount = questions.length - answeredCount;
 
@@ -304,7 +329,21 @@ export default function ExamRunner({
           </p>
 
           <div className="mt-4 space-y-2">
-            {q.options.map((o, i) => {
+            {isTextQuestion(q.type) ? (
+              <textarea
+                value={textAnswers[q.id] ?? ""}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setTextAnswers((p) => ({ ...p, [q.id]: value }));
+                  saveText(q.id, value, flags[q.id] ?? false);
+                }}
+                disabled={autoSubmitting}
+                rows={q.type === "descriptive" ? 6 : 3}
+                placeholder={q.type === "numerical" ? "Enter numerical answer" : "Enter answer"}
+                className="w-full rounded-lg border px-3 py-2.5 text-sm outline-none focus:border-gray-400 disabled:opacity-60"
+              />
+            ) : (
+            q.options.map((o, i) => {
               const sel = (answers[q.id] ?? []).includes(o.id);
               return (
                 <button
@@ -325,7 +364,7 @@ export default function ExamRunner({
                   {o.option_text}
                 </button>
               );
-            })}
+            }))}
           </div>
 
           <div className="mt-5 flex items-center justify-between">
@@ -411,7 +450,7 @@ export default function ExamRunner({
           <div className="max-h-[52vh] overflow-y-auto rounded-lg border border-slate-100 p-2">
             <div className="grid grid-cols-5 gap-2 sm:grid-cols-8 lg:grid-cols-6">
             {questions.map((x, i) => {
-              const a = answered(x.id);
+              const a = isAnswered(x);
               const fl = flags[x.id];
               return (
                 <button

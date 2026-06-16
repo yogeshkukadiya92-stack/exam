@@ -26,6 +26,9 @@ interface Exam {
   negative_marking: boolean;
   shuffle_questions: boolean;
   proctoring: boolean;
+  show_correct_answers: boolean;
+  show_explanations: boolean;
+  result_visible: boolean;
   max_attempts: number;
   start_time: string | null;
   end_time: string | null;
@@ -184,6 +187,18 @@ export default function EditExamButton({
                 <label className="flex cursor-pointer items-center gap-2.5 text-sm font-medium text-slate-700">
                   <input type="checkbox" name="proctoring" defaultChecked={exam.proctoring} className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
                   Anti-cheat
+                </label>
+                <label className="flex cursor-pointer items-center gap-2.5 text-sm font-medium text-slate-700">
+                  <input type="checkbox" name="show_correct_answers" defaultChecked={exam.show_correct_answers} className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
+                  Show answers
+                </label>
+                <label className="flex cursor-pointer items-center gap-2.5 text-sm font-medium text-slate-700">
+                  <input type="checkbox" name="show_explanations" defaultChecked={exam.show_explanations} className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
+                  Show explanations
+                </label>
+                <label className="flex cursor-pointer items-center gap-2.5 text-sm font-medium text-slate-700">
+                  <input type="checkbox" name="result_visible" defaultChecked={exam.result_visible} className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
+                  Result visible
                 </label>
               </div>
 
