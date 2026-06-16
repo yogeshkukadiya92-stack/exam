@@ -22,6 +22,8 @@ interface Analytics {
     submitted_at: string | null;
   }[];
   questions: { id: string; question_text: string; correct: number; wrong: number }[];
+  sections?: { section_id: string; section_name: string; avg_score: number; total_marks: number }[];
+  topics?: { topic: string; attempted: number; correct: number; wrong: number; accuracy: number }[];
 }
 
 export default async function ExamResultsPage({
@@ -39,12 +41,14 @@ export default async function ExamResultsPage({
     .single();
   if (!exam) notFound();
 
-  const { data, error } = await supabase.rpc("get_exam_analytics", {
+  const { data, error } = await supabase.rpc("get_exam_analytics_v2", {
     p_exam_id: examId,
   });
   if (error) notFound();
 
   const { summary, attempts, questions } = data as Analytics;
+  const sections = (data as Analytics).sections ?? [];
+  const topics = (data as Analytics).topics ?? [];
   const passRate =
     summary.total_attempts > 0
       ? Math.round((summary.pass_count / summary.total_attempts) * 100)
@@ -186,6 +190,40 @@ export default async function ExamResultsPage({
                 })}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {summary.total_attempts > 0 && (
+        <div className="mt-8 grid gap-6 md:grid-cols-2">
+          <div className="card p-6">
+            <h2 className="section-title mb-5">Section Performance</h2>
+            <div className="space-y-3 text-sm">
+              {sections.length === 0 && <p className="text-slate-500">No sections configured.</p>}
+              {sections.map((s) => (
+                <div key={s.section_id} className="flex items-center justify-between gap-3">
+                  <span className="font-medium text-slate-700">{s.section_name}</span>
+                  <span className="badge bg-indigo-50 text-indigo-700">
+                    Avg {s.avg_score} / {s.total_marks}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="card p-6">
+            <h2 className="section-title mb-5">Topic Accuracy</h2>
+            <div className="space-y-3 text-sm">
+              {topics.length === 0 && <p className="text-slate-500">No topic data yet.</p>}
+              {topics.map((t) => (
+                <div key={t.topic} className="flex items-center justify-between gap-3">
+                  <span className="font-medium text-slate-700">{t.topic}</span>
+                  <span className="badge bg-emerald-50 text-emerald-700">
+                    {t.accuracy}% accuracy
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       )}

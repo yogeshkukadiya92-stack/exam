@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { FileText, BarChart3, Eye, EyeOff, Trash2, Search } from "lucide-react";
+import { FileText, BarChart3, Eye, EyeOff, Trash2, Search, Layers, Monitor, RotateCcw } from "lucide-react";
 import { deleteExam, togglePublish } from "./actions";
 import DuplicateExamButton from "./DuplicateExamButton";
 import ExamLinkButton from "./ExamLinkButton";
@@ -146,11 +146,32 @@ export default function ExamFilters({ exams, courses, batches }: Props) {
                   Questions
                 </Link>
                 <Link
+                  href={`/admin/exams/${e.id}/sections`}
+                  className="btn-secondary flex items-center gap-1.5 text-xs"
+                >
+                  <Layers className="h-3.5 w-3.5" />
+                  Sections
+                </Link>
+                <Link
                   href={`/admin/exams/${e.id}/results`}
                   className="btn-secondary flex items-center gap-1.5 text-xs"
                 >
                   <BarChart3 className="h-3.5 w-3.5" />
                   Results
+                </Link>
+                <Link
+                  href={`/admin/exams/${e.id}/monitor`}
+                  className="btn-secondary flex items-center gap-1.5 text-xs"
+                >
+                  <Monitor className="h-3.5 w-3.5" />
+                  Live
+                </Link>
+                <Link
+                  href={`/admin/exams/${e.id}/controls`}
+                  className="btn-secondary flex items-center gap-1.5 text-xs"
+                >
+                  <RotateCcw className="h-3.5 w-3.5" />
+                  Controls
                 </Link>
                 <DuplicateExamButton
                   examId={e.id}

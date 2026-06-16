@@ -395,6 +395,60 @@ begin
 end;
 $$ language plpgsql security definer;
 
+-- ---------- START ATTEMPT V2: STUDENT OVERRIDES ----------
+create or replace function start_attempt(p_exam_id uuid)
+returns uuid as $$
+declare
+  v_student uuid := auth.uid();
+  v_exam exams;
+  v_existing uuid;
+  v_done int;
+  v_extra int := 0;
+  v_unlock_until timestamptz;
+  v_new uuid;
+begin
+  select * into v_exam from exams where id = p_exam_id;
+  if v_exam.id is null then raise exception 'Exam not found'; end if;
+  if not v_exam.is_published then raise exception 'Exam not available'; end if;
+
+  select coalesce(extra_attempts, 0), unlock_until
+  into v_extra, v_unlock_until
+  from student_exam_overrides
+  where exam_id = p_exam_id and student_id = v_student;
+
+  if not exists (
+    select 1 from enrollments
+    where student_id = v_student and batch_id = v_exam.batch_id
+  ) then
+    raise exception 'You are not enrolled in this exam';
+  end if;
+
+  if v_exam.start_time is not null and now() < v_exam.start_time then
+    raise exception 'Exam has not started yet';
+  end if;
+  if v_exam.end_time is not null and now() > v_exam.end_time
+     and (v_unlock_until is null or now() > v_unlock_until) then
+    raise exception 'Exam window is closed';
+  end if;
+
+  select id into v_existing from attempts
+  where exam_id = p_exam_id and student_id = v_student and status = 'in_progress'
+  order by started_at desc limit 1;
+  if v_existing is not null then return v_existing; end if;
+
+  select count(*) into v_done from attempts
+  where exam_id = p_exam_id and student_id = v_student and status <> 'in_progress';
+  if v_done >= (v_exam.max_attempts + v_extra) then
+    raise exception 'No attempts left for this exam';
+  end if;
+
+  insert into attempts (exam_id, student_id, status)
+  values (p_exam_id, v_student, 'in_progress')
+  returning id into v_new;
+  return v_new;
+end;
+$$ language plpgsql security definer;
+
 -- ============================================================
 -- DONE
 -- ============================================================

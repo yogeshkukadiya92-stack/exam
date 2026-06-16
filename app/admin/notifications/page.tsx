@@ -1,0 +1,54 @@
+import { createClient } from "@/lib/supabase/server";
+import { queueNotification } from "./actions";
+
+export default async function NotificationsPage() {
+  const supabase = await createClient();
+  const { data: events } = await supabase
+    .from("notification_events")
+    .select("id, event_type, recipient, subject, status, error, created_at")
+    .order("created_at", { ascending: false })
+    .limit(100);
+
+  return (
+    <div>
+      <h1 className="page-title">Notifications</h1>
+      <p className="mt-1 text-sm text-slate-500">Email outbox and manual notification queue.</p>
+
+      <form action={queueNotification} className="card my-6 grid gap-3 p-5 md:grid-cols-2">
+        <select name="event_type" className="input" defaultValue="manual">
+          <option value="manual">Manual</option>
+          <option value="exam_published">Exam published</option>
+          <option value="result_declared">Result declared</option>
+          <option value="student_added">Student added</option>
+        </select>
+        <input name="recipient" placeholder="Recipient email" className="input" />
+        <input name="subject" placeholder="Subject" className="input md:col-span-2" />
+        <textarea name="body" rows={3} placeholder="Message body" className="input md:col-span-2" />
+        <button className="btn-primary md:col-span-2">Queue notification</button>
+      </form>
+
+      <div className="card overflow-hidden">
+        <table className="w-full text-sm">
+          <thead className="bg-slate-50 text-left text-xs uppercase tracking-wider text-slate-500">
+            <tr>
+              <th className="px-4 py-3">Type</th>
+              <th className="px-4 py-3">Recipient</th>
+              <th className="px-4 py-3">Subject</th>
+              <th className="px-4 py-3">Status</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y">
+            {(events ?? []).map((e) => (
+              <tr key={e.id}>
+                <td className="px-4 py-3">{e.event_type}</td>
+                <td className="px-4 py-3">{e.recipient ?? "-"}</td>
+                <td className="px-4 py-3">{e.subject ?? "-"}</td>
+                <td className="px-4 py-3"><span className="badge bg-slate-100 text-slate-700">{e.status}</span></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
