@@ -21,9 +21,9 @@ interface ResultData {
     title: string;
     pass_marks: number;
     negative_marking: boolean;
-    show_correct_answers: boolean;
-    show_explanations: boolean;
-    result_visible: boolean;
+    show_correct_answers?: boolean | null;
+    show_explanations?: boolean | null;
+    result_visible?: boolean | null;
   };
   total_score: number | null;
   questions: ResultQuestion[];
@@ -46,8 +46,8 @@ export default async function ResultPage({
   const { exam, questions } = result;
 
   const resultVisible = exam.result_visible !== false;
-  const showAnswers = exam.show_correct_answers !== false;
-  const showExplanations = exam.show_explanations !== false;
+  const showAnswers = exam.show_correct_answers === true;
+  const showExplanations = exam.show_explanations === true;
 
   // Result not released by admin
   if (!resultVisible) {
@@ -80,6 +80,7 @@ export default async function ResultPage({
   const correct = questions.filter((q) => q.is_correct === true).length;
   const wrong = questions.filter((q) => q.is_correct === false).length;
   const skipped = questions.filter((q) => q.is_correct === null).length;
+  const answered = questions.filter((q) => (q.selected?.length ?? 0) > 0).length;
   const passed = score >= exam.pass_marks;
   const totalQ = questions.length;
   const percentage = totalMarks > 0 ? Math.round((score / totalMarks) * 100) : 0;
@@ -148,12 +149,20 @@ export default async function ResultPage({
             {passed ? "Passed" : "Failed"} — Pass marks: {exam.pass_marks}
           </span>
           <div className="mt-4 flex flex-wrap justify-center gap-4 sm:gap-6 text-sm">
-            <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
-              <CheckCircle2 className="h-4 w-4" /> {correct} correct
-            </span>
-            <span className="flex items-center gap-1.5 text-red-600 dark:text-red-400">
-              <XCircle className="h-4 w-4" /> {wrong} wrong
-            </span>
+            {showAnswers ? (
+              <>
+                <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
+                  <CheckCircle2 className="h-4 w-4" /> {correct} correct
+                </span>
+                <span className="flex items-center gap-1.5 text-red-600 dark:text-red-400">
+                  <XCircle className="h-4 w-4" /> {wrong} wrong
+                </span>
+              </>
+            ) : (
+              <span className="flex items-center gap-1.5 text-indigo-600 dark:text-indigo-400">
+                <CheckCircle2 className="h-4 w-4" /> {answered} answered
+              </span>
+            )}
             <span className="flex items-center gap-1.5 text-slate-400 dark:text-slate-500">
               <MinusCircle className="h-4 w-4" /> {skipped} skipped
             </span>
@@ -179,8 +188,12 @@ export default async function ResultPage({
           <div className="flex h-10 w-10 mx-auto items-center justify-center rounded-xl bg-emerald-100 dark:bg-emerald-950/50">
             <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
           </div>
-          <p className="mt-2 text-2xl font-bold text-slate-900 dark:text-slate-100">{accuracy}%</p>
-          <p className="text-xs text-slate-500 dark:text-slate-400">Accuracy</p>
+          <p className="mt-2 text-2xl font-bold text-slate-900 dark:text-slate-100">
+            {showAnswers ? `${accuracy}%` : answered}
+          </p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            {showAnswers ? "Accuracy" : "Answered"}
+          </p>
         </div>
         <div className="card p-4 text-center">
           <div className="flex h-10 w-10 mx-auto items-center justify-center rounded-xl bg-green-100 dark:bg-green-950/50">
@@ -199,31 +212,53 @@ export default async function ResultPage({
       </div>
 
       {/* Performance Bar */}
-      <div className="card p-5 mb-6">
-        <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">Question Performance</h3>
-        <div className="h-6 w-full rounded-full overflow-hidden flex bg-slate-100 dark:bg-slate-700">
-          {correctPct > 0 && (
-            <div className="bg-emerald-500 h-full transition-all duration-700" style={{ width: `${correctPct}%` }} />
-          )}
-          {wrongPct > 0 && (
-            <div className="bg-red-400 h-full transition-all duration-700" style={{ width: `${wrongPct}%` }} />
-          )}
-          {skippedPct > 0 && (
-            <div className="bg-slate-300 dark:bg-slate-500 h-full transition-all duration-700" style={{ width: `${skippedPct}%` }} />
-          )}
+      {showAnswers ? (
+        <div className="card p-5 mb-6">
+          <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">Question Performance</h3>
+          <div className="h-6 w-full rounded-full overflow-hidden flex bg-slate-100 dark:bg-slate-700">
+            {correctPct > 0 && (
+              <div className="bg-emerald-500 h-full transition-all duration-700" style={{ width: `${correctPct}%` }} />
+            )}
+            {wrongPct > 0 && (
+              <div className="bg-red-400 h-full transition-all duration-700" style={{ width: `${wrongPct}%` }} />
+            )}
+            {skippedPct > 0 && (
+              <div className="bg-slate-300 dark:bg-slate-500 h-full transition-all duration-700" style={{ width: `${skippedPct}%` }} />
+            )}
+          </div>
+          <div className="mt-2 flex flex-wrap gap-4 text-xs text-slate-600 dark:text-slate-400">
+            <span className="flex items-center gap-1.5">
+              <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" /> Correct: {correct}/{totalQ} ({Math.round(correctPct)}%)
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="h-2.5 w-2.5 rounded-full bg-red-400" /> Wrong: {wrong}/{totalQ} ({Math.round(wrongPct)}%)
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="h-2.5 w-2.5 rounded-full bg-slate-300 dark:bg-slate-500" /> Skipped: {skipped}/{totalQ} ({Math.round(skippedPct)}%)
+            </span>
+          </div>
         </div>
-        <div className="mt-2 flex flex-wrap gap-4 text-xs text-slate-600 dark:text-slate-400">
-          <span className="flex items-center gap-1.5">
-            <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" /> Correct: {correct}/{totalQ} ({Math.round(correctPct)}%)
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="h-2.5 w-2.5 rounded-full bg-red-400" /> Wrong: {wrong}/{totalQ} ({Math.round(wrongPct)}%)
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="h-2.5 w-2.5 rounded-full bg-slate-300 dark:bg-slate-500" /> Skipped: {skipped}/{totalQ} ({Math.round(skippedPct)}%)
-          </span>
+      ) : (
+        <div className="card p-5 mb-6">
+          <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">Attempt Summary</h3>
+          <div className="h-6 w-full rounded-full overflow-hidden flex bg-slate-100 dark:bg-slate-700">
+            {answered > 0 && (
+              <div className="bg-indigo-500 h-full transition-all duration-700" style={{ width: `${(answered / Math.max(totalQ, 1)) * 100}%` }} />
+            )}
+            {skipped > 0 && (
+              <div className="bg-slate-300 dark:bg-slate-500 h-full transition-all duration-700" style={{ width: `${skippedPct}%` }} />
+            )}
+          </div>
+          <div className="mt-2 flex flex-wrap gap-4 text-xs text-slate-600 dark:text-slate-400">
+            <span className="flex items-center gap-1.5">
+              <span className="h-2.5 w-2.5 rounded-full bg-indigo-500" /> Answered: {answered}/{totalQ}
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="h-2.5 w-2.5 rounded-full bg-slate-300 dark:bg-slate-500" /> Skipped: {skipped}/{totalQ}
+            </span>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Marks Breakdown */}
       <div className="card p-5 mb-6">
@@ -290,17 +325,19 @@ export default async function ResultPage({
                       {qScore > 0 ? `+${qScore}` : qScore}
                     </td>
                     <td className="px-4 py-2.5">
-                      {q.is_correct === true && (
+                      {!showAnswers ? (
+                        <span className="inline-flex items-center gap-1 text-xs font-medium text-indigo-700 bg-indigo-50 rounded-full px-2 py-0.5 dark:bg-indigo-950/50 dark:text-indigo-400">
+                          <CheckCircle2 className="h-3 w-3" /> {(q.selected?.length ?? 0) > 0 ? "Answered" : "Skipped"}
+                        </span>
+                      ) : q.is_correct === true ? (
                         <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-50 rounded-full px-2 py-0.5 dark:bg-emerald-950/50 dark:text-emerald-400">
                           <CheckCircle2 className="h-3 w-3" /> Correct
                         </span>
-                      )}
-                      {q.is_correct === false && (
+                      ) : q.is_correct === false ? (
                         <span className="inline-flex items-center gap-1 text-xs font-medium text-red-700 bg-red-50 rounded-full px-2 py-0.5 dark:bg-red-950/50 dark:text-red-400">
                           <XCircle className="h-3 w-3" /> Wrong
                         </span>
-                      )}
-                      {q.is_correct === null && (
+                      ) : (
                         <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 bg-slate-100 rounded-full px-2 py-0.5 dark:bg-slate-700 dark:text-slate-400">
                           <MinusCircle className="h-3 w-3" /> Skipped
                         </span>

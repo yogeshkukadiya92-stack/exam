@@ -6,8 +6,8 @@
 -- ============================================================
 
 -- ---------- EXAM SETTINGS ----------
-alter table exams add column if not exists show_correct_answers boolean default true;
-alter table exams add column if not exists show_explanations boolean default true;
+alter table exams add column if not exists show_correct_answers boolean default false;
+alter table exams add column if not exists show_explanations boolean default false;
 alter table exams add column if not exists result_visible boolean default true;
 alter table exams add column if not exists certificate_template_id uuid;
 
@@ -344,7 +344,7 @@ begin
   where id = p_attempt_id and student_id = v_student and status <> 'in_progress';
   if v_exam_id is null then raise exception 'Result not available'; end if;
 
-  select coalesce(show_correct_answers, true), coalesce(show_explanations, true)
+  select coalesce(show_correct_answers, false), coalesce(show_explanations, false)
   into v_show_answers, v_show_explanations
   from exams where id = v_exam_id;
 
@@ -354,8 +354,8 @@ begin
         'title', e.title,
         'pass_marks', e.pass_marks,
         'negative_marking', e.negative_marking,
-        'show_correct_answers', coalesce(e.show_correct_answers, true),
-        'show_explanations', coalesce(e.show_explanations, true),
+        'show_correct_answers', coalesce(e.show_correct_answers, false),
+        'show_explanations', coalesce(e.show_explanations, false),
         'result_visible', coalesce(e.result_visible, true)
       ) from exams e where e.id = v_exam_id
     ),
