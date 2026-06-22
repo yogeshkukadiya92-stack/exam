@@ -3,6 +3,88 @@ import { createClient } from "@/lib/supabase/server";
 import { Award, ArrowLeft, Trophy, CheckCircle2, XCircle, MinusCircle, BarChart3, Target, TrendingUp, TrendingDown, AlertCircle } from "lucide-react";
 import PrintButton from "./PrintButton";
 
+type SupabaseServer = Awaited<ReturnType<typeof createClient>>;
+
+// Rebuild the result from tables the student can read, used when the
+// get_attempt_result RPC is unavailable. Options are RLS-locked, so the
+// per-option review is omitted (handled by disabling showAnswers).
+async function buildResultFromTables(
+  supabase: SupabaseServer,
+  attemptId: string
+): Promise<ResultData | null> {
+  const { data: attempt } = await supabase
+    .from("attempts")
+    .select("exam_id, status, total_score")
+    .eq("id", attemptId)
+    .maybeSingle();
+
+  if (!attempt || attempt.status === "in_progress") return null;
+
+  const [{ data: exam }, { data: questions }, { data: answers }] = await Promise.all([
+    supabase
+      .from("exams")
+      .select("title, pass_marks, negative_marking, show_correct_answers, show_explanations, result_visible")
+      .eq("id", attempt.exam_id)
+      .maybeSingle(),
+    supabase
+      .from("questions")
+      .select("id, question_text, marks, negative_marks, explanation, type, position")
+      .eq("exam_id", attempt.exam_id)
+      .order("position", { ascending: true }),
+    supabase
+      .from("answers")
+      .select("question_id, score, is_correct, selected_option_ids, text_answer")
+      .eq("attempt_id", attemptId),
+  ]);
+
+  if (!exam || !questions) return null;
+
+  type AnswerRow = {
+    question_id: string;
+    score: number | null;
+    is_correct: boolean | null;
+    selected_option_ids: string[] | null;
+    text_answer: string | null;
+  };
+  const ansByQ = new Map<string, AnswerRow>(
+    ((answers as AnswerRow[]) ?? []).map((a) => [a.question_id, a])
+  );
+
+  type QuestionRow = {
+    id: string;
+    question_text: string;
+    marks: number;
+    negative_marks: number;
+    explanation: string | null;
+  };
+
+  return {
+    exam: {
+      title: exam.title,
+      pass_marks: Number(exam.pass_marks) || 0,
+      negative_marking: exam.negative_marking,
+      show_correct_answers: exam.show_correct_answers,
+      show_explanations: exam.show_explanations,
+      result_visible: exam.result_visible,
+    },
+    total_score: attempt.total_score,
+    questions: ((questions as QuestionRow[]) ?? []).map((q) => {
+      const a = ansByQ.get(q.id);
+      return {
+        id: q.id,
+        question_text: q.question_text,
+        marks: Number(q.marks) || 0,
+        negative_marks: Number(q.negative_marks) || 0,
+        explanation: q.explanation,
+        score: a?.score ?? null,
+        is_correct: a?.is_correct ?? null,
+        selected: a?.selected_option_ids ?? null,
+        options: [],
+      };
+    }),
+  };
+}
+
 interface ResultQuestion {
   id: string;
   question_text: string;
@@ -40,9 +122,21 @@ export default async function ResultPage({
     p_attempt_id: attemptId,
   });
 
-  if (error || !data) {
-    // Don't show a bare 404. Log the real reason and show a friendly page.
-    console.error("get_attempt_result failed:", error?.message ?? "no data", { attemptId });
+  // Primary path: the secure RPC (full per-option review when enabled).
+  // Fallback: if the RPC errors/returns nothing, rebuild the result straight
+  // from the tables the student can read (attempts + exams + questions +
+  // answers) so the score & analysis still show. Option-level review needs
+  // the RPC, so the answer review section is skipped in fallback mode.
+  let result = (data && !error ? (data as ResultData) : null);
+  const rpcOk = result !== null;
+
+  if (!result) {
+    console.error("get_attempt_result failed, using fallback:", error?.message ?? "no data", { attemptId });
+    result = await buildResultFromTables(supabase, attemptId);
+  }
+
+  if (!result) {
+    // Truly nothing to show (attempt missing or still in progress).
     return (
       <div>
         <div className="mb-4 print:hidden">
@@ -74,7 +168,7 @@ export default async function ResultPage({
       </div>
     );
   }
-  const result = data as ResultData;
+
   const { exam, questions } = result;
 
   // Read the visibility settings straight from the exams table so admin's
@@ -100,7 +194,9 @@ export default async function ResultPage({
   }
 
   const resultVisible = (settings?.result_visible ?? exam.result_visible) !== false;
-  const showAnswers = (settings?.show_correct_answers ?? exam.show_correct_answers) === true;
+  // Option-level review is only available via the RPC (options are RLS-locked),
+  // so disable the answer-review section when we fell back to table data.
+  const showAnswers = rpcOk && (settings?.show_correct_answers ?? exam.show_correct_answers) === true;
   const showExplanations = (settings?.show_explanations ?? exam.show_explanations) === true;
 
   // Result not released by admin
