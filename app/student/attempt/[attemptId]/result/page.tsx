@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Award, ArrowLeft, Trophy, CheckCircle2, XCircle, MinusCircle, BarChart3, Target, TrendingUp, TrendingDown, AlertCircle } from "lucide-react";
 import PrintButton from "./PrintButton";
@@ -41,7 +40,40 @@ export default async function ResultPage({
     p_attempt_id: attemptId,
   });
 
-  if (error || !data) notFound();
+  if (error || !data) {
+    // Don't show a bare 404. Log the real reason and show a friendly page.
+    console.error("get_attempt_result failed:", error?.message ?? "no data", { attemptId });
+    return (
+      <div>
+        <div className="mb-4 print:hidden">
+          <Link
+            href="/student"
+            className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-indigo-600 transition-colors"
+          >
+            <ArrowLeft className="h-4 w-4" /> My Exams
+          </Link>
+        </div>
+        <div className="card p-12 text-center">
+          <Award className="mx-auto h-14 w-14 text-slate-300" />
+          <h1 className="mt-4 text-xl font-bold text-slate-900 dark:text-slate-100">
+            Exam submitted
+          </h1>
+          <p className="mt-2 text-slate-500 dark:text-slate-400">
+            Your exam has been submitted. The result is not available right now.
+          </p>
+          <p className="mt-1 text-sm text-slate-400 dark:text-slate-500">
+            Please refresh in a moment, or check back from My Exams.
+          </p>
+          <Link
+            href="/student"
+            className="btn-primary mt-6 inline-flex items-center gap-1.5"
+          >
+            <ArrowLeft className="h-4 w-4" /> Back to My Exams
+          </Link>
+        </div>
+      </div>
+    );
+  }
   const result = data as ResultData;
   const { exam, questions } = result;
 

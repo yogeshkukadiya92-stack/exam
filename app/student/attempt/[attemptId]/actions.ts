@@ -12,9 +12,10 @@ export async function submitAttempt(attemptId: string) {
     p_attempt_id: attemptId,
   });
 
-  // Already submitted athva error — banne kisse result page par moklo
-  if (error) {
-    console.error("submit_attempt:", error.message);
+  // "Already submitted" jevo error ignore karo — attempt pehlethi submit thai gayo hoy.
+  // Bija errors log karo (Railway logs ma dekhase) jethi diagnose thai shake.
+  if (error && !/already submitted|not found/i.test(error.message)) {
+    console.error("submit_attempt failed:", error.message, { attemptId });
   }
 
   redirect(`/student/attempt/${attemptId}/result`);
