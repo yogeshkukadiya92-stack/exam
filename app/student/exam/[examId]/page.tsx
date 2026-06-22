@@ -101,7 +101,10 @@ export default async function ExamIntro({
 
           {exam.instructions && (
             <div className="mt-4 rounded-xl bg-slate-50 p-4 text-sm text-slate-600 dark:bg-slate-700/50 dark:text-slate-300">
-              {exam.instructions}
+              <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-slate-400">
+                Instructions
+              </p>
+              <div className="whitespace-pre-line leading-relaxed">{exam.instructions}</div>
             </div>
           )}
 
