@@ -527,7 +527,7 @@ export default async function ResultPage({
                     </span>
                   </div>
                   <ul className="mt-3 space-y-2 text-sm">
-                    {q.options.map((o) => {
+                    {q.options.map((o, oi) => {
                       const chosen = sel.includes(o.id);
                       return (
                         <li
@@ -541,15 +541,15 @@ export default async function ResultPage({
                           }`}
                         >
                           <span
-                            className={`flex h-5 w-5 items-center justify-center rounded-full text-xs ${
+                            className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${
                               o.is_correct
                                 ? "bg-emerald-200 text-emerald-800"
                                 : chosen
                                 ? "bg-red-200 text-red-700"
-                                : "bg-slate-100 text-slate-400"
+                                : "bg-slate-100 text-slate-500"
                             }`}
                           >
-                            {o.is_correct ? "✓" : chosen ? "✗" : "·"}
+                            {String.fromCharCode(65 + oi)}
                           </span>
                           {o.option_text}
                           {chosen && !o.is_correct && (
