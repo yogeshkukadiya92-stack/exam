@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Award, ArrowLeft, Trophy, CheckCircle2, XCircle, MinusCircle, BarChart3, Target, TrendingUp, TrendingDown, AlertCircle } from "lucide-react";
-import PrintButton from "./PrintButton";
 
 type SupabaseServer = Awaited<ReturnType<typeof createClient>>;
 
@@ -261,7 +260,6 @@ export default async function ResultPage({
               Certificate
             </Link>
           )}
-          <PrintButton />
         </div>
       </div>
 
