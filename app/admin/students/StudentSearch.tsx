@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Search, Users } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Search, Users, Plus, X } from "lucide-react";
+import { assignStudentToBatch, removeStudentFromBatch } from "./actions";
 
 interface Student {
   id: string;
@@ -11,8 +13,31 @@ interface Student {
   created_at: string;
 }
 
-export default function StudentSearch({ students }: { students: Student[] }) {
+interface BatchOption {
+  id: string;
+  label: string;
+}
+
+interface Enrollment {
+  batchId: string;
+  label: string;
+}
+
+export default function StudentSearch({
+  students,
+  batches,
+  enrollmentsByStudent,
+}: {
+  students: Student[];
+  batches: BatchOption[];
+  enrollmentsByStudent: Record<string, Enrollment[]>;
+}) {
+  const router = useRouter();
   const [term, setTerm] = useState("");
+  const [openFor, setOpenFor] = useState<string | null>(null);
+  const [selectedBatch, setSelectedBatch] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<{ id: string; ok: boolean; text: string } | null>(null);
 
   const filtered = students.filter((s) => {
     if (!term) return true;
@@ -23,6 +48,29 @@ export default function StudentSearch({ students }: { students: Student[] }) {
       s.phone?.toLowerCase().includes(q)
     );
   });
+
+  const assign = async (studentId: string) => {
+    if (!selectedBatch) return;
+    setBusy(true);
+    setMessage(null);
+    const res = await assignStudentToBatch(studentId, selectedBatch);
+    setBusy(false);
+    setMessage({ id: studentId, ok: res.ok, text: res.message });
+    if (res.ok) {
+      setOpenFor(null);
+      setSelectedBatch("");
+      router.refresh();
+    }
+  };
+
+  const remove = async (studentId: string, batchId: string) => {
+    setBusy(true);
+    setMessage(null);
+    const res = await removeStudentFromBatch(studentId, batchId);
+    setBusy(false);
+    setMessage({ id: studentId, ok: res.ok, text: res.message });
+    if (res.ok) router.refresh();
+  };
 
   return (
     <div>
@@ -48,26 +96,112 @@ export default function StudentSearch({ students }: { students: Student[] }) {
                 Email
               </th>
               <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
-                Phone
+                Batches / Courses
+              </th>
+              <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-500">
+                Assign
               </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {filtered.map((s) => (
-              <tr
-                key={s.id}
-                className="transition-colors hover:bg-slate-50/50"
-              >
-                <td className="px-5 py-3.5 font-medium text-slate-900">
-                  {s.full_name || "—"}
-                </td>
-                <td className="px-5 py-3.5 text-slate-500">{s.email}</td>
-                <td className="px-5 py-3.5 text-slate-500">{s.phone || "—"}</td>
-              </tr>
-            ))}
+            {filtered.map((s) => {
+              const enrolled = enrollmentsByStudent[s.id] ?? [];
+              const enrolledIds = new Set(enrolled.map((e) => e.batchId));
+              const available = batches.filter((b) => !enrolledIds.has(b.id));
+              return (
+                <tr key={s.id} className="align-top transition-colors hover:bg-slate-50/50">
+                  <td className="px-5 py-3.5 font-medium text-slate-900">
+                    {s.full_name || "—"}
+                    <div className="text-xs font-normal text-slate-400 sm:hidden">{s.email}</div>
+                  </td>
+                  <td className="hidden px-5 py-3.5 text-slate-500 sm:table-cell">{s.email}</td>
+                  <td className="px-5 py-3.5">
+                    {enrolled.length === 0 ? (
+                      <span className="text-xs text-slate-400">No batch</span>
+                    ) : (
+                      <div className="flex flex-wrap gap-1.5">
+                        {enrolled.map((e) => (
+                          <span
+                            key={e.batchId}
+                            className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700"
+                          >
+                            {e.label}
+                            <button
+                              type="button"
+                              onClick={() => remove(s.id, e.batchId)}
+                              disabled={busy}
+                              className="text-indigo-400 hover:text-red-500 disabled:opacity-40"
+                              title="Remove from batch"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    {message?.id === s.id && (
+                      <p className={`mt-1.5 text-xs ${message.ok ? "text-emerald-600" : "text-red-600"}`}>
+                        {message.text}
+                      </p>
+                    )}
+                  </td>
+                  <td className="px-5 py-3.5 text-right">
+                    {openFor === s.id ? (
+                      <div className="flex flex-wrap items-center justify-end gap-2">
+                        <select
+                          value={selectedBatch}
+                          onChange={(e) => setSelectedBatch(e.target.value)}
+                          className="input max-w-[200px] py-1.5 text-xs"
+                        >
+                          <option value="">Select batch / course</option>
+                          {available.map((b) => (
+                            <option key={b.id} value={b.id}>
+                              {b.label}
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          type="button"
+                          onClick={() => assign(s.id)}
+                          disabled={busy || !selectedBatch}
+                          className="btn-primary px-3 py-1.5 text-xs disabled:opacity-40"
+                        >
+                          {busy ? "..." : "Assign"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setOpenFor(null);
+                            setSelectedBatch("");
+                          }}
+                          className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setOpenFor(s.id);
+                          setSelectedBatch("");
+                          setMessage(null);
+                        }}
+                        disabled={available.length === 0}
+                        className="btn-secondary inline-flex items-center gap-1.5 text-xs disabled:opacity-40"
+                        title={available.length === 0 ? "All batches assigned" : "Assign batch / course"}
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                        Assign
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={3} className="px-5 py-12 text-center">
+                <td colSpan={4} className="px-5 py-12 text-center">
                   <Users className="mx-auto h-10 w-10 text-slate-300" />
                   <p className="mt-3 text-sm text-slate-500">
                     {term

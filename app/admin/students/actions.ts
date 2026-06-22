@@ -142,6 +142,55 @@ export async function createStudent(input: CreateStudentInput): Promise<{
   }
 }
 
+export async function assignStudentToBatch(
+  studentId: string,
+  batchId: string
+): Promise<{ ok: boolean; message: string }> {
+  try {
+    await requireAdmin();
+    if (!studentId || !batchId) {
+      return { ok: false, message: "Student ane batch select karo." };
+    }
+    const admin = createAdminClient();
+    const { error } = await admin.from("enrollments").upsert(
+      { student_id: studentId, batch_id: batchId },
+      { onConflict: "student_id,batch_id", ignoreDuplicates: true }
+    );
+    if (error) {
+      return { ok: false, message: toMessage(error, "Batch assign karva ma problem aavi.") };
+    }
+    revalidatePath("/admin/students");
+    return { ok: true, message: "Batch assign thai gayu." };
+  } catch (error) {
+    return { ok: false, message: toMessage(error, "Batch assign karva ma problem aavi.") };
+  }
+}
+
+export async function removeStudentFromBatch(
+  studentId: string,
+  batchId: string
+): Promise<{ ok: boolean; message: string }> {
+  try {
+    await requireAdmin();
+    if (!studentId || !batchId) {
+      return { ok: false, message: "Student ane batch select karo." };
+    }
+    const admin = createAdminClient();
+    const { error } = await admin
+      .from("enrollments")
+      .delete()
+      .eq("student_id", studentId)
+      .eq("batch_id", batchId);
+    if (error) {
+      return { ok: false, message: toMessage(error, "Batch remove karva ma problem aavi.") };
+    }
+    revalidatePath("/admin/students");
+    return { ok: true, message: "Batch mathi remove thai gayu." };
+  } catch (error) {
+    return { ok: false, message: toMessage(error, "Batch remove karva ma problem aavi.") };
+  }
+}
+
 export async function bulkImportStudents(
   batchId: string | null,
   students: BulkStudent[]
