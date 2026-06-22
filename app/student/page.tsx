@@ -10,17 +10,18 @@ import {
   Award,
   BarChart3,
   Megaphone,
+  CheckCircle2,
 } from "lucide-react";
 
 export default async function StudentDashboard() {
   const supabase = await createClient();
 
-  const [{ data: exams }, { data: attempts }, { data: announcements }] =
+  const [{ data: exams }, { data: attempts }, { data: announcements }, { data: overrides }] =
     await Promise.all([
       supabase
         .from("exams")
         .select(
-          "id, title, duration_minutes, negative_marking, pass_marks, courses(name), batches(name), questions(count)"
+          "id, title, duration_minutes, negative_marking, pass_marks, max_attempts, courses(name), batches(name), questions(count)"
         )
         .order("created_at", { ascending: false }),
       supabase
@@ -33,7 +34,17 @@ export default async function StudentDashboard() {
         .eq("is_active", true)
         .order("created_at", { ascending: false })
         .limit(5),
+      supabase
+        .from("student_exam_overrides")
+        .select("exam_id, extra_attempts"),
     ]);
+
+  const extraByExam = new Map<string, number>(
+    (overrides ?? []).map((o: { exam_id: string; extra_attempts: number | null }) => [
+      o.exam_id,
+      Number(o.extra_attempts) || 0,
+    ])
+  );
 
   type Attempt = NonNullable<typeof attempts>[number];
   const byExam = new Map<string, Attempt[]>();
@@ -228,6 +239,8 @@ export default async function StudentDashboard() {
             .map((a) => a.total_score)
             .filter((s): s is number => s != null);
           const best = examScores.length ? Math.max(...examScores) : null;
+          const attemptLimit = (Number(e.max_attempts) || 1) + (extraByExam.get(e.id) ?? 0);
+          const attemptsLeft = !inProgress && sub.length < attemptLimit;
           const course = (e.courses as unknown as { name: string } | null)
             ?.name;
           const batch = (e.batches as unknown as { name: string } | null)
@@ -267,7 +280,7 @@ export default async function StudentDashboard() {
                     <RotateCcw className="h-4 w-4" />
                     Resume
                   </Link>
-                ) : (
+                ) : attemptsLeft ? (
                   <Link
                     href={`/student/exam/${e.id}`}
                     className="btn-primary flex items-center gap-1.5"
@@ -275,6 +288,11 @@ export default async function StudentDashboard() {
                     <Play className="h-4 w-4" />
                     Start
                   </Link>
+                ) : (
+                  <span className="badge bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400">
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                    Completed
+                  </span>
                 )}
                 {sub.length > 0 && (
                   <Link

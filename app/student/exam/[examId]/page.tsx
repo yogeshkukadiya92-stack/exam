@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { startAttempt } from "./actions";
-import { ArrowLeft, Clock, Target, RotateCcw, AlertTriangle, FileText } from "lucide-react";
+import { ArrowLeft, Clock, Target, RotateCcw, AlertTriangle, FileText, CheckCircle2 } from "lucide-react";
 
 export default async function ExamIntro({
   params,
@@ -26,6 +26,32 @@ export default async function ExamIntro({
   const qCount = (exam.questions as { count: number }[] | null)?.[0]?.count ?? 0;
   const course = (exam.courses as unknown as { name: string } | null)?.name;
   const batch = (exam.batches as unknown as { name: string } | null)?.name;
+
+  // Attempts left calculation — block re-take once submitted (max_attempts + extra).
+  const { data: auth } = await supabase.auth.getUser();
+  const studentId = auth.user?.id;
+
+  const [{ data: myAttempts }, { data: override }] = await Promise.all([
+    supabase
+      .from("attempts")
+      .select("id, status")
+      .eq("exam_id", examId)
+      .eq("student_id", studentId ?? "")
+      .order("started_at", { ascending: false }),
+    supabase
+      .from("student_exam_overrides")
+      .select("extra_attempts")
+      .eq("exam_id", examId)
+      .eq("student_id", studentId ?? "")
+      .maybeSingle(),
+  ]);
+
+  const inProgress = (myAttempts ?? []).find((a) => a.status === "in_progress");
+  const submittedAttempts = (myAttempts ?? []).filter((a) => a.status !== "in_progress");
+  const lastSubmitted = submittedAttempts[0];
+  const attemptLimit =
+    (Number(exam.max_attempts) || 1) + (Number(override?.extra_attempts) || 0);
+  const noAttemptsLeft = !inProgress && submittedAttempts.length >= attemptLimit;
 
   return (
     <div className="mx-auto max-w-lg">
@@ -110,14 +136,39 @@ export default async function ExamIntro({
 
           <div className="mt-4 rounded-xl bg-amber-50 border border-amber-100 p-3 text-xs text-amber-700 dark:bg-amber-950/30 dark:border-amber-800 dark:text-amber-400">
             Once started, the timer begins. Answers are auto-saved. Navigate using the question palette and submit when done.
+            {" "}Once you submit, you cannot retake this exam or change your answers.
           </div>
 
-          <form action={startAttempt} className="mt-5">
-            <input type="hidden" name="exam_id" value={exam.id} />
-            <button className="btn-primary w-full text-base">
-              Start exam
-            </button>
-          </form>
+          {noAttemptsLeft ? (
+            <div className="mt-5">
+              <div className="flex items-center justify-center gap-2 rounded-xl bg-emerald-50 border border-emerald-200 p-3 text-sm font-medium text-emerald-700 dark:bg-emerald-950/30 dark:border-emerald-800 dark:text-emerald-400">
+                <CheckCircle2 className="h-4 w-4 shrink-0" />
+                You have already submitted this exam.
+              </div>
+              {lastSubmitted && (
+                <Link
+                  href={`/student/attempt/${lastSubmitted.id}/result`}
+                  className="btn-primary mt-3 flex w-full items-center justify-center text-base"
+                >
+                  View result
+                </Link>
+              )}
+            </div>
+          ) : inProgress ? (
+            <Link
+              href={`/student/attempt/${inProgress.id}`}
+              className="btn-primary mt-5 flex w-full items-center justify-center text-base"
+            >
+              Resume exam
+            </Link>
+          ) : (
+            <form action={startAttempt} className="mt-5">
+              <input type="hidden" name="exam_id" value={exam.id} />
+              <button className="btn-primary w-full text-base">
+                Start exam
+              </button>
+            </form>
+          )}
         </div>
       </div>
     </div>
