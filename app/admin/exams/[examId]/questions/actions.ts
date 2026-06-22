@@ -169,6 +169,96 @@ export async function bulkAddQuestions(
   return { added, failed };
 }
 
+export async function updateQuestion(formData: FormData): Promise<{
+  ok: boolean;
+  message: string;
+}> {
+  try {
+    await requireAdmin();
+    const supabase = await createClient();
+
+    const id = formData.get("id") as string;
+    const examId = formData.get("exam_id") as string;
+    const questionText = (formData.get("question_text") as string)?.trim();
+    const type = (formData.get("type") as string) || "single";
+    const marks = Number(formData.get("marks")) || 1;
+    const negativeMarks = Number(formData.get("negative_marks")) || 0;
+    const explanation = (formData.get("explanation") as string)?.trim() || null;
+    const correctText = (formData.get("correct_text") as string)?.trim() || null;
+
+    if (!id || !examId || !questionText) {
+      return { ok: false, message: "Question text required chhe." };
+    }
+
+    const options: { option_text: string; is_correct: boolean; position: number }[] =
+      [];
+    for (let i = 0; i < 4; i++) {
+      const text = (formData.get(`option_${i}`) as string)?.trim();
+      if (!text) continue;
+      options.push({
+        option_text: text,
+        is_correct: formData.get(`correct_${i}`) === "on",
+        position: i,
+      });
+    }
+
+    const isMcq = type === "single" || type === "multiple" || type === "true_false";
+
+    if (isMcq && options.length < 2) {
+      return { ok: false, message: "Ochama 2 options add karo." };
+    }
+    if (isMcq && !options.some((o) => o.is_correct)) {
+      return { ok: false, message: "Ochama 1 correct option select karo." };
+    }
+    if (!isMcq && type !== "descriptive" && !correctText) {
+      return { ok: false, message: "Correct answer required chhe." };
+    }
+
+    // 1) question update
+    const { error } = await supabase
+      .from("questions")
+      .update({
+        type,
+        question_text: questionText,
+        marks,
+        negative_marks: negativeMarks,
+        explanation,
+        correct_text: correctText,
+      })
+      .eq("id", id);
+
+    if (error) {
+      return {
+        ok: false,
+        message: `Question update fail: ${toMessage(error, "Unknown error")}`,
+      };
+    }
+
+    // 2) replace options
+    await supabase.from("options").delete().eq("question_id", id);
+    if (options.length > 0) {
+      const { error: optionsError } = await supabase
+        .from("options")
+        .insert(options.map((o) => ({ ...o, question_id: id })));
+
+      if (optionsError) {
+        return {
+          ok: false,
+          message: `Options save fail: ${toMessage(optionsError, "Unknown error")}`,
+        };
+      }
+    }
+
+    revalidatePath(`/admin/exams/${examId}/questions`);
+    return { ok: true, message: "Question update thai gayo." };
+  } catch (error) {
+    return {
+      ok: false,
+      message: toMessage(error, "Question update karva ma problem aavi."),
+    };
+  }
+}
+
 export async function deleteQuestion(formData: FormData) {
   await requireAdmin();
   const id = formData.get("id") as string;

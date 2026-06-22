@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import QuestionForm from "./QuestionForm";
 import ExcelQuestionUpload from "./ExcelQuestionUpload";
 import QuestionBankPicker from "./QuestionBankPicker";
+import EditQuestionButton from "./EditQuestionButton";
 import { deleteQuestion } from "./actions";
 import { ChevronRight, Trash2, FileText } from "lucide-react";
 
@@ -25,7 +26,7 @@ export default async function ExamQuestionsPage({
 
   const { data: questions } = await supabase
     .from("questions")
-    .select("id, question_text, type, marks, negative_marks, options(id, option_text, is_correct, position)")
+    .select("id, question_text, type, marks, negative_marks, explanation, correct_text, options(id, option_text, is_correct, position)")
     .eq("exam_id", examId)
     .order("created_at", { ascending: true });
 
@@ -79,13 +80,32 @@ export default async function ExamQuestionsPage({
                 <p className="font-medium text-slate-900">
                   <span className="text-slate-400">{idx + 1}.</span> {q.question_text}
                 </p>
-                <form action={deleteQuestion} className="shrink-0">
-                  <input type="hidden" name="id" value={q.id} />
-                  <input type="hidden" name="exam_id" value={examId} />
-                  <button className="rounded-lg border border-red-200 p-1.5 text-red-500 transition-colors hover:bg-red-50 hover:text-red-600">
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                </form>
+                <div className="flex shrink-0 items-center gap-2">
+                  <EditQuestionButton
+                    examId={examId}
+                    question={{
+                      id: q.id,
+                      question_text: q.question_text,
+                      type: q.type,
+                      marks: Number(q.marks),
+                      negative_marks: Number(q.negative_marks),
+                      explanation: q.explanation ?? null,
+                      correct_text: q.correct_text ?? null,
+                      options: opts.map((o) => ({
+                        option_text: o.option_text,
+                        is_correct: o.is_correct,
+                        position: o.position,
+                      })),
+                    }}
+                  />
+                  <form action={deleteQuestion}>
+                    <input type="hidden" name="id" value={q.id} />
+                    <input type="hidden" name="exam_id" value={examId} />
+                    <button className="rounded-lg border border-red-200 p-1.5 text-red-500 transition-colors hover:bg-red-50 hover:text-red-600">
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </form>
+                </div>
               </div>
               <ul className="mt-3 space-y-1.5 text-sm">
                 {opts.map((o) => (
