@@ -70,20 +70,26 @@ export default async function AttemptPage({
     if (a.marked_for_review) initialFlags[a.question_id] = true;
   });
 
+  // Break out of the student layout's max-w-4xl container so the exam uses
+  // the full screen width on desktop (more room for question + palette).
   return (
-    <ExamRunner
-      attemptId={attemptId}
-      title={exam.title}
-      startedAt={attempt.started_at as string}
-      durationMinutes={exam.duration_minutes}
-      examEndTime={exam.end_time}
-      negativeMarking={exam.negative_marking}
-      shuffle={exam.shuffle_questions}
-      proctoring={exam.proctoring}
-      questions={(questions as RawQuestion[]) ?? []}
-      initialAnswers={initialAnswers}
-      initialTextAnswers={initialTextAnswers}
-      initialFlags={initialFlags}
-    />
+    <div className="mx-[calc(50%-50vw)] w-screen px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-6xl">
+        <ExamRunner
+          attemptId={attemptId}
+          title={exam.title}
+          startedAt={attempt.started_at as string}
+          durationMinutes={exam.duration_minutes}
+          examEndTime={exam.end_time}
+          negativeMarking={exam.negative_marking}
+          shuffle={exam.shuffle_questions}
+          proctoring={exam.proctoring}
+          questions={(questions as RawQuestion[]) ?? []}
+          initialAnswers={initialAnswers}
+          initialTextAnswers={initialTextAnswers}
+          initialFlags={initialFlags}
+        />
+      </div>
+    </div>
   );
 }
