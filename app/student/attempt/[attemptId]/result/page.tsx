@@ -77,9 +77,31 @@ export default async function ResultPage({
   const result = data as ResultData;
   const { exam, questions } = result;
 
-  const resultVisible = exam.result_visible !== false;
-  const showAnswers = exam.show_correct_answers === true;
-  const showExplanations = exam.show_explanations === true;
+  // Read the visibility settings straight from the exams table so admin's
+  // per-exam choices are respected regardless of the RPC version deployed.
+  const { data: attemptRow } = await supabase
+    .from("attempts")
+    .select("exam_id")
+    .eq("id", attemptId)
+    .maybeSingle();
+
+  let settings: {
+    show_correct_answers: boolean | null;
+    show_explanations: boolean | null;
+    result_visible: boolean | null;
+  } | null = null;
+  if (attemptRow?.exam_id) {
+    const { data: examSettings } = await supabase
+      .from("exams")
+      .select("show_correct_answers, show_explanations, result_visible")
+      .eq("id", attemptRow.exam_id)
+      .maybeSingle();
+    settings = examSettings;
+  }
+
+  const resultVisible = (settings?.result_visible ?? exam.result_visible) !== false;
+  const showAnswers = (settings?.show_correct_answers ?? exam.show_correct_answers) === true;
+  const showExplanations = (settings?.show_explanations ?? exam.show_explanations) === true;
 
   // Result not released by admin
   if (!resultVisible) {
