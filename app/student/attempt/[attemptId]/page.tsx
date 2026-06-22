@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import ExamRunner from "./ExamRunner";
+import { gradeAndSubmit } from "./actions";
 
 interface RawQuestion {
   id: string;
@@ -45,7 +46,7 @@ export default async function AttemptPage({
   );
 
   if (Date.now() >= deadline) {
-    await supabase.rpc("submit_attempt", { p_attempt_id: attemptId });
+    await gradeAndSubmit(attemptId);
     redirect(`/student/attempt/${attemptId}/result`);
   }
 
