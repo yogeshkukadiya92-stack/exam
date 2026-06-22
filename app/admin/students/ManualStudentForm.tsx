@@ -56,7 +56,7 @@ export default function ManualStudentForm({
   };
 
   return (
-    <form onSubmit={onSubmit} className="mb-5 space-y-4 rounded-xl border bg-white p-5">
+    <form onSubmit={onSubmit} autoComplete="off" className="mb-5 space-y-4 rounded-xl border bg-white p-5">
       <div className="flex items-center justify-between gap-3">
         <div>
           <h2 className="font-medium">Add student manually</h2>
@@ -76,6 +76,8 @@ export default function ManualStudentForm({
           onChange={(e) => setEmail(e.target.value)}
           type="email"
           required
+          autoComplete="off"
+          name="student-email"
           placeholder="Email"
           className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:border-gray-400"
         />
@@ -95,6 +97,8 @@ export default function ManualStudentForm({
           type="password"
           required
           minLength={6}
+          autoComplete="new-password"
+          name="student-password"
           placeholder="Password"
           className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:border-gray-400"
         />
