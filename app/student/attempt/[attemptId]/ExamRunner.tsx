@@ -377,17 +377,17 @@ export default function ExamRunner({
             <button
               disabled={idx === 0 || autoSubmitting}
               onClick={() => setIdx((i) => i - 1)}
-              className="btn-secondary flex items-center gap-1 disabled:opacity-40"
+              className="flex items-center gap-1 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-700 transition-all hover:bg-indigo-100 active:scale-[0.98] disabled:opacity-40 dark:border-indigo-800 dark:bg-indigo-950/40 dark:text-indigo-300 dark:hover:bg-indigo-900/50"
             >
               <ChevronLeft className="h-4 w-4" /> Prev
             </button>
             <button
               onClick={toggleFlag}
               disabled={autoSubmitting}
-              className={`flex items-center gap-1.5 rounded-xl border px-4 py-2 text-sm font-medium transition-all ${
+              className={`flex items-center gap-1.5 rounded-xl border px-4 py-2 text-sm font-semibold transition-all active:scale-[0.98] ${
                 flags[q.id]
-                  ? "border-amber-400 bg-amber-50 text-amber-700 dark:border-amber-600 dark:bg-amber-950/30 dark:text-amber-400"
-                  : "border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700/50"
+                  ? "border-amber-500 bg-amber-500 text-white shadow-sm hover:bg-amber-600 dark:border-amber-500"
+                  : "border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-300 dark:hover:bg-amber-900/50"
               } disabled:opacity-50`}
             >
               <Flag className="h-4 w-4" /> {flags[q.id] ? "Flagged" : "Review"}
@@ -404,7 +404,7 @@ export default function ExamRunner({
               <button
                 onClick={() => setIdx((i) => i + 1)}
                 disabled={autoSubmitting}
-                className="btn-secondary flex items-center gap-1"
+                className="flex items-center gap-1 rounded-xl bg-indigo-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:bg-indigo-700 active:scale-[0.98] disabled:opacity-50"
               >
                 Next <ChevronRight className="h-4 w-4" />
               </button>
