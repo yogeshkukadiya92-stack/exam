@@ -2,7 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import ExamForm from "./ExamForm";
 import ExamFilters from "./ExamFilters";
-import { FileText } from "lucide-react";
+import { Trash2 } from "lucide-react";
 
 export default async function ExamsPage() {
   const supabase = await createClient();
@@ -17,7 +17,13 @@ export default async function ExamsPage() {
     .select(
       "id, title, instructions, is_published, duration_minutes, pass_marks, negative_marking, shuffle_questions, proctoring, show_correct_answers, show_explanations, result_visible, max_attempts, start_time, end_time, course_id, batch_id, courses(name), batches(name), questions(count)"
     )
+    .is("deleted_at", null)
     .order("created_at", { ascending: false });
+
+  const { count: trashCount } = await supabase
+    .from("exams")
+    .select("id", { count: "exact", head: true })
+    .not("deleted_at", "is", null);
 
   const hasCourses = (courses?.length ?? 0) > 0;
 
@@ -61,11 +67,23 @@ export default async function ExamsPage() {
 
   return (
     <div>
-      <div className="mb-8">
-        <h1 className="page-title">Exams</h1>
-        <p className="mt-1 text-sm text-slate-500">
-          Create and manage your examinations
-        </p>
+      <div className="mb-8 flex items-start justify-between gap-4">
+        <div>
+          <h1 className="page-title">Exams</h1>
+          <p className="mt-1 text-sm text-slate-500">
+            Create and manage your examinations
+          </p>
+        </div>
+        <Link
+          href="/admin/exams/trash"
+          className="btn-secondary flex shrink-0 items-center gap-1.5 text-sm"
+        >
+          <Trash2 className="h-4 w-4" />
+          Trash
+          {(trashCount ?? 0) > 0 && (
+            <span className="badge bg-red-100 text-red-700">{trashCount}</span>
+          )}
+        </Link>
       </div>
 
       {hasCourses ? (

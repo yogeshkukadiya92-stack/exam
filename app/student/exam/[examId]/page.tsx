@@ -17,11 +17,11 @@ export default async function ExamIntro({
 
   const { data: exam } = await supabase
     .from("exams")
-    .select("id, title, instructions, duration_minutes, pass_marks, negative_marking, max_attempts, start_time, end_time, courses(name), batches(name), questions(count)")
+    .select("id, title, instructions, duration_minutes, pass_marks, negative_marking, max_attempts, start_time, end_time, deleted_at, courses(name), batches(name), questions(count)")
     .eq("id", examId)
     .single();
 
-  if (!exam) notFound();
+  if (!exam || exam.deleted_at) notFound();
 
   const qCount = (exam.questions as { count: number }[] | null)?.[0]?.count ?? 0;
   const course = (exam.courses as unknown as { name: string } | null)?.name;

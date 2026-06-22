@@ -23,6 +23,7 @@ export default async function StudentDashboard() {
         .select(
           "id, title, duration_minutes, negative_marking, pass_marks, max_attempts, courses(name), batches(name), questions(count)"
         )
+        .is("deleted_at", null)
         .order("created_at", { ascending: false }),
       supabase
         .from("attempts")

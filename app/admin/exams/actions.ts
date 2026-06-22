@@ -112,12 +112,36 @@ export async function updateExam(formData: FormData): Promise<{
   }
 }
 
+// Soft delete: exam ne Trash ma moklo (recover thai shake).
 export async function deleteExam(formData: FormData) {
   await requireAdmin();
   const id = formData.get("id") as string;
   const supabase = await createClient();
-  await supabase.from("exams").delete().eq("id", id);
+  await supabase
+    .from("exams")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", id);
   revalidatePath("/admin/exams");
+  revalidatePath("/admin/exams/trash");
+}
+
+// Trash mathi exam pacho restore karo.
+export async function restoreExam(formData: FormData) {
+  await requireAdmin();
+  const id = formData.get("id") as string;
+  const supabase = await createClient();
+  await supabase.from("exams").update({ deleted_at: null }).eq("id", id);
+  revalidatePath("/admin/exams");
+  revalidatePath("/admin/exams/trash");
+}
+
+// Kayma mate delete (Trash mathi). Aa pachi recover na thay.
+export async function permanentlyDeleteExam(formData: FormData) {
+  await requireAdmin();
+  const id = formData.get("id") as string;
+  const supabase = await createClient();
+  await supabase.from("exams").delete().eq("id", id);
+  revalidatePath("/admin/exams/trash");
 }
 
 export async function duplicateExam(formData: FormData) {

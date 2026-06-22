@@ -7,7 +7,7 @@ export default async function AdminDashboard() {
 
   const [courses, exams, students] = await Promise.all([
     supabase.from("courses").select("id", { count: "exact", head: true }),
-    supabase.from("exams").select("id", { count: "exact", head: true }),
+    supabase.from("exams").select("id", { count: "exact", head: true }).is("deleted_at", null),
     supabase
       .from("profiles")
       .select("id", { count: "exact", head: true })
