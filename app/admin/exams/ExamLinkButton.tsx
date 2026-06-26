@@ -3,14 +3,26 @@
 import { useState } from "react";
 import { Check, Link as LinkIcon } from "lucide-react";
 
-export default function ExamLinkButton({ examId }: { examId: string }) {
-  const [copied, setCopied] = useState(false);
+export default function ExamLinkButton({
+  examId,
+  isPublished,
+}: {
+  examId: string;
+  isPublished: boolean;
+}) {
+  const [status, setStatus] = useState<"idle" | "copied" | "blocked">("idle");
 
   const copyLink = async () => {
+    if (!isPublished) {
+      setStatus("blocked");
+      window.setTimeout(() => setStatus("idle"), 1800);
+      return;
+    }
+
     const link = `${window.location.origin}/student/exam/${examId}`;
     await navigator.clipboard.writeText(link);
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 1800);
+    setStatus("copied");
+    window.setTimeout(() => setStatus("idle"), 1800);
   };
 
   return (
@@ -18,11 +30,15 @@ export default function ExamLinkButton({ examId }: { examId: string }) {
       type="button"
       onClick={copyLink}
       className="btn-secondary flex items-center gap-1.5 text-xs"
-      title="Copy exam link"
+      title={isPublished ? "Copy exam link" : "Publish exam before sharing link"}
     >
-      {copied ? (
+      {status === "copied" ? (
         <>
           <Check className="h-3.5 w-3.5" /> Copied
+        </>
+      ) : status === "blocked" ? (
+        <>
+          <Check className="h-3.5 w-3.5" /> Publish first
         </>
       ) : (
         <>

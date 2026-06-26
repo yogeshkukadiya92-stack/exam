@@ -29,6 +29,9 @@ interface Exam {
   negative_marking: boolean;
   shuffle_questions: boolean;
   proctoring: boolean;
+  show_correct_answers: boolean;
+  show_explanations: boolean;
+  result_visible: boolean;
   max_attempts: number;
   start_time: string | null;
   end_time: string | null;
@@ -185,7 +188,7 @@ export default function ExamFilters({ exams, courses, batches }: Props) {
                   batches={batches}
                   currentBatchId={e.batch_id}
                 />
-                <ExamLinkButton examId={e.id} />
+                <ExamLinkButton examId={e.id} isPublished={e.is_published} />
                 <EditExamButton exam={e} courses={courses} />
                 <form action={togglePublish}>
                   <input type="hidden" name="id" value={e.id} />

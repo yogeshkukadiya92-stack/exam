@@ -1,8 +1,12 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { startAttempt } from "./actions";
 import { ArrowLeft, Clock, Target, RotateCcw, AlertTriangle, FileText, CheckCircle2 } from "lucide-react";
+
+interface AttemptSummary {
+  id: string;
+  status: string;
+}
 
 export default async function ExamIntro({
   params,
@@ -21,7 +25,9 @@ export default async function ExamIntro({
     .eq("id", examId)
     .single();
 
-  if (!exam || exam.deleted_at) notFound();
+  if (!exam || exam.deleted_at) {
+    return <ExamUnavailable />;
+  }
 
   const qCount = (exam.questions as { count: number }[] | null)?.[0]?.count ?? 0;
   const course = (exam.courses as unknown as { name: string } | null)?.name;
@@ -46,8 +52,9 @@ export default async function ExamIntro({
       .maybeSingle(),
   ]);
 
-  const inProgress = (myAttempts ?? []).find((a) => a.status === "in_progress");
-  const submittedAttempts = (myAttempts ?? []).filter((a) => a.status !== "in_progress");
+  const attempts = (myAttempts ?? []) as AttemptSummary[];
+  const inProgress = attempts.find((a) => a.status === "in_progress");
+  const submittedAttempts = attempts.filter((a) => a.status !== "in_progress");
   const lastSubmitted = submittedAttempts[0];
   const attemptLimit =
     (Number(exam.max_attempts) || 1) + (Number(override?.extra_attempts) || 0);
@@ -170,6 +177,34 @@ export default async function ExamIntro({
             </form>
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+function ExamUnavailable() {
+  return (
+    <div className="mx-auto max-w-lg">
+      <Link
+        href="/student"
+        className="mb-4 inline-flex items-center gap-1.5 text-sm text-slate-500 transition-colors hover:text-indigo-600"
+      >
+        <ArrowLeft className="h-4 w-4" /> My Exams
+      </Link>
+
+      <div className="card p-6 text-center">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-amber-50 dark:bg-amber-950/30">
+          <AlertTriangle className="h-7 w-7 text-amber-500" />
+        </div>
+        <h1 className="mt-4 text-lg font-semibold text-slate-900 dark:text-slate-100">
+          Exam link available nathi
+        </h1>
+        <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+          Aa exam draft hoy shake, delete thayu hoy shake, athva tame aa exam na batch ma enrolled nathi.
+        </p>
+        <Link href="/student" className="btn-primary mt-5 inline-flex">
+          My Exams par jao
+        </Link>
       </div>
     </div>
   );
