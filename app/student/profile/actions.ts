@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { requireStudent } from "@/lib/auth";
+import { normalizePhoneNumber } from "@/lib/phone";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -10,7 +11,12 @@ export async function updateProfile(formData: FormData) {
   const supabase = await createClient();
 
   const full_name = (formData.get("full_name") as string)?.trim() || null;
-  const phone = (formData.get("phone") as string)?.trim() || null;
+  const phoneRaw = (formData.get("phone") as string)?.trim();
+  const phone = phoneRaw ? normalizePhoneNumber(phoneRaw) : null;
+
+  if (phoneRaw && !phone) {
+    redirect("/student/profile?error=Valid mobile number aapo");
+  }
 
   await supabase
     .from("profiles")

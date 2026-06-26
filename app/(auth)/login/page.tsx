@@ -38,13 +38,13 @@ export default async function LoginPage({
             {next && <input type="hidden" name="next" value={next} />}
             <div>
               <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                Email
+                Email or mobile number
               </label>
               <input
-                name="email"
-                type="email"
+                name="identifier"
+                type="text"
                 required
-                placeholder="you@example.com"
+                placeholder="you@example.com or +91 9876543210"
                 className="input"
               />
             </div>

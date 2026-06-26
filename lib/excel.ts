@@ -1,4 +1,5 @@
 import * as XLSX from "xlsx";
+import { normalizePhoneNumber } from "./phone";
 
 /* ----------------------- Question Excel ----------------------- */
 
@@ -73,14 +74,15 @@ export interface ParsedStudent {
   row: number;
   full_name: string;
   email: string;
+  phone: string;
   password: string;
   error?: string;
 }
 
-const STUDENT_HEADERS = ["Name", "Email", "Password"];
+const STUDENT_HEADERS = ["Name", "Email", "Mobile", "Password"];
 
 export function downloadStudentTemplate() {
-  const example = ["Rahul Patel", "rahul@example.com", "pass1234"];
+  const example = ["Rahul Patel", "rahul@example.com", "+91 9876543210", "pass1234"];
   const ws = XLSX.utils.aoa_to_sheet([STUDENT_HEADERS, example]);
   ws["!cols"] = STUDENT_HEADERS.map((h) => ({ wch: Math.max(h.length, 16) }));
   const wb = XLSX.utils.book_new();
@@ -99,12 +101,14 @@ export async function parseStudentsFile(file: File): Promise<ParsedStudent[]> {
   return rows.map((r, i) => {
     const full_name = String(r["Name"] ?? "").trim();
     const email = String(r["Email"] ?? "").trim().toLowerCase();
+    const phone = String(r["Mobile"] ?? r["Phone"] ?? "").trim();
     const password = String(r["Password"] ?? "").trim();
 
     let error: string | undefined;
     if (!email || !email.includes("@")) error = "Email barabar nathi";
+    else if (!normalizePhoneNumber(phone)) error = "Mobile number barabar nathi";
     else if (password.length < 6) error = "Password ochama 6 char joiye";
 
-    return { row: i + 2, full_name, email, password, error };
+    return { row: i + 2, full_name, email, phone, password, error };
   });
 }

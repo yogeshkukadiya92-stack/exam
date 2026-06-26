@@ -32,7 +32,7 @@ export default function ManualStudentForm({
       const res = await createStudent({
         full_name: fullName.trim(),
         email: email.trim(),
-        phone: phone.trim() || null,
+        phone: phone.trim(),
         password,
         batchId: batchId || null,
       });
@@ -60,7 +60,7 @@ export default function ManualStudentForm({
       <div className="flex items-center justify-between gap-3">
         <div>
           <h2 className="font-medium">Add student manually</h2>
-          <p className="text-sm text-gray-500">New student account create karo and optional batch enroll karo.</p>
+          <p className="text-sm text-gray-500">New student account create karo, mobile login enable karo, ane optional batch enroll karo.</p>
         </div>
       </div>
 
@@ -88,6 +88,7 @@ export default function ManualStudentForm({
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
           type="tel"
+          required
           placeholder="Mobile number (e.g. +91 9876543210)"
           className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:border-gray-400"
         />

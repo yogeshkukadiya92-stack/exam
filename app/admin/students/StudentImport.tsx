@@ -43,6 +43,7 @@ export default function StudentImport({ batches }: { batches: BatchOption[] }) {
       valid.map((r) => ({
         full_name: r.full_name,
         email: r.email,
+        phone: r.phone,
         password: r.password,
       }))
     );
@@ -115,7 +116,7 @@ export default function StudentImport({ batches }: { batches: BatchOption[] }) {
         </select>
       </div>
 
-      <p className="text-xs text-gray-400">Columns: Name · Email · Password</p>
+      <p className="text-xs text-gray-400">Columns: Name - Email - Mobile - Password</p>
 
       {result && (
         <p className="rounded-md bg-emerald-50 p-2 text-sm text-emerald-700">
@@ -137,6 +138,7 @@ export default function StudentImport({ batches }: { batches: BatchOption[] }) {
                 <tr>
                   <th className="px-3 py-2 font-medium">Name</th>
                   <th className="px-3 py-2 font-medium">Email</th>
+                  <th className="px-3 py-2 font-medium">Mobile</th>
                   <th className="px-3 py-2 font-medium">Status</th>
                 </tr>
               </thead>
@@ -144,7 +146,8 @@ export default function StudentImport({ batches }: { batches: BatchOption[] }) {
                 {rows.map((r) => (
                   <tr key={r.row} className="border-t">
                     <td className="px-3 py-2">{r.full_name || "—"}</td>
-                    <td className="px-3 py-2 text-gray-600">{r.email || "—"}</td>
+                    <td className="px-3 py-2 text-gray-600">{r.email || "-"}</td>
+                    <td className="px-3 py-2 text-gray-600">{r.phone || "-"}</td>
                     <td className="px-3 py-2">
                       {r.error ? (
                         <span className="text-red-600">{r.error}</span>

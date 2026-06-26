@@ -2,8 +2,13 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Search, Users, Plus, X } from "lucide-react";
-import { assignStudentToBatch, removeStudentFromBatch } from "./actions";
+import { Check, Pencil, Plus, Search, Trash2, Users, X } from "lucide-react";
+import {
+  assignStudentToBatch,
+  deleteStudent,
+  removeStudentFromBatch,
+  updateStudent,
+} from "./actions";
 
 interface Student {
   id: string;
@@ -23,6 +28,16 @@ interface Enrollment {
   label: string;
 }
 
+interface EditValues {
+  full_name: string;
+  email: string;
+  phone: string;
+  password: string;
+}
+
+const editInput =
+  "w-full rounded-md border px-2.5 py-1.5 text-xs outline-none focus:border-slate-400";
+
 export default function StudentSearch({
   students,
   batches,
@@ -35,7 +50,15 @@ export default function StudentSearch({
   const router = useRouter();
   const [term, setTerm] = useState("");
   const [openFor, setOpenFor] = useState<string | null>(null);
+  const [editingFor, setEditingFor] = useState<string | null>(null);
+  const [confirmDeleteFor, setConfirmDeleteFor] = useState<string | null>(null);
   const [selectedBatch, setSelectedBatch] = useState("");
+  const [editValues, setEditValues] = useState<EditValues>({
+    full_name: "",
+    email: "",
+    phone: "",
+    password: "",
+  });
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ id: string; ok: boolean; text: string } | null>(null);
 
@@ -48,6 +71,23 @@ export default function StudentSearch({
       s.phone?.toLowerCase().includes(q)
     );
   });
+
+  const setEditValue = (key: keyof EditValues, value: string) => {
+    setEditValues((current) => ({ ...current, [key]: value }));
+  };
+
+  const startEdit = (student: Student) => {
+    setEditingFor(student.id);
+    setOpenFor(null);
+    setConfirmDeleteFor(null);
+    setMessage(null);
+    setEditValues({
+      full_name: student.full_name ?? "",
+      email: student.email ?? "",
+      phone: student.phone ?? "",
+      password: "",
+    });
+  };
 
   const assign = async (studentId: string) => {
     if (!selectedBatch) return;
@@ -72,13 +112,37 @@ export default function StudentSearch({
     if (res.ok) router.refresh();
   };
 
+  const saveEdit = async (studentId: string) => {
+    setBusy(true);
+    setMessage(null);
+    const res = await updateStudent({ id: studentId, ...editValues });
+    setBusy(false);
+    setMessage({ id: studentId, ok: res.ok, text: res.message });
+    if (res.ok) {
+      setEditingFor(null);
+      router.refresh();
+    }
+  };
+
+  const removeStudent = async (studentId: string) => {
+    setBusy(true);
+    setMessage(null);
+    const res = await deleteStudent(studentId);
+    setBusy(false);
+    setMessage({ id: studentId, ok: res.ok, text: res.message });
+    if (res.ok) {
+      setConfirmDeleteFor(null);
+      router.refresh();
+    }
+  };
+
   return (
     <div>
-      <div className="mb-6 relative">
+      <div className="relative mb-6">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
         <input
           type="text"
-          placeholder="Search by name or email..."
+          placeholder="Search by name, email or mobile..."
           value={term}
           onChange={(e) => setTerm(e.target.value)}
           className="input pl-9"
@@ -92,14 +156,14 @@ export default function StudentSearch({
               <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
                 Name
               </th>
-              <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
-                Email
+              <th className="hidden px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500 sm:table-cell">
+                Email / Mobile
               </th>
               <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
                 Batches / Courses
               </th>
               <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-500">
-                Assign
+                Actions
               </th>
             </tr>
           </thead>
@@ -108,13 +172,67 @@ export default function StudentSearch({
               const enrolled = enrollmentsByStudent[s.id] ?? [];
               const enrolledIds = new Set(enrolled.map((e) => e.batchId));
               const available = batches.filter((b) => !enrolledIds.has(b.id));
+              const isEditing = editingFor === s.id;
+
               return (
                 <tr key={s.id} className="align-top transition-colors hover:bg-slate-50/50">
                   <td className="px-5 py-3.5 font-medium text-slate-900">
-                    {s.full_name || "—"}
-                    <div className="text-xs font-normal text-slate-400 sm:hidden">{s.email}</div>
+                    {isEditing ? (
+                      <div className="space-y-2">
+                        <input
+                          value={editValues.full_name}
+                          onChange={(e) => setEditValue("full_name", e.target.value)}
+                          placeholder="Full name"
+                          className={editInput}
+                        />
+                        <input
+                          value={editValues.password}
+                          onChange={(e) => setEditValue("password", e.target.value)}
+                          type="password"
+                          minLength={6}
+                          placeholder="New password (optional)"
+                          className={editInput}
+                        />
+                      </div>
+                    ) : (
+                      <>
+                        {s.full_name || "-"}
+                        <div className="text-xs font-normal text-slate-400 sm:hidden">
+                          {s.email || "-"}
+                        </div>
+                        <div className="text-xs font-normal text-slate-400 sm:hidden">
+                          {s.phone || "-"}
+                        </div>
+                      </>
+                    )}
                   </td>
-                  <td className="hidden px-5 py-3.5 text-slate-500 sm:table-cell">{s.email}</td>
+                  <td className="hidden px-5 py-3.5 text-slate-500 sm:table-cell">
+                    {isEditing ? (
+                      <div className="space-y-2">
+                        <input
+                          value={editValues.email}
+                          onChange={(e) => setEditValue("email", e.target.value)}
+                          type="email"
+                          required
+                          placeholder="Email"
+                          className={editInput}
+                        />
+                        <input
+                          value={editValues.phone}
+                          onChange={(e) => setEditValue("phone", e.target.value)}
+                          type="tel"
+                          required
+                          placeholder="Mobile number"
+                          className={editInput}
+                        />
+                      </div>
+                    ) : (
+                      <div className="space-y-1">
+                        <div>{s.email || "-"}</div>
+                        <div className="text-xs text-slate-400">{s.phone || "-"}</div>
+                      </div>
+                    )}
+                  </td>
                   <td className="px-5 py-3.5">
                     {enrolled.length === 0 ? (
                       <span className="text-xs text-slate-400">No batch</span>
@@ -129,7 +247,7 @@ export default function StudentSearch({
                             <button
                               type="button"
                               onClick={() => remove(s.id, e.batchId)}
-                              disabled={busy}
+                              disabled={busy || isEditing}
                               className="text-indigo-400 hover:text-red-500 disabled:opacity-40"
                               title="Remove from batch"
                             >
@@ -140,13 +258,37 @@ export default function StudentSearch({
                       </div>
                     )}
                     {message?.id === s.id && (
-                      <p className={`mt-1.5 text-xs ${message.ok ? "text-emerald-600" : "text-red-600"}`}>
+                      <p
+                        className={`mt-1.5 text-xs ${
+                          message.ok ? "text-emerald-600" : "text-red-600"
+                        }`}
+                      >
                         {message.text}
                       </p>
                     )}
                   </td>
                   <td className="px-5 py-3.5 text-right">
-                    {openFor === s.id ? (
+                    {isEditing ? (
+                      <div className="flex flex-wrap items-center justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() => saveEdit(s.id)}
+                          disabled={busy}
+                          className="btn-primary inline-flex items-center gap-1.5 px-3 py-1.5 text-xs disabled:opacity-40"
+                        >
+                          <Check className="h-3.5 w-3.5" />
+                          {busy ? "Saving" : "Save"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditingFor(null)}
+                          className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100"
+                          title="Cancel edit"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ) : openFor === s.id ? (
                       <div className="flex flex-wrap items-center justify-end gap-2">
                         <select
                           value={selectedBatch}
@@ -175,25 +317,68 @@ export default function StudentSearch({
                             setSelectedBatch("");
                           }}
                           className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100"
+                          title="Cancel assign"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ) : confirmDeleteFor === s.id ? (
+                      <div className="flex flex-wrap items-center justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() => removeStudent(s.id)}
+                          disabled={busy}
+                          className="rounded-md bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-40"
+                        >
+                          {busy ? "Deleting" : "Confirm delete"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setConfirmDeleteFor(null)}
+                          className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100"
+                          title="Cancel delete"
                         >
                           <X className="h-4 w-4" />
                         </button>
                       </div>
                     ) : (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setOpenFor(s.id);
-                          setSelectedBatch("");
-                          setMessage(null);
-                        }}
-                        disabled={available.length === 0}
-                        className="btn-secondary inline-flex items-center gap-1.5 text-xs disabled:opacity-40"
-                        title={available.length === 0 ? "All batches assigned" : "Assign batch / course"}
-                      >
-                        <Plus className="h-3.5 w-3.5" />
-                        Assign
-                      </button>
+                      <div className="flex flex-wrap items-center justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setOpenFor(s.id);
+                            setSelectedBatch("");
+                            setMessage(null);
+                            setConfirmDeleteFor(null);
+                          }}
+                          disabled={available.length === 0}
+                          className="btn-secondary inline-flex items-center gap-1.5 text-xs disabled:opacity-40"
+                          title={available.length === 0 ? "All batches assigned" : "Assign batch / course"}
+                        >
+                          <Plus className="h-3.5 w-3.5" />
+                          Assign
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => startEdit(s)}
+                          className="rounded-lg border p-1.5 text-slate-500 hover:bg-slate-100"
+                          title="Edit student"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setConfirmDeleteFor(s.id);
+                            setOpenFor(null);
+                            setMessage(null);
+                          }}
+                          className="rounded-lg border p-1.5 text-slate-500 hover:bg-red-50 hover:text-red-600"
+                          title="Delete student"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
                     )}
                   </td>
                 </tr>
