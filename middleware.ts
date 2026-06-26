@@ -45,7 +45,7 @@ export async function middleware(request: NextRequest) {
   const isProtected =
     path.startsWith("/admin") || path.startsWith("/student");
 
-  // Not logged in -> protected page par jay to login par moklo
+  // Not logged in -> redirect protected pages to login.
   if (!user && isProtected) {
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set(
@@ -55,7 +55,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // Logged in -> login page par jay to redirect (role pachi handle thase)
+  // Logged in -> redirect away from auth pages; role routing happens later.
   if (user && isAuthPage) {
     return NextResponse.redirect(new URL("/", request.url));
   }

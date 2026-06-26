@@ -23,7 +23,7 @@ export async function login(formData: FormData) {
   } else {
     const phone = normalizePhoneNumber(identifier);
     if (!phone) {
-      redirect("/login?error=" + encodeURIComponent("Valid email athva mobile number aapo."));
+      redirect("/login?error=" + encodeURIComponent("Enter a valid email or mobile number."));
     }
 
     const phoneResult = await supabase.auth.signInWithPassword({ phone, password });
@@ -78,7 +78,7 @@ export async function signup(formData: FormData) {
   const phone = phoneRaw ? normalizePhoneNumber(phoneRaw) : null;
 
   if (phoneRaw && !phone) {
-    redirect("/signup?error=" + encodeURIComponent("Valid mobile number aapo."));
+    redirect("/signup?error=" + encodeURIComponent("Enter a valid mobile number."));
   }
 
   const supabase = await createClient();
@@ -98,7 +98,7 @@ export async function signup(formData: FormData) {
     await syncSignupPhone(data.user.id, email, fullName, phone);
   }
 
-  redirect("/login?message=" + encodeURIComponent("Account banyu! Have login karo."));
+  redirect("/login?message=" + encodeURIComponent("Account created. You can sign in now."));
 }
 
 async function syncSignupPhone(userId: string, email: string, fullName: string, phone: string) {

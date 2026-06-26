@@ -38,7 +38,7 @@ export default function ManualStudentForm({
       });
 
       setOk(res.ok);
-      setMessage(formatMessage(res.message, "Student create karva ma problem aavi."));
+      setMessage(formatMessage(res.message, "Unable to create student."));
 
       if (res.ok) {
         setFullName("");
@@ -49,7 +49,7 @@ export default function ManualStudentForm({
       }
     } catch (error) {
       setOk(false);
-      setMessage(formatMessage(error, "Student create karva ma problem aavi."));
+      setMessage(formatMessage(error, "Unable to create student."));
     } finally {
       setBusy(false);
     }
@@ -60,7 +60,7 @@ export default function ManualStudentForm({
       <div className="flex items-center justify-between gap-3">
         <div>
           <h2 className="font-medium">Add student manually</h2>
-          <p className="text-sm text-gray-500">New student account create karo, mobile login enable karo, ane optional batch enroll karo.</p>
+          <p className="text-sm text-gray-500">Create a student account, enable mobile login, and optionally enroll the student in a batch.</p>
         </div>
       </div>
 
@@ -111,7 +111,7 @@ export default function ManualStudentForm({
           onChange={(e) => setBatchId(e.target.value)}
           className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:border-gray-400"
         >
-          <option value="">No batch enroll</option>
+          <option value="">Do not enroll in a batch</option>
           {batches.map((b) => (
             <option key={b.id} value={b.id}>
               {b.label}

@@ -27,7 +27,7 @@ export default async function CertificatePage({
   const score = result.total_score ?? 0;
   const passed = score >= result.exam.pass_marks;
 
-  // pass na thaya hoy to certificate nathi
+  // Do not show a certificate unless the student passed.
   if (!passed) redirect(`/student/attempt/${attemptId}/result`);
 
   const name = profile?.full_name || profile?.email || "Student";

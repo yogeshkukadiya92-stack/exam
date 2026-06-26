@@ -197,13 +197,13 @@ function ExamUnavailable() {
           <AlertTriangle className="h-7 w-7 text-amber-500" />
         </div>
         <h1 className="mt-4 text-lg font-semibold text-slate-900 dark:text-slate-100">
-          Exam link available nathi
+          Exam link is not available
         </h1>
         <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-          Aa exam draft hoy shake, delete thayu hoy shake, athva tame aa exam na batch ma enrolled nathi.
+          This exam may be a draft, deleted, or not assigned to your batch.
         </p>
         <Link href="/student" className="btn-primary mt-5 inline-flex">
-          My Exams par jao
+          Go to My Exams
         </Link>
       </div>
     </div>

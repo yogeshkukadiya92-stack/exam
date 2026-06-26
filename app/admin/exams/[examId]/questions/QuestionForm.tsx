@@ -30,14 +30,14 @@ export default function QuestionForm({ examId }: { examId: string }) {
       id="qform"
       className="mb-6 space-y-4 rounded-xl border bg-white p-5"
     >
-      <h2 className="font-medium">Question add karo</h2>
+      <h2 className="font-medium">Add question</h2>
       <input type="hidden" name="exam_id" value={examId} />
 
       <textarea
         name="question_text"
         required
         rows={2}
-        placeholder="Question lakho…"
+        placeholder="Write the question..."
         className={input}
       />
 
@@ -46,9 +46,9 @@ export default function QuestionForm({ examId }: { examId: string }) {
         <select
           name="type"
           value={type}
-            onChange={(e) => setType(e.target.value)}
-            className="rounded-md border px-2 py-1.5 text-sm"
-          >
+          onChange={(e) => setType(e.target.value)}
+          className="rounded-md border px-2 py-1.5 text-sm"
+        >
           <option value="single">Single correct</option>
           <option value="multiple">Multiple correct</option>
           <option value="true_false">True / False</option>
@@ -58,10 +58,10 @@ export default function QuestionForm({ examId }: { examId: string }) {
         </select>
         <span className="text-xs text-gray-400">
           {type === "single"
-            ? "(faqt ek option correct mark karo)"
+            ? "(mark exactly one correct option)"
             : type === "multiple"
-            ? "(ek thi vadhare correct mark kari shako)"
-            : "(text/numerical answer mate correct text niche lakho)"}
+            ? "(you can mark more than one correct option)"
+            : "(enter the correct text below for text or numerical answers)"}
         </span>
       </div>
 
@@ -85,7 +85,7 @@ export default function QuestionForm({ examId }: { examId: string }) {
           </div>
         ))}
         <p className="text-xs text-gray-400">
-          Checkbox = correct answer. Ochama 2 option + 1 correct joiye.
+          Checkbox = correct answer. Add at least 2 options and 1 correct answer.
         </p>
       </div>
       )}
@@ -137,7 +137,7 @@ export default function QuestionForm({ examId }: { examId: string }) {
         <textarea
           name="explanation"
           rows={2}
-          placeholder="Review vakhate dekhase…"
+          placeholder="Shown during review..."
           className={input}
         />
       </div>

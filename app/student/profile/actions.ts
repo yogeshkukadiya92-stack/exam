@@ -15,7 +15,7 @@ export async function updateProfile(formData: FormData) {
   const phone = phoneRaw ? normalizePhoneNumber(phoneRaw) : null;
 
   if (phoneRaw && !phone) {
-    redirect("/student/profile?error=Valid mobile number aapo");
+    redirect("/student/profile?error=Enter a valid mobile number");
   }
 
   await supabase

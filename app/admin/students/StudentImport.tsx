@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useRef, useState } from "react";
 import {
   downloadStudentTemplate,
   parseStudentsFile,
@@ -10,7 +10,7 @@ import { bulkImportStudents } from "./actions";
 
 interface BatchOption {
   id: string;
-  label: string; // "Course — Batch"
+  label: string;
 }
 
 export default function StudentImport({ batches }: { batches: BatchOption[] }) {
@@ -31,7 +31,7 @@ export default function StudentImport({ batches }: { batches: BatchOption[] }) {
     try {
       setRows(await parseStudentsFile(file));
     } catch {
-      setResult("File read na thai. .xlsx athva .csv aapo.");
+      setResult("Could not read the file. Upload an .xlsx or .csv file.");
     }
   };
 
@@ -49,8 +49,8 @@ export default function StudentImport({ batches }: { batches: BatchOption[] }) {
     );
     setBusy(false);
     setResult(
-      `${res.created} student banya · ${res.enrolled} batch ma enroll` +
-        (res.failed ? ` · ${res.failed} fail` : "")
+      `${res.created} students created - ${res.enrolled} enrolled in batch` +
+        (res.failed ? ` - ${res.failed} failed` : "")
     );
     setRows(null);
     if (fileRef.current) fileRef.current.value = "";
@@ -62,7 +62,7 @@ export default function StudentImport({ batches }: { batches: BatchOption[] }) {
         onClick={() => setOpen(true)}
         className="rounded-md bg-gray-900 px-3 py-2 text-sm font-medium text-white hover:bg-gray-800"
       >
-        📥 Bulk import (Excel)
+        Bulk import (Excel)
       </button>
     );
   }
@@ -73,9 +73,13 @@ export default function StudentImport({ batches }: { batches: BatchOption[] }) {
   return (
     <div className="mb-5 space-y-3 rounded-xl border bg-white p-5">
       <div className="flex items-center justify-between">
-        <h2 className="font-medium">Students bulk import</h2>
+        <h2 className="font-medium">Bulk import students</h2>
         <button
-          onClick={() => { setOpen(false); setRows(null); setResult(null); }}
+          onClick={() => {
+            setOpen(false);
+            setRows(null);
+            setResult(null);
+          }}
           className="text-sm text-gray-500 hover:text-gray-900"
         >
           Close
@@ -87,7 +91,7 @@ export default function StudentImport({ batches }: { batches: BatchOption[] }) {
           onClick={downloadStudentTemplate}
           className="rounded-md border px-3 py-1.5 text-sm hover:bg-gray-100"
         >
-          ⬇ Template download
+          Download template
         </button>
         <input
           ref={fileRef}
@@ -100,14 +104,14 @@ export default function StudentImport({ batches }: { batches: BatchOption[] }) {
 
       <div>
         <label className="mb-1 block text-sm font-medium">
-          Batch ma enroll karo (optional)
+          Enroll in batch (optional)
         </label>
         <select
           value={batchId}
           onChange={(e) => setBatchId(e.target.value)}
           className={input}
         >
-          <option value="">— Koi batch nahi —</option>
+          <option value="">No batch</option>
           {batches.map((b) => (
             <option key={b.id} value={b.id}>
               {b.label}
@@ -129,7 +133,7 @@ export default function StudentImport({ batches }: { batches: BatchOption[] }) {
           <p className="mb-2 text-sm">
             <span className="text-emerald-700">{valid.length} valid</span>
             {invalid.length > 0 && (
-              <span className="text-red-600"> · {invalid.length} ma error</span>
+              <span className="text-red-600"> - {invalid.length} errors</span>
             )}
           </p>
           <div className="max-h-72 overflow-auto rounded-lg border">
@@ -145,7 +149,7 @@ export default function StudentImport({ batches }: { batches: BatchOption[] }) {
               <tbody>
                 {rows.map((r) => (
                   <tr key={r.row} className="border-t">
-                    <td className="px-3 py-2">{r.full_name || "—"}</td>
+                    <td className="px-3 py-2">{r.full_name || "-"}</td>
                     <td className="px-3 py-2 text-gray-600">{r.email || "-"}</td>
                     <td className="px-3 py-2 text-gray-600">{r.phone || "-"}</td>
                     <td className="px-3 py-2">
@@ -165,7 +169,7 @@ export default function StudentImport({ batches }: { batches: BatchOption[] }) {
             onClick={submit}
             className="mt-3 rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-40"
           >
-            {busy ? "Importing…" : `Import ${valid.length} students`}
+            {busy ? "Importing..." : `Import ${valid.length} students`}
           </button>
         </div>
       )}

@@ -30,16 +30,16 @@ export async function addQuestion(formData: FormData): Promise<{
     const examId = formData.get("exam_id") as string;
     const questionText = (formData.get("question_text") as string)?.trim();
     const type = (formData.get("type") as string) || "single";
-  const marks = Number(formData.get("marks")) || 1;
-  const negativeMarks = Number(formData.get("negative_marks")) || 0;
-  const explanation = (formData.get("explanation") as string)?.trim() || null;
-  const correctText = (formData.get("correct_text") as string)?.trim() || null;
+    const marks = Number(formData.get("marks")) || 1;
+    const negativeMarks = Number(formData.get("negative_marks")) || 0;
+    const explanation = (formData.get("explanation") as string)?.trim() || null;
+    const correctText = (formData.get("correct_text") as string)?.trim() || null;
 
     if (!examId || !questionText) {
-      return { ok: false, message: "Question text required chhe." };
+      return { ok: false, message: "Question text is required." };
     }
 
-    // Options aave che: option_0..option_3, correct_0..correct_3
+    // Options arrive as option_0..option_3 and correct_0..correct_3.
     const options: { option_text: string; is_correct: boolean; position: number }[] =
       [];
     for (let i = 0; i < 4; i++) {
@@ -55,16 +55,16 @@ export async function addQuestion(formData: FormData): Promise<{
     const isMcq = type === "single" || type === "multiple" || type === "true_false";
 
     if (isMcq && options.length < 2) {
-      return { ok: false, message: "Ochama 2 options add karo." };
+      return { ok: false, message: "Add at least 2 options." };
     }
     if (isMcq && !options.some((o) => o.is_correct)) {
-      return { ok: false, message: "Ochama 1 correct option select karo." };
+      return { ok: false, message: "Select at least 1 correct option." };
     }
     if (!isMcq && type !== "descriptive" && !correctText) {
-      return { ok: false, message: "Correct answer required chhe." };
+      return { ok: false, message: "Correct answer is required." };
     }
 
-    // 1) question insert
+    // 1) Insert question.
     const { data: q, error } = await supabase
       .from("questions")
       .insert({
@@ -82,11 +82,11 @@ export async function addQuestion(formData: FormData): Promise<{
     if (error || !q) {
       return {
         ok: false,
-        message: `Question save fail: ${toMessage(error, "Unknown error")}`,
+        message: `Question save failed: ${toMessage(error, "Unknown error")}`,
       };
     }
 
-    // 2) options insert
+    // 2) Insert options.
     if (options.length > 0) {
       const { error: optionsError } = await supabase
         .from("options")
@@ -96,17 +96,17 @@ export async function addQuestion(formData: FormData): Promise<{
         await supabase.from("questions").delete().eq("id", q.id);
         return {
           ok: false,
-          message: `Options save fail: ${toMessage(optionsError, "Unknown error")}`,
+          message: `Options save failed: ${toMessage(optionsError, "Unknown error")}`,
         };
       }
     }
 
     revalidatePath(`/admin/exams/${examId}/questions`);
-    return { ok: true, message: "Question add thai gayo." };
+    return { ok: true, message: "Question added successfully." };
   } catch (error) {
     return {
       ok: false,
-      message: toMessage(error, "Question add karva ma problem aavi."),
+      message: toMessage(error, "Unable to add question."),
     };
   }
 }
@@ -187,7 +187,7 @@ export async function updateQuestion(formData: FormData): Promise<{
     const correctText = (formData.get("correct_text") as string)?.trim() || null;
 
     if (!id || !examId || !questionText) {
-      return { ok: false, message: "Question text required chhe." };
+      return { ok: false, message: "Question text is required." };
     }
 
     const options: { option_text: string; is_correct: boolean; position: number }[] =
@@ -205,16 +205,16 @@ export async function updateQuestion(formData: FormData): Promise<{
     const isMcq = type === "single" || type === "multiple" || type === "true_false";
 
     if (isMcq && options.length < 2) {
-      return { ok: false, message: "Ochama 2 options add karo." };
+      return { ok: false, message: "Add at least 2 options." };
     }
     if (isMcq && !options.some((o) => o.is_correct)) {
-      return { ok: false, message: "Ochama 1 correct option select karo." };
+      return { ok: false, message: "Select at least 1 correct option." };
     }
     if (!isMcq && type !== "descriptive" && !correctText) {
-      return { ok: false, message: "Correct answer required chhe." };
+      return { ok: false, message: "Correct answer is required." };
     }
 
-    // 1) question update
+    // 1) Update question.
     const { error } = await supabase
       .from("questions")
       .update({
@@ -230,11 +230,11 @@ export async function updateQuestion(formData: FormData): Promise<{
     if (error) {
       return {
         ok: false,
-        message: `Question update fail: ${toMessage(error, "Unknown error")}`,
+        message: `Question update failed: ${toMessage(error, "Unknown error")}`,
       };
     }
 
-    // 2) replace options
+    // 2) Replace options.
     await supabase.from("options").delete().eq("question_id", id);
     if (options.length > 0) {
       const { error: optionsError } = await supabase
@@ -244,17 +244,17 @@ export async function updateQuestion(formData: FormData): Promise<{
       if (optionsError) {
         return {
           ok: false,
-          message: `Options save fail: ${toMessage(optionsError, "Unknown error")}`,
+          message: `Options save failed: ${toMessage(optionsError, "Unknown error")}`,
         };
       }
     }
 
     revalidatePath(`/admin/exams/${examId}/questions`);
-    return { ok: true, message: "Question update thai gayo." };
+    return { ok: true, message: "Question updated successfully." };
   } catch (error) {
     return {
       ok: false,
-      message: toMessage(error, "Question update karva ma problem aavi."),
+      message: toMessage(error, "Unable to update question."),
     };
   }
 }

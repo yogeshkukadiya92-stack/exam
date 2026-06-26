@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useRef, useState } from "react";
 import {
   downloadQuestionTemplate,
   parseQuestionsFile,
@@ -25,7 +25,7 @@ export default function ExcelQuestionUpload({ examId }: { examId: string }) {
     try {
       setRows(await parseQuestionsFile(file));
     } catch {
-      setResult("File read na thai. .xlsx athva .csv aapo.");
+      setResult("Could not read the file. Upload an .xlsx or .csv file.");
     }
   };
 
@@ -44,7 +44,9 @@ export default function ExcelQuestionUpload({ examId }: { examId: string }) {
       }))
     );
     setBusy(false);
-    setResult(`${res.added} questions add thaya${res.failed ? `, ${res.failed} fail` : ""}.`);
+    setResult(
+      `${res.added} questions added${res.failed ? `, ${res.failed} failed` : ""}.`
+    );
     setRows(null);
     if (fileRef.current) fileRef.current.value = "";
   };
@@ -55,7 +57,7 @@ export default function ExcelQuestionUpload({ examId }: { examId: string }) {
         onClick={() => setOpen(true)}
         className="mb-3 rounded-md border px-3 py-2 text-sm hover:bg-gray-100"
       >
-        📥 Excel thi bulk upload
+        Bulk upload from Excel
       </button>
     );
   }
@@ -63,9 +65,13 @@ export default function ExcelQuestionUpload({ examId }: { examId: string }) {
   return (
     <div className="mb-5 space-y-3 rounded-xl border bg-white p-5">
       <div className="flex items-center justify-between">
-        <h2 className="font-medium">Excel thi questions upload</h2>
+        <h2 className="font-medium">Upload questions from Excel</h2>
         <button
-          onClick={() => { setOpen(false); setRows(null); setResult(null); }}
+          onClick={() => {
+            setOpen(false);
+            setRows(null);
+            setResult(null);
+          }}
           className="text-sm text-gray-500 hover:text-gray-900"
         >
           Close
@@ -77,7 +83,7 @@ export default function ExcelQuestionUpload({ examId }: { examId: string }) {
           onClick={downloadQuestionTemplate}
           className="rounded-md border px-3 py-1.5 text-sm hover:bg-gray-100"
         >
-          ⬇ Template download
+          Download template
         </button>
         <input
           ref={fileRef}
@@ -89,7 +95,7 @@ export default function ExcelQuestionUpload({ examId }: { examId: string }) {
       </div>
 
       <p className="text-xs text-gray-400">
-        Columns: Question · OptionA–D · CorrectAnswer (A/B/C/D, multiple mate "A,C") · Marks · NegativeMarks
+        Columns: Question - OptionA-D - CorrectAnswer (A/B/C/D, use "A,C" for multiple) - Marks - NegativeMarks
       </p>
 
       {result && (
@@ -101,7 +107,7 @@ export default function ExcelQuestionUpload({ examId }: { examId: string }) {
           <p className="mb-2 text-sm">
             <span className="text-emerald-700">{valid.length} valid</span>
             {invalid.length > 0 && (
-              <span className="text-red-600"> · {invalid.length} ma error</span>
+              <span className="text-red-600"> - {invalid.length} errors</span>
             )}
           </p>
 
@@ -120,9 +126,9 @@ export default function ExcelQuestionUpload({ examId }: { examId: string }) {
                 {rows.map((r) => (
                   <tr key={r.row} className="border-t">
                     <td className="px-3 py-2 text-gray-400">{r.row}</td>
-                    <td className="px-3 py-2">{r.question_text || "—"}</td>
+                    <td className="px-3 py-2">{r.question_text || "-"}</td>
                     <td className="px-3 py-2">
-                      {r.correct.map((i) => String.fromCharCode(65 + i)).join(", ") || "—"}
+                      {r.correct.map((i) => String.fromCharCode(65 + i)).join(", ") || "-"}
                     </td>
                     <td className="px-3 py-2">
                       +{r.marks}
@@ -146,7 +152,7 @@ export default function ExcelQuestionUpload({ examId }: { examId: string }) {
             onClick={submit}
             className="mt-3 rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-40"
           >
-            {busy ? "Adding…" : `Add ${valid.length} questions`}
+            {busy ? "Adding..." : `Add ${valid.length} questions`}
           </button>
         </div>
       )}

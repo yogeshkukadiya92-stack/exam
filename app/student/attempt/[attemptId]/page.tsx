@@ -12,6 +12,13 @@ interface RawQuestion {
   options: { id: string; option_text: string }[];
 }
 
+interface SavedAnswerRow {
+  question_id: string;
+  selected_option_ids: string[] | null;
+  text_answer: string | null;
+  marked_for_review: boolean | null;
+}
+
 export default async function AttemptPage({
   params,
 }: {
@@ -55,7 +62,7 @@ export default async function AttemptPage({
     p_attempt_id: attemptId,
   });
 
-  // Existing answers (resume mate)
+  // Existing answers for resume.
   const { data: saved } = await supabase
     .from("answers")
     .select("question_id, selected_option_ids, text_answer, marked_for_review")
@@ -64,7 +71,7 @@ export default async function AttemptPage({
   const initialAnswers: Record<string, string[]> = {};
   const initialTextAnswers: Record<string, string> = {};
   const initialFlags: Record<string, boolean> = {};
-  saved?.forEach((a) => {
+  (saved as SavedAnswerRow[] | null)?.forEach((a) => {
     initialAnswers[a.question_id] = (a.selected_option_ids as string[]) ?? [];
     if (a.text_answer) initialTextAnswers[a.question_id] = a.text_answer;
     if (a.marked_for_review) initialFlags[a.question_id] = true;

@@ -4,6 +4,15 @@ import { createClient } from "@/lib/supabase/server";
 import { restoreExam } from "../actions";
 import ConfirmDeleteButton from "./ConfirmDeleteButton";
 
+interface TrashedExamRow {
+  id: string;
+  title: string;
+  deleted_at: string | null;
+  courses: unknown;
+  batches: unknown;
+  questions: unknown;
+}
+
 export default async function ExamTrashPage() {
   const supabase = await createClient();
 
@@ -14,7 +23,7 @@ export default async function ExamTrashPage() {
     .order("deleted_at", { ascending: false });
 
   const list =
-    exams?.map((e) => ({
+    (exams as TrashedExamRow[] | null)?.map((e) => ({
       id: e.id,
       title: e.title,
       deleted_at: e.deleted_at as string | null,
@@ -35,7 +44,7 @@ export default async function ExamTrashPage() {
       <div className="mb-8">
         <h1 className="page-title">Trash</h1>
         <p className="mt-1 text-sm text-slate-500">
-          Deleted exams. Restore karo athva kayma mate remove karo.
+          Deleted exams. Restore them or remove them permanently.
         </p>
       </div>
 
@@ -43,7 +52,7 @@ export default async function ExamTrashPage() {
         {list.length === 0 && (
           <div className="card p-12 text-center">
             <Trash2 className="mx-auto h-10 w-10 text-slate-300" />
-            <p className="mt-3 text-sm text-slate-500">Trash khali che.</p>
+            <p className="mt-3 text-sm text-slate-500">Trash is empty.</p>
           </div>
         )}
 

@@ -98,7 +98,7 @@ export default function EditQuestionButton({
               required
               rows={2}
               defaultValue={question.question_text}
-              placeholder="Question lakho…"
+              placeholder="Write the question..."
               className={input}
             />
 
@@ -142,7 +142,7 @@ export default function EditQuestionButton({
                   );
                 })}
                 <p className="text-xs text-gray-400">
-                  Checkbox = correct answer. Ochama 2 option + 1 correct joiye.
+                  Checkbox = correct answer. Add at least 2 options and 1 correct answer.
                 </p>
               </div>
             )}
@@ -194,7 +194,7 @@ export default function EditQuestionButton({
                 name="explanation"
                 rows={2}
                 defaultValue={question.explanation ?? ""}
-                placeholder="Review vakhate dekhase…"
+                placeholder="Shown during review..."
                 className={input}
               />
             </div>

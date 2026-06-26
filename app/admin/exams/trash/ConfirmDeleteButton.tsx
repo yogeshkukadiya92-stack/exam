@@ -16,7 +16,7 @@ export default function ConfirmDeleteButton({
       onSubmit={(e) => {
         if (
           !window.confirm(
-            `"${title}" kayma mate delete karva che? Aa pachi recover nahi thay.`
+            `Delete "${title}" permanently? This cannot be recovered.`
           )
         ) {
           e.preventDefault();

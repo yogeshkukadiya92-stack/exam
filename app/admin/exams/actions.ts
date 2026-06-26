@@ -71,7 +71,7 @@ export async function updateExam(formData: FormData): Promise<{
     const courseId = formData.get("course_id") as string;
     const batchId = formData.get("batch_id") as string;
     if (!id || !title || !courseId || !batchId) {
-      return { ok: false, message: "Title, course ane batch required chhe." };
+      return { ok: false, message: "Title, course, and batch are required." };
     }
 
     const startRaw = formData.get("start_time") as string;
@@ -99,20 +99,20 @@ export async function updateExam(formData: FormData): Promise<{
       .eq("id", id);
 
     if (error) {
-      return { ok: false, message: `Exam save fail: ${toMessage(error, "Unknown error")}` };
+      return { ok: false, message: `Exam save failed: ${toMessage(error, "Unknown error")}` };
     }
 
     revalidatePath("/admin/exams");
-    return { ok: true, message: "Exam update thai gayu." };
+    return { ok: true, message: "Exam updated successfully." };
   } catch (error) {
     return {
       ok: false,
-      message: toMessage(error, "Exam save karva ma problem aavi."),
+      message: toMessage(error, "Unable to save exam."),
     };
   }
 }
 
-// Soft delete: exam ne Trash ma moklo (recover thai shake).
+// Soft delete: move the exam to Trash so it can be restored.
 export async function deleteExam(formData: FormData) {
   await requireAdmin();
   const id = formData.get("id") as string;
@@ -125,7 +125,7 @@ export async function deleteExam(formData: FormData) {
   revalidatePath("/admin/exams/trash");
 }
 
-// Trash mathi exam pacho restore karo.
+// Restore an exam from Trash.
 export async function restoreExam(formData: FormData) {
   await requireAdmin();
   const id = formData.get("id") as string;
@@ -135,7 +135,7 @@ export async function restoreExam(formData: FormData) {
   revalidatePath("/admin/exams/trash");
 }
 
-// Kayma mate delete (Trash mathi). Aa pachi recover na thay.
+// Permanently delete an exam from Trash. This cannot be undone.
 export async function permanentlyDeleteExam(formData: FormData) {
   await requireAdmin();
   const id = formData.get("id") as string;

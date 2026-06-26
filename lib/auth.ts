@@ -31,7 +31,7 @@ export async function getProfile(): Promise<Profile | null> {
 
   if (data) return data as Profile;
 
-  // Profile row nathi — auto-create from auth metadata
+  // Profile row is missing, so auto-create it from auth metadata.
   const meta = user.user_metadata ?? {};
   const newProfile: Profile = {
     id: user.id,

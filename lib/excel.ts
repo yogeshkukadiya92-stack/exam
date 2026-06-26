@@ -49,7 +49,7 @@ export async function parseQuestionsFile(file: File): Promise<ParsedQuestion[]> 
     const opts = [get("OptionA"), get("OptionB"), get("OptionC"), get("OptionD")];
     const options = opts.filter(Boolean);
 
-    // CorrectAnswer: "B" athva "A,C" athva "AC"
+    // CorrectAnswer: "B", "A,C", or "AC".
     const correctRaw = get("CorrectAnswer").toUpperCase().replace(/[^A-D]/g, "");
     const correct = [...correctRaw]
       .map((ch) => LETTER_TO_INDEX[ch])
@@ -60,9 +60,9 @@ export async function parseQuestionsFile(file: File): Promise<ParsedQuestion[]> 
     const type = correct.length > 1 ? "multiple" : "single";
 
     let error: string | undefined;
-    if (!question_text) error = "Question khali che";
-    else if (options.length < 2) error = "Ochama 2 option joiye";
-    else if (correct.length === 0) error = "CorrectAnswer barabar nathi (A/B/C/D)";
+    if (!question_text) error = "Question is required";
+    else if (options.length < 2) error = "Add at least 2 options";
+    else if (correct.length === 0) error = "CorrectAnswer must be A/B/C/D";
 
     return { row: i + 2, question_text, options, correct, marks, negative_marks, type, error };
   });
@@ -105,9 +105,9 @@ export async function parseStudentsFile(file: File): Promise<ParsedStudent[]> {
     const password = String(r["Password"] ?? "").trim();
 
     let error: string | undefined;
-    if (!email || !email.includes("@")) error = "Email barabar nathi";
-    else if (!normalizePhoneNumber(phone)) error = "Mobile number barabar nathi";
-    else if (password.length < 6) error = "Password ochama 6 char joiye";
+    if (!email || !email.includes("@")) error = "Enter a valid email";
+    else if (!normalizePhoneNumber(phone)) error = "Enter a valid mobile number";
+    else if (password.length < 6) error = "Password must be at least 6 characters";
 
     return { row: i + 2, full_name, email, phone, password, error };
   });

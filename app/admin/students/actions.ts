@@ -60,9 +60,9 @@ function toMessage(error: unknown, fallback: string) {
 }
 
 function createUserMessage(error: unknown) {
-  const message = toMessage(error, "Student banavta problem aavi.");
+  const message = toMessage(error, "Unable to create student.");
   if (message.toLowerCase().includes("invalid api key")) {
-    return "Invalid API key: Railway ma SUPABASE_SERVICE_ROLE_KEY ni value Supabase Project Settings > API mathi service_role key sathe replace karo.";
+    return "Invalid API key: replace SUPABASE_SERVICE_ROLE_KEY in Railway with the service_role key from Supabase Project Settings > API.";
   }
   return message;
 }
@@ -94,11 +94,11 @@ export async function createStudent(input: CreateStudentInput): Promise<{
     const phone = normalizePhoneNumber(input.phone);
 
     if (!email || !input.password || input.password.length < 6) {
-      return { ok: false, message: "Email ane 6+ char password aapo." };
+      return { ok: false, message: "Enter an email and a password with at least 6 characters." };
     }
 
     if (!phone) {
-      return { ok: false, message: "Valid mobile number aapo. India mate 10 digit number chale." };
+      return { ok: false, message: "Enter a valid mobile number. A 10-digit Indian number is accepted." };
     }
 
     const { data: existingProfile } = await admin
@@ -108,7 +108,7 @@ export async function createStudent(input: CreateStudentInput): Promise<{
       .maybeSingle();
 
     if (existingProfile) {
-      return { ok: false, message: "Aa email par student pachi thi exist kare chhe." };
+      return { ok: false, message: "A student with this email already exists." };
     }
 
     const { data: existingPhone } = await admin
@@ -119,7 +119,7 @@ export async function createStudent(input: CreateStudentInput): Promise<{
       .maybeSingle();
 
     if (existingPhone) {
-      return { ok: false, message: "Aa mobile number par student pachi thi exist kare chhe." };
+      return { ok: false, message: "A student with this mobile number already exists." };
     }
 
     let { data, error } = await admin.auth.admin.createUser({
@@ -163,7 +163,7 @@ export async function createStudent(input: CreateStudentInput): Promise<{
     if (profileUpsertError) {
       return {
         ok: true,
-        message: `Student account bane gayo, pan profile sync fail: ${toMessage(profileUpsertError, "Unknown error")}`,
+        message: `Student account was created, but profile sync failed: ${toMessage(profileUpsertError, "Unknown error")}`,
       };
     }
 
@@ -176,17 +176,17 @@ export async function createStudent(input: CreateStudentInput): Promise<{
       if (enrErr) {
         return {
           ok: true,
-          message: `Student bane gayo, pan batch enrollment fail: ${toMessage(enrErr, "Unknown error")}`,
+          message: `Student was created, but batch enrollment failed: ${toMessage(enrErr, "Unknown error")}`,
         };
       }
     }
 
     revalidatePath("/admin/students");
-    return { ok: true, message: "Student successfully add thai gayo." };
+    return { ok: true, message: "Student added successfully." };
   } catch (error) {
     return {
       ok: false,
-      message: toMessage(error, "Student create karva ma unknown error aavi."),
+      message: toMessage(error, "An unknown error occurred while creating the student."),
     };
   }
 }
@@ -204,19 +204,19 @@ export async function updateStudent(input: UpdateStudentInput): Promise<{
     const password = input.password?.trim() || null;
 
     if (!input.id) {
-      return { ok: false, message: "Student select karo." };
+      return { ok: false, message: "Select a student." };
     }
 
     if (!email || !email.includes("@")) {
-      return { ok: false, message: "Valid email aapo." };
+      return { ok: false, message: "Enter a valid email." };
     }
 
     if (!phone) {
-      return { ok: false, message: "Valid mobile number aapo. India mate 10 digit number chale." };
+      return { ok: false, message: "Enter a valid mobile number. A 10-digit Indian number is accepted." };
     }
 
     if (password && password.length < 6) {
-      return { ok: false, message: "Password ochama 6 character hovu joiye." };
+      return { ok: false, message: "Password must be at least 6 characters." };
     }
 
     const { data: student } = await admin
@@ -227,7 +227,7 @@ export async function updateStudent(input: UpdateStudentInput): Promise<{
       .maybeSingle();
 
     if (!student) {
-      return { ok: false, message: "Student maleo nahi." };
+      return { ok: false, message: "Student not found." };
     }
 
     const { data: existingEmail } = await admin
@@ -238,7 +238,7 @@ export async function updateStudent(input: UpdateStudentInput): Promise<{
       .maybeSingle();
 
     if (existingEmail) {
-      return { ok: false, message: "Aa email biji account ma use thay chhe." };
+      return { ok: false, message: "This email is already used by another account." };
     }
 
     const { data: existingPhone } = await admin
@@ -250,7 +250,7 @@ export async function updateStudent(input: UpdateStudentInput): Promise<{
       .maybeSingle();
 
     if (existingPhone) {
-      return { ok: false, message: "Aa mobile number biji account ma use thay chhe." };
+      return { ok: false, message: "This mobile number is already used by another account." };
     }
 
     const authUpdate = {
@@ -298,13 +298,13 @@ export async function updateStudent(input: UpdateStudentInput): Promise<{
       .eq("role", "student");
 
     if (profileError) {
-      return { ok: false, message: toMessage(profileError, "Student update karva ma problem aavi.") };
+      return { ok: false, message: toMessage(profileError, "Unable to update student.") };
     }
 
     revalidatePath("/admin/students");
-    return { ok: true, message: "Student update thai gayo." };
+    return { ok: true, message: "Student updated successfully." };
   } catch (error) {
-    return { ok: false, message: toMessage(error, "Student update karva ma problem aavi.") };
+    return { ok: false, message: toMessage(error, "Unable to update student.") };
   }
 }
 
@@ -317,7 +317,7 @@ export async function deleteStudent(studentId: string): Promise<{
     const admin = createAdminClient();
 
     if (!studentId) {
-      return { ok: false, message: "Student select karo." };
+      return { ok: false, message: "Select a student." };
     }
 
     const { data: student } = await admin
@@ -328,19 +328,19 @@ export async function deleteStudent(studentId: string): Promise<{
       .maybeSingle();
 
     if (!student) {
-      return { ok: false, message: "Student maleo nahi." };
+      return { ok: false, message: "Student not found." };
     }
 
     const { error } = await admin.auth.admin.deleteUser(studentId);
 
     if (error) {
-      return { ok: false, message: toMessage(error, "Student delete karva ma problem aavi.") };
+      return { ok: false, message: toMessage(error, "Unable to delete student.") };
     }
 
     revalidatePath("/admin/students");
-    return { ok: true, message: "Student delete thai gayo." };
+    return { ok: true, message: "Student deleted successfully." };
   } catch (error) {
-    return { ok: false, message: toMessage(error, "Student delete karva ma problem aavi.") };
+    return { ok: false, message: toMessage(error, "Unable to delete student.") };
   }
 }
 
@@ -351,7 +351,7 @@ export async function assignStudentToBatch(
   try {
     await requireAdmin();
     if (!studentId || !batchId) {
-      return { ok: false, message: "Student ane batch select karo." };
+      return { ok: false, message: "Select a student and batch." };
     }
     const admin = createAdminClient();
     const { error } = await admin.from("enrollments").upsert(
@@ -359,12 +359,12 @@ export async function assignStudentToBatch(
       { onConflict: "student_id,batch_id", ignoreDuplicates: true }
     );
     if (error) {
-      return { ok: false, message: toMessage(error, "Batch assign karva ma problem aavi.") };
+      return { ok: false, message: toMessage(error, "Unable to assign batch.") };
     }
     revalidatePath("/admin/students");
-    return { ok: true, message: "Batch assign thai gayu." };
+    return { ok: true, message: "Batch assigned successfully." };
   } catch (error) {
-    return { ok: false, message: toMessage(error, "Batch assign karva ma problem aavi.") };
+    return { ok: false, message: toMessage(error, "Unable to assign batch.") };
   }
 }
 
@@ -375,7 +375,7 @@ export async function removeStudentFromBatch(
   try {
     await requireAdmin();
     if (!studentId || !batchId) {
-      return { ok: false, message: "Student ane batch select karo." };
+      return { ok: false, message: "Select a student and batch." };
     }
     const admin = createAdminClient();
     const { error } = await admin
@@ -384,12 +384,12 @@ export async function removeStudentFromBatch(
       .eq("student_id", studentId)
       .eq("batch_id", batchId);
     if (error) {
-      return { ok: false, message: toMessage(error, "Batch remove karva ma problem aavi.") };
+      return { ok: false, message: toMessage(error, "Unable to remove batch.") };
     }
     revalidatePath("/admin/students");
-    return { ok: true, message: "Batch mathi remove thai gayu." };
+    return { ok: true, message: "Removed from batch successfully." };
   } catch (error) {
-    return { ok: false, message: toMessage(error, "Batch remove karva ma problem aavi.") };
+    return { ok: false, message: toMessage(error, "Unable to remove batch.") };
   }
 }
 
@@ -462,7 +462,7 @@ export async function bulkImportStudents(
     }
 
     if (error) {
-      // Kdach pehlethi exist kare — profile dhundi ne enroll karva try karo
+      // If the user already exists, find the profile and try enrolling them.
       const { data: existing } = await admin
         .from("profiles")
         .select("id")
@@ -492,12 +492,12 @@ export async function bulkImportStudents(
 
       if (profileUpsertError) {
         errors.push(
-          `${email}: profile sync fail: ${toMessage(profileUpsertError, "Unknown error")}`
+          `${email}: profile sync failed: ${toMessage(profileUpsertError, "Unknown error")}`
         );
       }
     } else {
       failed++;
-      errors.push(`${email}: user create response khali aavyo`);
+      errors.push(`${email}: user create response was empty`);
       continue;
     }
 

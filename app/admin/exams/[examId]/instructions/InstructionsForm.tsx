@@ -35,15 +35,15 @@ export default function InstructionsForm({
           Exam instructions
         </label>
         <p className="mb-3 text-xs text-slate-500">
-          Aa instructions student ne exam start karta pehla intro page par dekhashe.
-          Dareko point alag line par lakho.
+          These instructions appear on the student intro page before the exam starts.
+          Write each point on a separate line.
         </p>
         <textarea
           value={value}
           onChange={(e) => setValue(e.target.value)}
           rows={12}
           placeholder={
-            "Example:\n• Total questions: 50\n• Time: 60 minutes\n• Each wrong answer ma negative marking che\n• Tab switch / cheating allowed nathi\n• Submit karta pehla badha answers check karo"
+            "Example:\n- Total questions: 50\n- Time: 60 minutes\n- Wrong answers have negative marking\n- Tab switching or cheating is not allowed\n- Review all answers before submitting"
           }
           className="input font-mono text-sm leading-relaxed"
         />

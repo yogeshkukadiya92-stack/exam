@@ -43,7 +43,7 @@ export default function QuestionBankPicker({
 
       <div className="max-h-80 overflow-y-auto rounded-lg border">
         {questions.length === 0 && (
-          <p className="p-4 text-sm text-slate-500">Question bank empty chhe.</p>
+          <p className="p-4 text-sm text-slate-500">Question bank is empty.</p>
         )}
         {questions.map((q) => (
           <label key={q.id} className="flex cursor-pointer gap-3 border-b p-3 last:border-b-0 hover:bg-slate-50">

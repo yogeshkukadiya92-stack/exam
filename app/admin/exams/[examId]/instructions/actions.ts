@@ -10,7 +10,7 @@ export async function saveInstructions(formData: FormData) {
 
   const examId = formData.get("exam_id") as string;
   if (!examId) {
-    return { ok: false, message: "Exam id missing che." };
+    return { ok: false, message: "Exam ID is missing." };
   }
 
   const raw = (formData.get("instructions") as string) ?? "";
@@ -27,5 +27,5 @@ export async function saveInstructions(formData: FormData) {
 
   revalidatePath(`/admin/exams/${examId}/instructions`);
   revalidatePath("/admin/exams");
-  return { ok: true, message: "Instructions save thai gaya." };
+  return { ok: true, message: "Instructions saved successfully." };
 }
