@@ -19,6 +19,15 @@ function toMessage(error: unknown, fallback: string) {
   return fallback;
 }
 
+function isMissingCaseStudySchema(error: unknown) {
+  const message = toMessage(error, "").toLowerCase();
+  return (
+    message.includes("case_study_id") ||
+    message.includes("case_studies") ||
+    message.includes("schema cache")
+  );
+}
+
 export async function addQuestion(formData: FormData): Promise<{
   ok: boolean;
   message: string;
@@ -114,6 +123,9 @@ export async function addQuestion(formData: FormData): Promise<{
 }
 
 interface BulkQuestion {
+  case_title?: string;
+  case_content?: string;
+  case_order?: number | null;
   question_text: string;
   options: string[];
   correct: number[];
@@ -125,12 +137,26 @@ interface BulkQuestion {
 export async function bulkAddQuestions(
   examId: string,
   questions: BulkQuestion[]
-): Promise<{ added: number; failed: number }> {
-  await requireAdmin();
+): Promise<{ added: number; failed: number; caseStudiesCreated: number }> {
+  const profile = await requireAdmin();
   const supabase = await createClient();
 
   let added = 0;
   let failed = 0;
+  let caseStudiesCreated = 0;
+
+  const normalizeCaseTitle = (value: string | null | undefined) =>
+    (value ?? "").trim().toLowerCase();
+
+  const { data: existingCases } = await supabase
+    .from("case_studies")
+    .select("id, title")
+    .eq("exam_id", examId);
+
+  const caseIdByTitle = new Map<string, string>();
+  ((existingCases as { id: string; title: string }[] | null) ?? []).forEach((study) => {
+    caseIdByTitle.set(normalizeCaseTitle(study.title), study.id);
+  });
 
   for (const q of questions) {
     if (!q.question_text || q.options.length < 2 || q.correct.length === 0) {
@@ -138,17 +164,69 @@ export async function bulkAddQuestions(
       continue;
     }
 
-    const { data: inserted, error } = await supabase
+    const caseTitle = (q.case_title ?? "").trim();
+    let caseStudyId: string | null = null;
+
+    if (caseTitle) {
+      const key = normalizeCaseTitle(caseTitle);
+      caseStudyId = caseIdByTitle.get(key) ?? null;
+
+      if (!caseStudyId) {
+        const caseContent = (q.case_content ?? "").trim();
+        if (!caseContent) {
+          failed++;
+          continue;
+        }
+
+        const { data: insertedCase, error: caseError } = await supabase
+          .from("case_studies")
+          .insert({
+            exam_id: examId,
+            title: caseTitle,
+            content: caseContent,
+            position: q.case_order ?? caseIdByTitle.size + 1,
+            created_by: profile.id,
+          })
+          .select("id")
+          .single();
+
+        if (caseError || !insertedCase) {
+          failed++;
+          continue;
+        }
+
+        caseStudyId = insertedCase.id as string;
+        caseIdByTitle.set(key, caseStudyId);
+        caseStudiesCreated++;
+      }
+    }
+
+    const questionPayload = {
+      exam_id: examId,
+      case_study_id: caseStudyId,
+      type: q.type,
+      question_text: q.question_text,
+      marks: q.marks,
+      negative_marks: q.negative_marks,
+    };
+
+    let insertResult = await supabase
       .from("questions")
-      .insert({
-        exam_id: examId,
-        type: q.type,
-        question_text: q.question_text,
-        marks: q.marks,
-        negative_marks: q.negative_marks,
-      })
+      .insert(questionPayload)
       .select("id")
       .single();
+
+    if (insertResult.error && !caseStudyId && isMissingCaseStudySchema(insertResult.error)) {
+      const { case_study_id, ...fallbackPayload } = questionPayload;
+      insertResult = await supabase
+        .from("questions")
+        .insert(fallbackPayload)
+        .select("id")
+        .single();
+    }
+
+    const inserted = insertResult.data;
+    const error = insertResult.error;
 
     if (error || !inserted) {
       failed++;
@@ -168,7 +246,8 @@ export async function bulkAddQuestions(
   }
 
   revalidatePath(`/admin/exams/${examId}/questions`);
-  return { added, failed };
+  revalidatePath(`/admin/exams/${examId}/case-studies`);
+  return { added, failed, caseStudiesCreated };
 }
 
 export async function updateQuestion(formData: FormData): Promise<{

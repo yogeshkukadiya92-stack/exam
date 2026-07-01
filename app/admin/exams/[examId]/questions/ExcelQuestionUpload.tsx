@@ -35,6 +35,9 @@ export default function ExcelQuestionUpload({ examId }: { examId: string }) {
     const res = await bulkAddQuestions(
       examId,
       valid.map((r) => ({
+        case_title: r.case_title,
+        case_content: r.case_content,
+        case_order: r.case_order,
         question_text: r.question_text,
         options: r.options,
         correct: r.correct,
@@ -45,7 +48,9 @@ export default function ExcelQuestionUpload({ examId }: { examId: string }) {
     );
     setBusy(false);
     setResult(
-      `${res.added} questions added${res.failed ? `, ${res.failed} failed` : ""}.`
+      `${res.added} questions added${
+        res.caseStudiesCreated ? `, ${res.caseStudiesCreated} case studies created` : ""
+      }${res.failed ? `, ${res.failed} failed` : ""}.`
     );
     setRows(null);
     if (fileRef.current) fileRef.current.value = "";
@@ -95,7 +100,7 @@ export default function ExcelQuestionUpload({ examId }: { examId: string }) {
       </div>
 
       <p className="text-xs text-gray-400">
-        Columns: Question - OptionA-D - CorrectAnswer (A/B/C/D, use "A,C" for multiple) - Marks - NegativeMarks
+        Columns: CaseTitle - CaseContent - CaseOrder - Question - OptionA-D - CorrectAnswer (A/B/C/D, use "A,C" for multiple) - Marks - NegativeMarks
       </p>
 
       {result && (
@@ -116,6 +121,7 @@ export default function ExcelQuestionUpload({ examId }: { examId: string }) {
               <thead className="sticky top-0 bg-gray-50 text-left text-gray-500">
                 <tr>
                   <th className="px-3 py-2 font-medium">#</th>
+                  <th className="px-3 py-2 font-medium">Case</th>
                   <th className="px-3 py-2 font-medium">Question</th>
                   <th className="px-3 py-2 font-medium">Correct</th>
                   <th className="px-3 py-2 font-medium">Marks</th>
@@ -126,6 +132,7 @@ export default function ExcelQuestionUpload({ examId }: { examId: string }) {
                 {rows.map((r) => (
                   <tr key={r.row} className="border-t">
                     <td className="px-3 py-2 text-gray-400">{r.row}</td>
+                    <td className="px-3 py-2">{r.case_title || "-"}</td>
                     <td className="px-3 py-2">{r.question_text || "-"}</td>
                     <td className="px-3 py-2">
                       {r.correct.map((i) => String.fromCharCode(65 + i)).join(", ") || "-"}

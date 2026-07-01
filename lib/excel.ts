@@ -5,6 +5,9 @@ import { normalizePhoneNumber } from "./phone";
 
 export interface ParsedQuestion {
   row: number;
+  case_title: string;
+  case_content: string;
+  case_order: number | null;
   question_text: string;
   options: string[]; // up to 4
   correct: number[]; // indices
@@ -15,6 +18,7 @@ export interface ParsedQuestion {
 }
 
 const QUESTION_HEADERS = [
+  "CaseTitle", "CaseContent", "CaseOrder",
   "Question", "OptionA", "OptionB", "OptionC", "OptionD",
   "CorrectAnswer", "Marks", "NegativeMarks",
 ];
@@ -24,7 +28,17 @@ const LETTER_TO_INDEX: Record<string, number> = { A: 0, B: 1, C: 2, D: 3 };
 /** Download a blank question template (.xlsx) with one example row. */
 export function downloadQuestionTemplate() {
   const example = [
-    "What is 2 + 2?", "3", "4", "5", "6", "B", 2, 0.5,
+    "Business Case 1",
+    "A company wants to reduce delivery delays. Read the case and answer the questions.",
+    1,
+    "What is the main issue in the case?",
+    "Pricing",
+    "Delivery delays",
+    "Branding",
+    "Hiring",
+    "B",
+    2,
+    0.5,
   ];
   const ws = XLSX.utils.aoa_to_sheet([QUESTION_HEADERS, example]);
   ws["!cols"] = QUESTION_HEADERS.map((h) => ({ wch: Math.max(h.length, 12) }));
@@ -45,6 +59,10 @@ export async function parseQuestionsFile(file: File): Promise<ParsedQuestion[]> 
 
   return rows.map((r, i) => {
     const get = (k: string) => String(r[k] ?? "").trim();
+    const case_title = get("CaseTitle") || get("Case Study") || get("CaseStudy");
+    const case_content = get("CaseContent") || get("Case Study Content") || get("CaseDescription");
+    const case_order_raw = get("CaseOrder") || get("CasePosition");
+    const case_order = case_order_raw ? Number(case_order_raw) || null : null;
     const question_text = get("Question");
     const opts = [get("OptionA"), get("OptionB"), get("OptionC"), get("OptionD")];
     const options = opts.filter(Boolean);
@@ -64,7 +82,19 @@ export async function parseQuestionsFile(file: File): Promise<ParsedQuestion[]> 
     else if (options.length < 2) error = "Add at least 2 options";
     else if (correct.length === 0) error = "CorrectAnswer must be A/B/C/D";
 
-    return { row: i + 2, question_text, options, correct, marks, negative_marks, type, error };
+    return {
+      row: i + 2,
+      case_title,
+      case_content,
+      case_order,
+      question_text,
+      options,
+      correct,
+      marks,
+      negative_marks,
+      type,
+      error,
+    };
   });
 }
 
