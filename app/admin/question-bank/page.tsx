@@ -3,6 +3,18 @@ import { addBankQuestion, deleteBankQuestion } from "./actions";
 import QuestionBankExport from "./QuestionBankExport";
 import { BookOpen, Trash2 } from "lucide-react";
 
+interface BankQuestionRow {
+  id: string;
+  subject: string | null;
+  topic: string | null;
+  difficulty: string | null;
+  type: string;
+  question_text: string;
+  marks: number | string;
+  negative_marks: number | string;
+  question_bank_options: { count: number }[] | null;
+}
+
 export default async function QuestionBankPage({
   searchParams,
 }: {
@@ -21,6 +33,7 @@ export default async function QuestionBankPage({
   if (filters.difficulty) query = query.eq("difficulty", filters.difficulty);
 
   const { data: questions } = await query;
+  const rows = (questions as BankQuestionRow[] | null) ?? [];
 
   const input = "input";
   const label = "mb-1.5 block text-sm font-medium text-slate-700";
@@ -35,14 +48,14 @@ export default async function QuestionBankPage({
           </p>
         </div>
         <QuestionBankExport
-          questions={(questions ?? []).map((q: any) => ({
-            subject: q.subject,
+          questions={rows.map((q) => ({
+            subject: q.subject ?? "",
             topic: q.topic,
             difficulty: q.difficulty,
             type: q.type,
             question_text: q.question_text,
-            marks: q.marks,
-            negative_marks: q.negative_marks,
+            marks: Number(q.marks) || 0,
+            negative_marks: Number(q.negative_marks) || 0,
           }))}
         />
       </div>
@@ -118,13 +131,13 @@ export default async function QuestionBankPage({
       </form>
 
       <div className="space-y-3">
-        {(questions ?? []).length === 0 && (
+        {rows.length === 0 && (
           <div className="card p-10 text-center text-sm text-slate-500">
             <BookOpen className="mx-auto mb-3 h-10 w-10 text-slate-300" />
             No bank questions yet.
           </div>
         )}
-        {questions?.map((q) => (
+        {rows.map((q) => (
           <div key={q.id} className="card-hover flex items-start justify-between gap-4 p-4">
             <div>
               <p className="font-medium text-slate-900">{q.question_text}</p>

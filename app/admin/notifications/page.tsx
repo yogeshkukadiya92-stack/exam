@@ -1,6 +1,16 @@
 import { createClient } from "@/lib/supabase/server";
 import { queueNotification } from "./actions";
 
+interface NotificationEventRow {
+  id: string;
+  event_type: string;
+  recipient: string | null;
+  subject: string | null;
+  status: string;
+  error: string | null;
+  created_at: string;
+}
+
 export default async function NotificationsPage() {
   const supabase = await createClient();
   const { data: events } = await supabase
@@ -8,6 +18,7 @@ export default async function NotificationsPage() {
     .select("id, event_type, recipient, subject, status, error, created_at")
     .order("created_at", { ascending: false })
     .limit(100);
+  const rows = (events as NotificationEventRow[] | null) ?? [];
 
   return (
     <div>
@@ -38,7 +49,7 @@ export default async function NotificationsPage() {
             </tr>
           </thead>
           <tbody className="divide-y">
-            {(events ?? []).map((e) => (
+            {rows.map((e) => (
               <tr key={e.id}>
                 <td className="px-4 py-3">{e.event_type}</td>
                 <td className="px-4 py-3">{e.recipient ?? "-"}</td>

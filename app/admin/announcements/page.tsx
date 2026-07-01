@@ -2,6 +2,14 @@ import { createClient } from "@/lib/supabase/server";
 import { createAnnouncement, deleteAnnouncement, toggleAnnouncement } from "./actions";
 import { Megaphone, Trash2, Eye, EyeOff } from "lucide-react";
 
+interface AnnouncementRow {
+  id: string;
+  title: string;
+  content: string | null;
+  is_active: boolean;
+  created_at: string;
+}
+
 export default async function AnnouncementsPage() {
   const supabase = await createClient();
 
@@ -9,6 +17,7 @@ export default async function AnnouncementsPage() {
     .from("announcements")
     .select("id, title, content, is_active, created_at")
     .order("created_at", { ascending: false });
+  const rows = (announcements as AnnouncementRow[] | null) ?? [];
 
   return (
     <div>
@@ -54,7 +63,7 @@ export default async function AnnouncementsPage() {
 
       {/* List */}
       <div className="space-y-3">
-        {announcements?.length === 0 && (
+        {rows.length === 0 && (
           <div className="card p-12 text-center">
             <Megaphone className="mx-auto h-10 w-10 text-slate-300" />
             <p className="mt-3 text-sm text-slate-500">
@@ -62,7 +71,7 @@ export default async function AnnouncementsPage() {
             </p>
           </div>
         )}
-        {announcements?.map((a) => (
+        {rows.map((a) => (
           <div key={a.id} className="card-hover p-5">
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">

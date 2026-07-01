@@ -1,102 +1,162 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import {
+  Award,
   BookOpen,
+  CheckCircle2,
+  Megaphone,
   Play,
   RotateCcw,
-  Trophy,
   Target,
   TrendingUp,
-  Award,
-  BarChart3,
-  Megaphone,
-  CheckCircle2,
+  Trophy,
 } from "lucide-react";
+
+interface ExamRow {
+  id: string;
+  title: string;
+  duration_minutes: number;
+  negative_marking: boolean;
+  pass_marks: number | string | null;
+  max_attempts: number | null;
+  courses: { name: string } | null;
+  batches: { name: string } | null;
+  questions: { count: number }[] | null;
+}
+
+interface AttemptRow {
+  id: string;
+  exam_id: string;
+  status: string;
+  total_score: number | null;
+  submitted_at: string | null;
+}
+
+interface AnnouncementRow {
+  id: string;
+  title: string;
+  content: string | null;
+  created_at: string;
+}
+
+interface OverrideRow {
+  exam_id: string;
+  extra_attempts: number | null;
+}
+
+function questionCount(exam: ExamRow) {
+  return exam.questions?.[0]?.count ?? 0;
+}
 
 export default async function StudentDashboard() {
   const supabase = await createClient();
 
-  const [{ data: exams }, { data: attempts }, { data: announcements }, { data: overrides }] =
-    await Promise.all([
-      supabase
-        .from("exams")
-        .select(
-          "id, title, duration_minutes, negative_marking, pass_marks, max_attempts, courses(name), batches(name), questions(count)"
-        )
-        .is("deleted_at", null)
-        .order("created_at", { ascending: false }),
-      supabase
-        .from("attempts")
-        .select("id, exam_id, status, total_score, submitted_at")
-        .order("started_at", { ascending: false }),
-      supabase
-        .from("announcements")
-        .select("id, title, content, created_at")
-        .eq("is_active", true)
-        .order("created_at", { ascending: false })
-        .limit(5),
-      supabase
-        .from("student_exam_overrides")
-        .select("exam_id, extra_attempts"),
-    ]);
+  const [
+    { data: exams },
+    { data: attempts },
+    { data: announcements },
+    { data: overrides },
+  ] = await Promise.all([
+    supabase
+      .from("exams")
+      .select(
+        "id, title, duration_minutes, negative_marking, pass_marks, max_attempts, courses(name), batches(name), questions(count)"
+      )
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("attempts")
+      .select("id, exam_id, status, total_score, submitted_at")
+      .order("started_at", { ascending: false }),
+    supabase
+      .from("announcements")
+      .select("id, title, content, created_at")
+      .eq("is_active", true)
+      .order("created_at", { ascending: false })
+      .limit(5),
+    supabase.from("student_exam_overrides").select("exam_id, extra_attempts"),
+  ]);
+
+  const examRows = (exams as ExamRow[] | null) ?? [];
+  const attemptRows = (attempts as AttemptRow[] | null) ?? [];
+  const announcementRows = (announcements as AnnouncementRow[] | null) ?? [];
+  const overrideRows = (overrides as OverrideRow[] | null) ?? [];
 
   const extraByExam = new Map<string, number>(
-    (overrides ?? []).map((o: { exam_id: string; extra_attempts: number | null }) => [
-      o.exam_id,
-      Number(o.extra_attempts) || 0,
+    overrideRows.map((override) => [
+      override.exam_id,
+      Number(override.extra_attempts) || 0,
     ])
   );
 
-  type Attempt = NonNullable<typeof attempts>[number];
-  const byExam = new Map<string, Attempt[]>();
-  attempts?.forEach((a) => {
-    const list = byExam.get(a.exam_id) ?? [];
-    list.push(a);
-    byExam.set(a.exam_id, list);
+  const byExam = new Map<string, AttemptRow[]>();
+  attemptRows.forEach((attempt) => {
+    const list = byExam.get(attempt.exam_id) ?? [];
+    list.push(attempt);
+    byExam.set(attempt.exam_id, list);
   });
 
-  // Stats
-  const submitted = attempts?.filter((a) => a.status !== "in_progress") ?? [];
-  const totalTaken = submitted.length;
+  const submitted = attemptRows.filter((attempt) => attempt.status !== "in_progress");
   const scores = submitted
-    .map((a) => a.total_score)
-    .filter((s): s is number => s != null);
+    .map((attempt) => attempt.total_score)
+    .filter((score): score is number => score != null);
   const avgScore =
     scores.length > 0
-      ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)
+      ? Math.round(scores.reduce((sum, score) => sum + score, 0) / scores.length)
       : 0;
   const bestScore = scores.length > 0 ? Math.max(...scores) : 0;
 
-  // Pass rate: count exams where best attempt >= pass_marks
-  const examMap = new Map<string, number>(
-    (exams ?? []).map((e: { id: string; pass_marks: unknown }) => [e.id, Number(e.pass_marks) || 0])
+  const passMarksByExam = new Map<string, number>(
+    examRows.map((exam) => [exam.id, Number(exam.pass_marks) || 0])
   );
   let passCount = 0;
   const examsSeen = new Set<string>();
-  for (const a of submitted) {
-    if (examsSeen.has(a.exam_id)) continue;
-    examsSeen.add(a.exam_id);
-    const examAttempts = byExam.get(a.exam_id) ?? [];
+  submitted.forEach((attempt) => {
+    if (examsSeen.has(attempt.exam_id)) return;
+    examsSeen.add(attempt.exam_id);
+
     const bestForExam = Math.max(
-      ...examAttempts
-        .filter((x) => x.status !== "in_progress")
-        .map((x) => x.total_score ?? 0)
+      0,
+      ...(byExam.get(attempt.exam_id) ?? [])
+        .filter((item) => item.status !== "in_progress")
+        .map((item) => item.total_score ?? 0)
     );
-    if (bestForExam >= (examMap.get(a.exam_id) ?? 0)) passCount++;
-  }
+    if (bestForExam >= (passMarksByExam.get(attempt.exam_id) ?? 0)) passCount++;
+  });
   const passRate = examsSeen.size > 0 ? Math.round((passCount / examsSeen.size) * 100) : 0;
 
   const recentResults = submitted.slice(0, 5);
-
-  const available = (exams ?? []).filter(
-    (e) => ((e.questions as { count: number }[] | null)?.[0]?.count ?? 0) > 0
-  );
+  const available = examRows.filter((exam) => questionCount(exam) > 0);
 
   const statCards = [
-    { label: "Exams Taken", value: totalTaken, icon: Target, color: "from-blue-500 to-blue-600", shadow: "shadow-blue-200" },
-    { label: "Average Score", value: avgScore, icon: TrendingUp, color: "from-violet-500 to-violet-600", shadow: "shadow-violet-200" },
-    { label: "Pass Rate", value: `${passRate}%`, icon: Award, color: "from-emerald-500 to-emerald-600", shadow: "shadow-emerald-200" },
-    { label: "Best Score", value: bestScore, icon: Trophy, color: "from-amber-500 to-amber-600", shadow: "shadow-amber-200" },
+    {
+      label: "Exams Taken",
+      value: submitted.length,
+      icon: Target,
+      color: "from-blue-500 to-blue-600",
+      shadow: "shadow-blue-200",
+    },
+    {
+      label: "Average Score",
+      value: avgScore,
+      icon: TrendingUp,
+      color: "from-violet-500 to-violet-600",
+      shadow: "shadow-violet-200",
+    },
+    {
+      label: "Pass Rate",
+      value: `${passRate}%`,
+      icon: Award,
+      color: "from-emerald-500 to-emerald-600",
+      shadow: "shadow-emerald-200",
+    },
+    {
+      label: "Best Score",
+      value: bestScore,
+      icon: Trophy,
+      color: "from-amber-500 to-amber-600",
+      shadow: "shadow-amber-200",
+    },
   ];
 
   return (
@@ -108,25 +168,26 @@ export default async function StudentDashboard() {
         </p>
       </div>
 
-      {/* Announcements */}
-      {announcements && announcements.length > 0 && (
+      {announcementRows.length > 0 && (
         <div className="mb-8 space-y-3">
-          {announcements.map((a) => (
+          {announcementRows.map((announcement) => (
             <div
-              key={a.id}
+              key={announcement.id}
               className="card border-l-4 border-l-indigo-500 p-4"
             >
               <div className="flex items-start gap-3">
                 <Megaphone className="mt-0.5 h-4 w-4 shrink-0 text-indigo-500" />
                 <div>
-                  <p className="font-medium text-slate-900 dark:text-slate-100">{a.title}</p>
-                  {a.content && (
-                    <p className="mt-0.5 text-sm text-slate-500 line-clamp-2">
-                      {a.content}
+                  <p className="font-medium text-slate-900 dark:text-slate-100">
+                    {announcement.title}
+                  </p>
+                  {announcement.content && (
+                    <p className="mt-0.5 line-clamp-2 text-sm text-slate-500">
+                      {announcement.content}
                     </p>
                   )}
                   <p className="mt-1 text-xs text-slate-400">
-                    {new Date(a.created_at).toLocaleDateString("en-IN", {
+                    {new Date(announcement.created_at).toLocaleDateString("en-IN", {
                       day: "numeric",
                       month: "short",
                     })}
@@ -138,24 +199,22 @@ export default async function StudentDashboard() {
         </div>
       )}
 
-      {/* Stats */}
       <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
-        {statCards.map((s) => (
-          <div key={s.label} className="card p-5">
+        {statCards.map((stat) => (
+          <div key={stat.label} className="card p-5">
             <div
-              className={`mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${s.color} shadow-sm ${s.shadow}`}
+              className={`mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${stat.color} shadow-sm ${stat.shadow}`}
             >
-              <s.icon className="h-5 w-5 text-white" />
+              <stat.icon className="h-5 w-5 text-white" />
             </div>
-            <p className="text-xl font-bold tracking-tight">{s.value}</p>
+            <p className="text-xl font-bold tracking-tight">{stat.value}</p>
             <p className="mt-0.5 text-xs font-medium text-slate-500">
-              {s.label}
+              {stat.label}
             </p>
           </div>
         ))}
       </div>
 
-      {/* Recent Results */}
       {recentResults.length > 0 && (
         <div className="mb-8">
           <h2 className="section-title mb-4">Recent Results</h2>
@@ -170,19 +229,19 @@ export default async function StudentDashboard() {
                     <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                       Score
                     </th>
-                    <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 hidden sm:table-cell">
+                    <th className="hidden px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 sm:table-cell">
                       Date
                     </th>
                     <th className="px-5 py-3" />
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-                  {recentResults.map((a) => {
+                  {recentResults.map((attempt) => {
                     const examTitle =
-                      exams?.find((e) => e.id === a.exam_id)?.title ?? "Exam";
+                      examRows.find((exam) => exam.id === attempt.exam_id)?.title ?? "Exam";
                     return (
                       <tr
-                        key={a.id}
+                        key={attempt.id}
                         className="transition-colors hover:bg-slate-50/50 dark:hover:bg-slate-700/30"
                       >
                         <td className="px-5 py-3.5 font-medium text-slate-900 dark:text-slate-100">
@@ -190,20 +249,20 @@ export default async function StudentDashboard() {
                         </td>
                         <td className="px-5 py-3.5">
                           <span className="badge bg-indigo-50 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-400">
-                            {a.total_score ?? 0}
+                            {attempt.total_score ?? 0}
                           </span>
                         </td>
-                        <td className="px-5 py-3.5 text-slate-500 dark:text-slate-400 hidden sm:table-cell">
-                          {a.submitted_at
-                            ? new Date(a.submitted_at).toLocaleDateString(
+                        <td className="hidden px-5 py-3.5 text-slate-500 dark:text-slate-400 sm:table-cell">
+                          {attempt.submitted_at
+                            ? new Date(attempt.submitted_at).toLocaleDateString(
                                 "en-IN",
                                 { day: "numeric", month: "short" }
                               )
-                            : "—"}
+                            : "-"}
                         </td>
                         <td className="px-5 py-3.5 text-right">
                           <Link
-                            href={`/student/attempt/${a.id}/result`}
+                            href={`/student/attempt/${attempt.id}/result`}
                             className="text-sm font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300"
                           >
                             View
@@ -219,7 +278,6 @@ export default async function StudentDashboard() {
         </div>
       )}
 
-      {/* Available Exams */}
       <h2 className="section-title mb-4">Available Exams</h2>
       {available.length === 0 && (
         <div className="card p-12 text-center">
@@ -232,34 +290,31 @@ export default async function StudentDashboard() {
       )}
 
       <div className="space-y-3">
-        {available.map((e) => {
-          const list = byExam.get(e.id) ?? [];
-          const inProgress = list.find((a) => a.status === "in_progress");
-          const sub = list.filter((a) => a.status !== "in_progress");
-          const examScores = sub
-            .map((a) => a.total_score)
-            .filter((s): s is number => s != null);
+        {available.map((exam) => {
+          const list = byExam.get(exam.id) ?? [];
+          const inProgress = list.find((attempt) => attempt.status === "in_progress");
+          const submittedForExam = list.filter((attempt) => attempt.status !== "in_progress");
+          const examScores = submittedForExam
+            .map((attempt) => attempt.total_score)
+            .filter((score): score is number => score != null);
           const best = examScores.length ? Math.max(...examScores) : null;
-          const attemptLimit = (Number(e.max_attempts) || 1) + (extraByExam.get(e.id) ?? 0);
-          const attemptsLeft = !inProgress && sub.length < attemptLimit;
-          const course = (e.courses as unknown as { name: string } | null)
-            ?.name;
-          const batch = (e.batches as unknown as { name: string } | null)
-            ?.name;
+          const attemptLimit =
+            (Number(exam.max_attempts) || 1) + (extraByExam.get(exam.id) ?? 0);
+          const attemptsLeft = !inProgress && submittedForExam.length < attemptLimit;
 
           return (
             <div
-              key={e.id}
+              key={exam.id}
               className="card-hover flex flex-wrap items-center justify-between gap-4 p-5"
             >
               <div className="min-w-0">
-                <p className="font-semibold text-slate-900">{e.title}</p>
+                <p className="font-semibold text-slate-900">{exam.title}</p>
                 <p className="mt-0.5 text-sm text-slate-500">
-                  {course} · {batch}
+                  {exam.courses?.name ?? "Course"} - {exam.batches?.name ?? "Batch"}
                 </p>
                 <div className="mt-1.5 flex flex-wrap items-center gap-3 text-xs text-slate-400">
-                  <span>{e.duration_minutes} min</span>
-                  {e.negative_marking && (
+                  <span>{exam.duration_minutes} min</span>
+                  {exam.negative_marking && (
                     <span className="badge bg-red-50 text-red-600">
                       Negative marking
                     </span>
@@ -283,7 +338,7 @@ export default async function StudentDashboard() {
                   </Link>
                 ) : attemptsLeft ? (
                   <Link
-                    href={`/student/exam/${e.id}`}
+                    href={`/student/exam/${exam.id}`}
                     className="btn-primary flex items-center gap-1.5"
                   >
                     <Play className="h-4 w-4" />
@@ -295,9 +350,9 @@ export default async function StudentDashboard() {
                     Completed
                   </span>
                 )}
-                {sub.length > 0 && (
+                {submittedForExam.length > 0 && (
                   <Link
-                    href={`/student/attempt/${sub[0].id}/result`}
+                    href={`/student/attempt/${submittedForExam[0].id}/result`}
                     className="btn-secondary text-sm"
                   >
                     Result

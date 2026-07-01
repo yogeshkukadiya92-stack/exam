@@ -4,6 +4,15 @@ import { createClient } from "@/lib/supabase/server";
 import { addSection, deleteSection } from "./actions";
 import { Trash2 } from "lucide-react";
 
+interface SectionRow {
+  id: string;
+  name: string;
+  position: number | null;
+  marks: number | string | null;
+  duration_minutes: number | null;
+  questions: { count: number }[] | null;
+}
+
 export default async function SectionsPage({
   params,
 }: {
@@ -19,6 +28,7 @@ export default async function SectionsPage({
     .select("id, name, position, marks, duration_minutes, questions(count)")
     .eq("exam_id", examId)
     .order("position");
+  const rows = (sections as SectionRow[] | null) ?? [];
 
   return (
     <div>
@@ -37,7 +47,7 @@ export default async function SectionsPage({
       </form>
 
       <div className="space-y-3">
-        {(sections ?? []).map((s) => (
+        {rows.map((s) => (
           <div key={s.id} className="card-hover flex items-center justify-between p-4">
             <div>
               <p className="font-medium">{s.name}</p>

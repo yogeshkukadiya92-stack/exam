@@ -4,12 +4,20 @@ import { createCourse, deleteCourse } from "./actions";
 import EditCourseButton from "./EditCourseButton";
 import { Plus, Layers, Trash2 } from "lucide-react";
 
+interface CourseRow {
+  id: string;
+  name: string;
+  description: string | null;
+  batches: { count: number }[] | null;
+}
+
 export default async function CoursesPage() {
   const supabase = await createClient();
   const { data: courses } = await supabase
     .from("courses")
     .select("id, name, description, batches(count)")
     .order("created_at", { ascending: false });
+  const rows = (courses as CourseRow[] | null) ?? [];
 
   return (
     <div>
@@ -42,7 +50,7 @@ export default async function CoursesPage() {
       </form>
 
       <div className="space-y-3">
-        {courses?.length === 0 && (
+        {rows.length === 0 && (
           <div className="card p-8 text-center">
             <Layers className="mx-auto h-10 w-10 text-slate-300" />
             <p className="mt-3 text-sm text-slate-500">
@@ -50,7 +58,7 @@ export default async function CoursesPage() {
             </p>
           </div>
         )}
-        {courses?.map((c) => {
+        {rows.map((c) => {
           const batchCount =
             (c.batches as { count: number }[] | null)?.[0]?.count ?? 0;
           return (

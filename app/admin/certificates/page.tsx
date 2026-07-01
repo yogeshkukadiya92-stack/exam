@@ -1,12 +1,24 @@
 import { createClient } from "@/lib/supabase/server";
 import { saveCertificateTemplate } from "./actions";
 
+interface CertificateTemplateRow {
+  id: string;
+  name: string;
+  logo_url: string | null;
+  signature_url: string | null;
+  signer_name: string | null;
+  signer_title: string | null;
+  primary_color: string | null;
+  created_at: string;
+}
+
 export default async function CertificateTemplatesPage() {
   const supabase = await createClient();
   const { data: templates } = await supabase
     .from("certificate_templates")
     .select("id, name, logo_url, signature_url, signer_name, signer_title, primary_color, created_at")
     .order("created_at", { ascending: false });
+  const rows = (templates as CertificateTemplateRow[] | null) ?? [];
 
   return (
     <div>
@@ -24,7 +36,7 @@ export default async function CertificateTemplatesPage() {
       </form>
 
       <div className="grid gap-4 md:grid-cols-2">
-        {(templates ?? []).map((t) => (
+        {rows.map((t) => (
           <div key={t.id} className="card p-5">
             <div className="flex items-center gap-3">
               <span className="h-8 w-8 rounded" style={{ backgroundColor: t.primary_color ?? "#4f46e5" }} />

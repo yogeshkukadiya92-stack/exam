@@ -4,49 +4,69 @@ import StudentImport from "./StudentImport";
 import StudentSearch from "./StudentSearch";
 import StudentExport from "./StudentExport";
 
+interface StudentRow {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+  phone: string | null;
+  created_at: string;
+}
+
+interface BatchRow {
+  id: string;
+  name: string;
+  courses: { name: string } | null;
+}
+
+interface EnrollmentRow {
+  student_id: string;
+  batch_id: string;
+}
+
 export default async function StudentsPage() {
   const supabase = await createClient();
 
-  const [{ data: students }, { data: batches }, { data: enrollments }] = await Promise.all([
-    supabase
-      .from("profiles")
-      .select("id, full_name, email, phone, created_at")
-      .eq("role", "student")
-      .order("created_at", { ascending: false }),
-    supabase.from("batches").select("id, name, courses(name)").order("name"),
-    supabase.from("enrollments").select("student_id, batch_id"),
-  ]);
+  const [{ data: students }, { data: batches }, { data: enrollments }] =
+    await Promise.all([
+      supabase
+        .from("profiles")
+        .select("id, full_name, email, phone, created_at")
+        .eq("role", "student")
+        .order("created_at", { ascending: false }),
+      supabase.from("batches").select("id, name, courses(name)").order("name"),
+      supabase.from("enrollments").select("student_id, batch_id"),
+    ]);
 
-  const batchOptions =
-    batches?.map((b) => ({
-      id: b.id,
-      label: `${(b.courses as unknown as { name: string } | null)?.name ?? ""} — ${b.name}`,
-    })) ?? [];
+  const studentRows = (students as StudentRow[] | null) ?? [];
+  const batchRows = (batches as BatchRow[] | null) ?? [];
+  const enrollmentRows = (enrollments as EnrollmentRow[] | null) ?? [];
+
+  const batchOptions = batchRows.map((batch) => ({
+    id: batch.id,
+    label: `${batch.courses?.name ?? ""} - ${batch.name}`,
+  }));
 
   const batchLabelById = new Map<string, string>(
-    batchOptions.map((b) => [b.id, b.label] as [string, string])
+    batchOptions.map((batch) => [batch.id, batch.label] as [string, string])
   );
 
-  // student_id -> [{ batchId, label }]
   const enrollmentsByStudent: Record<string, { batchId: string; label: string }[]> = {};
-  enrollments?.forEach((e) => {
-    const sid = e.student_id as string;
-    const bid = e.batch_id as string;
-    if (!enrollmentsByStudent[sid]) enrollmentsByStudent[sid] = [];
-    enrollmentsByStudent[sid].push({
-      batchId: bid,
-      label: batchLabelById.get(bid) ?? "Unknown batch",
+  enrollmentRows.forEach((enrollment) => {
+    const list = enrollmentsByStudent[enrollment.student_id] ?? [];
+    list.push({
+      batchId: enrollment.batch_id,
+      label: batchLabelById.get(enrollment.batch_id) ?? "Unknown batch",
     });
+    enrollmentsByStudent[enrollment.student_id] = list;
   });
 
-  const studentList =
-    students?.map((s) => ({
-      id: s.id,
-      full_name: s.full_name,
-      email: s.email,
-      phone: s.phone,
-      created_at: s.created_at,
-    })) ?? [];
+  const studentList = studentRows.map((student) => ({
+    id: student.id,
+    full_name: student.full_name,
+    email: student.email,
+    phone: student.phone,
+    created_at: student.created_at,
+  }));
 
   return (
     <div>
@@ -54,7 +74,7 @@ export default async function StudentsPage() {
         <div>
           <h1 className="page-title">Students</h1>
           <p className="mt-1 text-sm text-slate-500">
-            {students?.length ?? 0} total students
+            {studentRows.length} total students
           </p>
         </div>
         <div className="flex items-center gap-2">

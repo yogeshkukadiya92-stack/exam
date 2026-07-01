@@ -5,6 +5,12 @@ import { createBatch, deleteBatch } from "../actions";
 import EditBatchButton from "./EditBatchButton";
 import { Plus, Trash2, ChevronRight } from "lucide-react";
 
+interface BatchRow {
+  id: string;
+  name: string;
+  enrollments: { count: number }[] | null;
+}
+
 export default async function CourseBatchesPage({
   params,
 }: {
@@ -26,6 +32,7 @@ export default async function CourseBatchesPage({
     .select("id, name, enrollments(count)")
     .eq("course_id", courseId)
     .order("created_at", { ascending: false });
+  const rows = (batches as BatchRow[] | null) ?? [];
 
   return (
     <div>
@@ -58,12 +65,12 @@ export default async function CourseBatchesPage({
       </form>
 
       <div className="space-y-3">
-        {batches?.length === 0 && (
+        {rows.length === 0 && (
           <div className="card p-8 text-center">
             <p className="text-sm text-slate-500">No batches yet. Create one above.</p>
           </div>
         )}
-        {batches?.map((b) => {
+        {rows.map((b) => {
           const studentCount =
             (b.enrollments as { count: number }[] | null)?.[0]?.count ?? 0;
           return (

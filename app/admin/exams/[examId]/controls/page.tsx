@@ -3,6 +3,30 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { grantExtraAttempt, resetAttempt } from "./actions";
 
+interface StudentEnrollmentRow {
+  student_id: string;
+  profiles: {
+    id: string;
+    full_name: string | null;
+    email: string | null;
+  } | null;
+}
+
+interface AttemptRow {
+  id: string;
+  student_id: string;
+  status: string;
+  total_score: number | null;
+  started_at: string | null;
+  submitted_at: string | null;
+}
+
+interface OverrideRow {
+  student_id: string;
+  extra_attempts: number | null;
+  notes: string | null;
+}
+
 export default async function AttemptControlsPage({
   params,
 }: {
@@ -29,8 +53,11 @@ export default async function AttemptControlsPage({
       .eq("exam_id", examId),
   ]);
 
-  const attemptByStudent = new Map((attempts ?? []).map((a) => [a.student_id, a]));
-  const overrideByStudent = new Map((overrides ?? []).map((o) => [o.student_id, o]));
+  const studentRows = (students as StudentEnrollmentRow[] | null) ?? [];
+  const attemptRows = (attempts as AttemptRow[] | null) ?? [];
+  const overrideRows = (overrides as OverrideRow[] | null) ?? [];
+  const attemptByStudent = new Map(attemptRows.map((a) => [a.student_id, a]));
+  const overrideByStudent = new Map(overrideRows.map((o) => [o.student_id, o]));
 
   return (
     <div>
@@ -38,8 +65,9 @@ export default async function AttemptControlsPage({
       <h1 className="page-title mt-2">{exam.title} Re-attempt Controls</h1>
 
       <div className="mt-6 space-y-3">
-        {(students ?? []).map((row) => {
-          const student = row.profiles as unknown as { id: string; full_name: string | null; email: string | null };
+        {studentRows.map((row) => {
+          const student = row.profiles;
+          if (!student) return null;
           const attempt = attemptByStudent.get(student.id);
           const override = overrideByStudent.get(student.id);
           return (
