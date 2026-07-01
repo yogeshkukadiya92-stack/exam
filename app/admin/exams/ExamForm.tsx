@@ -17,6 +17,8 @@ interface Course {
 export default function ExamForm({ courses }: { courses: Course[] }) {
   const [open, setOpen] = useState(false);
   const [courseId, setCourseId] = useState("");
+  const [examMode, setExamMode] = useState<"standard" | "practical">("standard");
+  const [timerMode, setTimerMode] = useState<"continuous" | "pausable">("continuous");
 
   const batches = courses.find((c) => c.id === courseId)?.batches ?? [];
 
@@ -55,6 +57,46 @@ export default function ExamForm({ courses }: { courses: Course[] }) {
         <input name="title" required placeholder="e.g. Physics Unit Test 1" className="input" />
       </div>
 
+      <div className="grid gap-4 sm:grid-cols-3">
+        <div>
+          <label className={label}>Exam type</label>
+          <select
+            name="exam_mode"
+            value={examMode}
+            onChange={(e) => {
+              const next = e.target.value === "practical" ? "practical" : "standard";
+              setExamMode(next);
+              setTimerMode(next === "practical" ? "pausable" : "continuous");
+            }}
+            className="input"
+          >
+            <option value="standard">Standard</option>
+            <option value="practical">Practical / Case study</option>
+          </select>
+        </div>
+        <div>
+          <label className={label}>
+            {examMode === "practical" ? "Active duration (min)" : "Duration (min)"}
+          </label>
+          <input name="duration_minutes" type="number" min={1} defaultValue={60} className="input" />
+        </div>
+        <div>
+          <label className={label}>Timer</label>
+          <select
+            name="timer_mode"
+            value={timerMode}
+            onChange={(e) =>
+              setTimerMode(e.target.value === "continuous" ? "continuous" : "pausable")
+            }
+            className="input"
+            disabled={examMode !== "practical"}
+          >
+            <option value="continuous">Continuous</option>
+            <option value="pausable">Pausable</option>
+          </select>
+        </div>
+      </div>
+
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label className={label}>Course</label>
@@ -86,11 +128,7 @@ export default function ExamForm({ courses }: { courses: Course[] }) {
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        <div>
-          <label className={label}>Duration (min)</label>
-          <input name="duration_minutes" type="number" min={1} defaultValue={60} className="input" />
-        </div>
+      <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label className={label}>Pass marks</label>
           <input name="pass_marks" type="number" min={0} step="0.01" defaultValue={0} className="input" />
@@ -147,6 +185,12 @@ export default function ExamForm({ courses }: { courses: Course[] }) {
           <input type="checkbox" name="result_visible" defaultChecked className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
           Result visible
         </label>
+        {examMode === "practical" && (
+          <label className="flex items-center gap-2.5 text-sm font-medium text-slate-700 cursor-pointer">
+            <input type="checkbox" name="allow_case_navigation" defaultChecked className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
+            Free case navigation
+          </label>
+        )}
       </div>
 
       <button className="btn-primary">Create exam</button>

@@ -10,8 +10,15 @@ interface Option {
   position: number;
 }
 
+interface CaseStudy {
+  id: string;
+  title: string;
+  position: number | null;
+}
+
 interface Question {
   id: string;
+  case_study_id: string | null;
   question_text: string;
   type: string;
   marks: number;
@@ -24,9 +31,11 @@ interface Question {
 export default function EditQuestionButton({
   examId,
   question,
+  caseStudies,
 }: {
   examId: string;
   question: Question;
+  caseStudies: CaseStudy[];
 }) {
   const [open, setOpen] = useState(false);
   const [type, setType] = useState(question.type);
@@ -92,6 +101,24 @@ export default function EditQuestionButton({
 
             <input type="hidden" name="id" value={question.id} />
             <input type="hidden" name="exam_id" value={examId} />
+
+            {caseStudies.length > 0 && (
+              <div>
+                <label className="mb-1 block text-sm font-medium">Case study</label>
+                <select
+                  name="case_study_id"
+                  defaultValue={question.case_study_id ?? ""}
+                  className={input}
+                >
+                  <option value="">No case study</option>
+                  {caseStudies.map((study) => (
+                    <option key={study.id} value={study.id}>
+                      {study.position ?? 0}. {study.title}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             <textarea
               name="question_text"

@@ -18,6 +18,12 @@ export async function submitAttempt(attemptId: string) {
       .maybeSingle();
 
     if (owner && owner.student_id === profile.id) {
+      const now = new Date().toISOString();
+      await admin
+        .from("attempt_sessions")
+        .update({ ended_at: now, last_seen_at: now })
+        .eq("attempt_id", attemptId)
+        .is("ended_at", null);
       await gradeAndSubmit(attemptId);
     }
   } catch (e) {
@@ -36,6 +42,31 @@ export async function submitAttempt(attemptId: string) {
   }
 
   redirect(`/student/attempt/${attemptId}/result`);
+}
+
+export async function pauseAttempt(attemptId: string) {
+  const profile = await requireStudent();
+  const supabase = await createClient();
+
+  const { data: attempt } = await supabase
+    .from("attempts")
+    .select("id, exam_id, status")
+    .eq("id", attemptId)
+    .eq("student_id", profile.id)
+    .maybeSingle();
+
+  if (!attempt || attempt.status !== "in_progress") {
+    redirect("/student");
+  }
+
+  const now = new Date().toISOString();
+  await supabase
+    .from("attempt_sessions")
+    .update({ ended_at: now, last_seen_at: now })
+    .eq("attempt_id", attemptId)
+    .is("ended_at", null);
+
+  redirect(`/student/exam/${attempt.exam_id}`);
 }
 
 interface QuestionRow {
@@ -63,6 +94,13 @@ export async function gradeAndSubmit(attemptId: string) {
   if (!attempt || attempt.status !== "in_progress") return; // already submitted / missing
 
   const examId = attempt.exam_id as string;
+  const now = new Date().toISOString();
+
+  await admin
+    .from("attempt_sessions")
+    .update({ ended_at: now, last_seen_at: now })
+    .eq("attempt_id", attemptId)
+    .is("ended_at", null);
 
   const [{ data: exam }, { data: questions }, { data: answers }] = await Promise.all([
     admin.from("exams").select("negative_marking").eq("id", examId).maybeSingle(),

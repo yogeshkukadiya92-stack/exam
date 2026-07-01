@@ -24,6 +24,15 @@ function indiaDateTimeLocalToIso(value: string) {
   return new Date(`${value}:00+05:30`).toISOString();
 }
 
+function examModeFromForm(formData: FormData) {
+  return formData.get("exam_mode") === "practical" ? "practical" : "standard";
+}
+
+function timerModeFromForm(formData: FormData, examMode: string) {
+  if (examMode !== "practical") return "continuous";
+  return formData.get("timer_mode") === "continuous" ? "continuous" : "pausable";
+}
+
 export async function createExam(formData: FormData) {
   const profile = await requireAdmin();
   const supabase = await createClient();
@@ -35,11 +44,17 @@ export async function createExam(formData: FormData) {
 
   const startRaw = formData.get("start_time") as string;
   const endRaw = formData.get("end_time") as string;
+  const examMode = examModeFromForm(formData);
+  const timerMode = timerModeFromForm(formData, examMode);
 
   await supabase.from("exams").insert({
     title,
     course_id: courseId,
     batch_id: batchId,
+    exam_mode: examMode,
+    timer_mode: timerMode,
+    allow_case_navigation:
+      examMode === "practical" ? formData.get("allow_case_navigation") === "on" : true,
     instructions: (formData.get("instructions") as string)?.trim() || null,
     duration_minutes: Number(formData.get("duration_minutes")) || 60,
     pass_marks: Number(formData.get("pass_marks")) || 0,
@@ -76,6 +91,8 @@ export async function updateExam(formData: FormData): Promise<{
 
     const startRaw = formData.get("start_time") as string;
     const endRaw = formData.get("end_time") as string;
+    const examMode = examModeFromForm(formData);
+    const timerMode = timerModeFromForm(formData, examMode);
 
     const { error } = await supabase
       .from("exams")
@@ -83,6 +100,10 @@ export async function updateExam(formData: FormData): Promise<{
         title,
         course_id: courseId,
         batch_id: batchId,
+        exam_mode: examMode,
+        timer_mode: timerMode,
+        allow_case_navigation:
+          examMode === "practical" ? formData.get("allow_case_navigation") === "on" : true,
         instructions: (formData.get("instructions") as string)?.trim() || null,
         duration_minutes: Number(formData.get("duration_minutes")) || 60,
         pass_marks: Number(formData.get("pass_marks")) || 0,
@@ -164,6 +185,9 @@ export async function duplicateExam(formData: FormData) {
       title: source.title + " (Copy)",
       course_id: source.course_id,
       batch_id: targetBatchId || source.batch_id,
+      exam_mode: source.exam_mode ?? "standard",
+      timer_mode: source.timer_mode ?? "continuous",
+      allow_case_navigation: source.allow_case_navigation ?? true,
       instructions: source.instructions,
       duration_minutes: source.duration_minutes,
       pass_marks: source.pass_marks,
@@ -179,6 +203,31 @@ export async function duplicateExam(formData: FormData) {
     .single();
 
   if (!newExam) return;
+
+  const caseStudyMap = new Map<string, string>();
+  const { data: caseStudies } = await supabase
+    .from("case_studies")
+    .select("*")
+    .eq("exam_id", examId)
+    .order("position");
+
+  if (caseStudies && caseStudies.length > 0) {
+    for (const cs of caseStudies) {
+      const { data: newCase } = await supabase
+        .from("case_studies")
+        .insert({
+          exam_id: newExam.id,
+          title: cs.title,
+          content: cs.content,
+          position: cs.position,
+          created_by: profile.id,
+        })
+        .select("id")
+        .single();
+
+      if (newCase) caseStudyMap.set(cs.id as string, newCase.id as string);
+    }
+  }
 
   const { data: questions } = await supabase
     .from("questions")
@@ -198,6 +247,9 @@ export async function duplicateExam(formData: FormData) {
         .insert({
           exam_id: newExam.id,
           section_id: null,
+          case_study_id: q.case_study_id
+            ? caseStudyMap.get(q.case_study_id as string) ?? null
+            : null,
           type: q.type,
           question_text: q.question_text,
           image_url: q.image_url,

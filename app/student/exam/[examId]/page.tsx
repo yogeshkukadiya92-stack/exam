@@ -21,7 +21,7 @@ export default async function ExamIntro({
 
   const { data: exam } = await supabase
     .from("exams")
-    .select("id, title, instructions, duration_minutes, pass_marks, negative_marking, max_attempts, start_time, end_time, deleted_at, courses(name), batches(name), questions(count)")
+    .select("id, title, instructions, duration_minutes, pass_marks, negative_marking, max_attempts, start_time, end_time, deleted_at, exam_mode, timer_mode, allow_case_navigation, courses(name), batches(name), questions(count), case_studies(count)")
     .eq("id", examId)
     .single();
 
@@ -30,6 +30,8 @@ export default async function ExamIntro({
   }
 
   const qCount = (exam.questions as { count: number }[] | null)?.[0]?.count ?? 0;
+  const caseCount = (exam.case_studies as { count: number }[] | null)?.[0]?.count ?? 0;
+  const isPractical = exam.exam_mode === "practical";
   const course = (exam.courses as unknown as { name: string } | null)?.name;
   const batch = (exam.batches as unknown as { name: string } | null)?.name;
 
@@ -94,7 +96,9 @@ export default async function ExamIntro({
             <div className="rounded-xl bg-slate-50 p-3.5 dark:bg-slate-700/50">
               <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
                 <Clock className="h-4 w-4" />
-                <span className="text-xs font-medium uppercase tracking-wider">Duration</span>
+                <span className="text-xs font-medium uppercase tracking-wider">
+                  {isPractical ? "Active time" : "Duration"}
+                </span>
               </div>
               <p className="mt-1 text-xl font-bold text-slate-900 dark:text-slate-100">{exam.duration_minutes} min</p>
             </div>
@@ -113,6 +117,25 @@ export default async function ExamIntro({
               <p className="mt-1 text-xl font-bold text-slate-900 dark:text-slate-100">{exam.max_attempts}</p>
             </div>
           </div>
+
+          {isPractical && (
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <div className="rounded-xl bg-cyan-50 p-3 text-sm text-cyan-700 dark:bg-cyan-950/30 dark:text-cyan-300">
+                <p className="text-xs font-semibold uppercase tracking-wider text-cyan-500">
+                  Case studies
+                </p>
+                <p className="mt-1 text-lg font-semibold">{caseCount}</p>
+              </div>
+              <div className="rounded-xl bg-cyan-50 p-3 text-sm text-cyan-700 dark:bg-cyan-950/30 dark:text-cyan-300">
+                <p className="text-xs font-semibold uppercase tracking-wider text-cyan-500">
+                  Timer
+                </p>
+                <p className="mt-1 text-lg font-semibold">
+                  {exam.timer_mode === "pausable" ? "Pausable" : "Continuous"}
+                </p>
+              </div>
+            </div>
+          )}
 
           {exam.negative_marking && (
             <div className="mt-4 flex items-center gap-2 rounded-xl bg-red-50 border border-red-100 p-3 text-sm text-red-600 dark:bg-red-950/30 dark:border-red-800 dark:text-red-400">
@@ -142,7 +165,9 @@ export default async function ExamIntro({
           )}
 
           <div className="mt-4 rounded-xl bg-amber-50 border border-amber-100 p-3 text-xs text-amber-700 dark:bg-amber-950/30 dark:border-amber-800 dark:text-amber-400">
-            Once started, the timer begins. Answers are auto-saved. Navigate using the question palette and submit when done.
+            {isPractical && exam.timer_mode === "pausable"
+              ? "Your active timer pauses when you pause or leave the practical exam. Answers are auto-saved."
+              : "Once started, the timer begins. Answers are auto-saved. Navigate using the question palette and submit when done."}
             {" "}Once you submit, you cannot retake this exam or change your answers.
           </div>
 

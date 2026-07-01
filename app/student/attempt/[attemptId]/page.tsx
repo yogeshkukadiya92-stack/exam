@@ -5,6 +5,13 @@ import { gradeAndSubmit } from "./actions";
 
 interface RawQuestion {
   id: string;
+  case_study_id: string | null;
+  case_study: {
+    id: string;
+    title: string;
+    content: string;
+    position: number | null;
+  } | null;
   question_text: string;
   type: string;
   marks: number;
@@ -29,7 +36,7 @@ export default async function AttemptPage({
 
   const { data: attempt } = await supabase
     .from("attempts")
-    .select("id, exam_id, status, started_at, exams(title, duration_minutes, negative_marking, end_time, shuffle_questions, proctoring)")
+    .select("id, exam_id, status, started_at, exams(title, duration_minutes, negative_marking, end_time, shuffle_questions, proctoring, exam_mode, timer_mode, allow_case_navigation)")
     .eq("id", attemptId)
     .single();
 
@@ -45,28 +52,49 @@ export default async function AttemptPage({
     end_time: string | null;
     shuffle_questions: boolean;
     proctoring: boolean;
+    exam_mode: string;
+    timer_mode: string;
+    allow_case_navigation: boolean;
   };
 
-  const deadline = Math.min(
+  const isPausablePractical =
+    exam.exam_mode === "practical" && exam.timer_mode === "pausable";
+  const windowDeadline = exam.end_time ? new Date(exam.end_time).getTime() : Infinity;
+  const continuousDeadline = Math.min(
     new Date(attempt.started_at as string).getTime() + exam.duration_minutes * 60000,
-    exam.end_time ? new Date(exam.end_time).getTime() : Infinity
+    windowDeadline
   );
 
-  if (Date.now() >= deadline) {
+  if (!isPausablePractical && Date.now() >= continuousDeadline) {
     await gradeAndSubmit(attemptId);
     redirect(`/student/attempt/${attemptId}/result`);
   }
 
-  // Questions via secure RPC (correct answers VAGAR)
-  const { data: questions } = await supabase.rpc("get_attempt_questions", {
-    p_attempt_id: attemptId,
-  });
+  const activeSecondsPromise = isPausablePractical
+    ? supabase.rpc("get_attempt_active_seconds", { p_attempt_id: attemptId })
+    : Promise.resolve({ data: 0 });
 
-  // Existing answers for resume.
-  const { data: saved } = await supabase
-    .from("answers")
-    .select("question_id, selected_option_ids, text_answer, marked_for_review")
-    .eq("attempt_id", attemptId);
+  const [{ data: activeSeconds }, { data: questions }, { data: saved }] =
+    await Promise.all([
+      activeSecondsPromise,
+      supabase.rpc("get_attempt_questions", {
+        p_attempt_id: attemptId,
+      }),
+      supabase
+        .from("answers")
+        .select("question_id, selected_option_ids, text_answer, marked_for_review")
+        .eq("attempt_id", attemptId),
+    ]);
+
+  const initialActiveSeconds = Math.max(0, Number(activeSeconds) || 0);
+
+  if (
+    (isPausablePractical && initialActiveSeconds >= exam.duration_minutes * 60) ||
+    Date.now() >= windowDeadline
+  ) {
+    await gradeAndSubmit(attemptId);
+    redirect(`/student/attempt/${attemptId}/result`);
+  }
 
   const initialAnswers: Record<string, string[]> = {};
   const initialTextAnswers: Record<string, string> = {};
@@ -85,9 +113,13 @@ export default async function AttemptPage({
         <ExamRunner
           attemptId={attemptId}
           title={exam.title}
+          examMode={exam.exam_mode}
+          timerMode={exam.timer_mode}
+          allowCaseNavigation={exam.allow_case_navigation}
           startedAt={attempt.started_at as string}
           durationMinutes={exam.duration_minutes}
           examEndTime={exam.end_time}
+          initialActiveSeconds={initialActiveSeconds}
           negativeMarking={exam.negative_marking}
           shuffle={exam.shuffle_questions}
           proctoring={exam.proctoring}

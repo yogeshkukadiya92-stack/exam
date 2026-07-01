@@ -3,7 +3,19 @@
 import { useState } from "react";
 import { addQuestion } from "./actions";
 
-export default function QuestionForm({ examId }: { examId: string }) {
+interface CaseStudy {
+  id: string;
+  title: string;
+  position: number | null;
+}
+
+export default function QuestionForm({
+  examId,
+  caseStudies,
+}: {
+  examId: string;
+  caseStudies: CaseStudy[];
+}) {
   const [type, setType] = useState("single");
   const [message, setMessage] = useState<string | null>(null);
   const [ok, setOk] = useState(false);
@@ -32,6 +44,20 @@ export default function QuestionForm({ examId }: { examId: string }) {
     >
       <h2 className="font-medium">Add question</h2>
       <input type="hidden" name="exam_id" value={examId} />
+
+      {caseStudies.length > 0 && (
+        <div>
+          <label className="mb-1 block text-sm font-medium">Case study</label>
+          <select name="case_study_id" className={input} defaultValue="">
+            <option value="">No case study</option>
+            {caseStudies.map((study) => (
+              <option key={study.id} value={study.id}>
+                {study.position ?? 0}. {study.title}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       <textarea
         name="question_text"

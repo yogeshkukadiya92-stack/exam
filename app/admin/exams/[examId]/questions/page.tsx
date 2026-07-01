@@ -1,12 +1,38 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ChevronRight, FileText, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import QuestionForm from "./QuestionForm";
 import ExcelQuestionUpload from "./ExcelQuestionUpload";
 import QuestionBankPicker from "./QuestionBankPicker";
 import EditQuestionButton from "./EditQuestionButton";
 import { deleteQuestion } from "./actions";
-import { ChevronRight, Trash2, FileText } from "lucide-react";
+
+interface CaseStudyRow {
+  id: string;
+  title: string;
+  position: number | null;
+}
+
+interface OptionRow {
+  id: string;
+  option_text: string;
+  is_correct: boolean;
+  position: number;
+}
+
+interface QuestionRow {
+  id: string;
+  case_study_id: string | null;
+  question_text: string;
+  type: string;
+  marks: number | string;
+  negative_marks: number | string;
+  explanation: string | null;
+  correct_text: string | null;
+  case_studies: CaseStudyRow | null;
+  options: OptionRow[] | null;
+}
 
 export default async function ExamQuestionsPage({
   params,
@@ -18,43 +44,60 @@ export default async function ExamQuestionsPage({
 
   const { data: exam } = await supabase
     .from("exams")
-    .select("id, title")
+    .select("id, title, exam_mode")
     .eq("id", examId)
     .single();
 
   if (!exam) notFound();
 
-  const { data: questions } = await supabase
-    .from("questions")
-    .select("id, question_text, type, marks, negative_marks, explanation, correct_text, options(id, option_text, is_correct, position)")
-    .eq("exam_id", examId)
-    .order("created_at", { ascending: true });
+  const [{ data: questions }, { data: bankQuestions }, { data: caseStudies }] =
+    await Promise.all([
+      supabase
+        .from("questions")
+        .select("id, case_study_id, question_text, type, marks, negative_marks, explanation, correct_text, case_studies(id, title, position), options(id, option_text, is_correct, position)")
+        .eq("exam_id", examId)
+        .order("created_at", { ascending: true }),
+      supabase
+        .from("question_bank")
+        .select("id, question_text, subject, topic, difficulty, type, marks")
+        .order("created_at", { ascending: false })
+        .limit(100),
+      supabase
+        .from("case_studies")
+        .select("id, title, position")
+        .eq("exam_id", examId)
+        .order("position", { ascending: true })
+        .order("created_at", { ascending: true }),
+    ]);
 
-  const { data: bankQuestions } = await supabase
-    .from("question_bank")
-    .select("id, question_text, subject, topic, difficulty, type, marks")
-    .order("created_at", { ascending: false })
-    .limit(100);
-
-  const totalMarks =
-    questions?.reduce((sum, q) => sum + Number(q.marks), 0) ?? 0;
+  const questionRows = (questions as QuestionRow[] | null) ?? [];
+  const caseStudyRows = (caseStudies as CaseStudyRow[] | null) ?? [];
+  const totalMarks = questionRows.reduce((sum, q) => sum + Number(q.marks), 0);
 
   return (
     <div>
       <div className="mb-2 flex items-center gap-1.5 text-sm text-slate-500">
-        <Link href="/admin/exams" className="hover:text-indigo-600 transition-colors">
+        <Link href="/admin/exams" className="transition-colors hover:text-indigo-600">
           Exams
         </Link>
         <ChevronRight className="h-3.5 w-3.5" />
-        <span className="text-slate-700 font-medium">{exam.title}</span>
+        <span className="font-medium text-slate-700">{exam.title}</span>
       </div>
-      <div className="mb-8 flex items-center justify-between">
+      <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="page-title">{exam.title} — Questions</h1>
+          <h1 className="page-title">{exam.title} Questions</h1>
           <p className="mt-1 text-sm text-slate-500">
-            {questions?.length ?? 0} questions · {totalMarks} marks total
+            {questionRows.length} questions - {totalMarks} marks total
           </p>
         </div>
+        {exam.exam_mode === "practical" && (
+          <Link
+            href={`/admin/exams/${examId}/case-studies`}
+            className="btn-secondary"
+          >
+            Manage case studies
+          </Link>
+        )}
       </div>
 
       <ExcelQuestionUpload examId={examId} />
@@ -62,18 +105,12 @@ export default async function ExamQuestionsPage({
         examId={examId}
         questions={(bankQuestions as never) ?? []}
       />
-      <QuestionForm examId={examId} />
+      <QuestionForm examId={examId} caseStudies={caseStudyRows} />
 
       <div className="space-y-3">
-        {questions?.map((q, idx) => {
-          const opts = (
-            (q.options as {
-              id: string;
-              option_text: string;
-              is_correct: boolean;
-              position: number;
-            }[]) ?? []
-          ).sort((a, b) => a.position - b.position);
+        {questionRows.map((q, idx) => {
+          const opts = [...(q.options ?? [])].sort((a, b) => a.position - b.position);
+
           return (
             <div key={q.id} className="card-hover p-5">
               <div className="flex items-start justify-between gap-3">
@@ -83,8 +120,10 @@ export default async function ExamQuestionsPage({
                 <div className="flex shrink-0 items-center gap-2">
                   <EditQuestionButton
                     examId={examId}
+                    caseStudies={caseStudyRows}
                     question={{
                       id: q.id,
+                      case_study_id: q.case_study_id ?? null,
                       question_text: q.question_text,
                       type: q.type,
                       marks: Number(q.marks),
@@ -107,26 +146,35 @@ export default async function ExamQuestionsPage({
                   </form>
                 </div>
               </div>
+
               <ul className="mt-3 space-y-1.5 text-sm">
                 {opts.map((o) => (
                   <li
                     key={o.id}
                     className={`flex items-center gap-2 ${
-                      o.is_correct ? "text-emerald-600 font-medium" : "text-slate-500"
+                      o.is_correct ? "font-medium text-emerald-600" : "text-slate-500"
                     }`}
                   >
-                    <span className={`flex h-5 w-5 items-center justify-center rounded-full text-xs ${
-                      o.is_correct
-                        ? "bg-emerald-100 text-emerald-700"
-                        : "bg-slate-100 text-slate-400"
-                    }`}>
-                      {o.is_correct ? "✓" : "·"}
+                    <span
+                      className={`flex h-5 w-5 items-center justify-center rounded-full text-xs ${
+                        o.is_correct
+                          ? "bg-emerald-100 text-emerald-700"
+                          : "bg-slate-100 text-slate-400"
+                      }`}
+                    >
+                      {o.is_correct ? "C" : "-"}
                     </span>
                     {o.option_text}
                   </li>
                 ))}
               </ul>
-              <div className="mt-3 flex items-center gap-2">
+
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                {q.case_studies && (
+                  <span className="badge bg-cyan-50 text-cyan-700">
+                    {q.case_studies.title}
+                  </span>
+                )}
                 <span className="badge bg-slate-100 text-slate-600">+{q.marks} marks</span>
                 {Number(q.negative_marks) > 0 && (
                   <span className="badge bg-red-50 text-red-600">-{q.negative_marks} negative</span>
@@ -136,7 +184,8 @@ export default async function ExamQuestionsPage({
             </div>
           );
         })}
-        {questions?.length === 0 && (
+
+        {questionRows.length === 0 && (
           <div className="card p-12 text-center">
             <FileText className="mx-auto h-10 w-10 text-slate-300" />
             <p className="mt-3 text-sm text-slate-500">

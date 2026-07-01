@@ -2,7 +2,19 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { FileText, BarChart3, Eye, EyeOff, Trash2, Search, Layers, Monitor, RotateCcw, ClipboardList } from "lucide-react";
+import {
+  BarChart3,
+  BookOpen,
+  ClipboardList,
+  Eye,
+  EyeOff,
+  FileText,
+  Layers,
+  Monitor,
+  RotateCcw,
+  Search,
+  Trash2,
+} from "lucide-react";
 import { deleteExam, togglePublish } from "./actions";
 import DuplicateExamButton from "./DuplicateExamButton";
 import ExamLinkButton from "./ExamLinkButton";
@@ -32,6 +44,9 @@ interface Exam {
   show_correct_answers: boolean;
   show_explanations: boolean;
   result_visible: boolean;
+  exam_mode: string;
+  timer_mode: string;
+  allow_case_navigation: boolean;
   max_attempts: number;
   start_time: string | null;
   end_time: string | null;
@@ -63,9 +78,8 @@ export default function ExamFilters({ exams, courses, batches }: Props) {
 
   return (
     <div>
-      {/* Filter controls */}
       <div className="mb-6 flex flex-wrap items-center gap-3">
-        <div className="relative flex-1 min-w-[200px]">
+        <div className="relative min-w-[200px] flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
@@ -78,7 +92,7 @@ export default function ExamFilters({ exams, courses, batches }: Props) {
         <select
           value={courseFilter}
           onChange={(e) => setCourseFilter(e.target.value)}
-          className="input py-2.5 min-w-[160px]"
+          className="input min-w-[160px] py-2.5"
         >
           <option value="">All Courses</option>
           {courses.map((c) => (
@@ -104,7 +118,6 @@ export default function ExamFilters({ exams, courses, batches }: Props) {
         </div>
       </div>
 
-      {/* Exam list */}
       <div className="space-y-3">
         {filtered.length === 0 && (
           <div className="card p-8 text-center">
@@ -114,12 +127,13 @@ export default function ExamFilters({ exams, courses, batches }: Props) {
             </p>
           </div>
         )}
+
         {filtered.map((e) => (
           <div key={e.id} className="card-hover p-5">
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
-                <div className="flex items-center gap-2.5">
-                  <span className="font-semibold text-slate-900 truncate">
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <span className="truncate font-semibold text-slate-900">
                     {e.title}
                   </span>
                   <span
@@ -131,15 +145,24 @@ export default function ExamFilters({ exams, courses, batches }: Props) {
                   >
                     {e.is_published ? "Published" : "Draft"}
                   </span>
+                  {e.exam_mode === "practical" && (
+                    <span className="badge bg-cyan-50 text-cyan-700">
+                      Practical
+                    </span>
+                  )}
                 </div>
                 <p className="mt-0.5 text-sm text-slate-500">
-                  {e.courseName} · {e.batchName}
+                  {e.courseName} - {e.batchName}
                 </p>
                 <p className="mt-1 text-xs text-slate-400">
-                  {e.qCount} questions · {e.duration_minutes} min
-                  {e.negative_marking ? " · negative marking" : ""}
+                  {e.qCount} questions - {e.duration_minutes} min
+                  {e.negative_marking ? " - negative marking" : ""}
+                  {e.exam_mode === "practical"
+                    ? ` - ${e.timer_mode === "pausable" ? "pausable" : "continuous"} timer`
+                    : ""}
                 </p>
               </div>
+
               <div className="flex flex-wrap items-center justify-end gap-2">
                 <Link
                   href={`/admin/exams/${e.id}/questions`}
@@ -148,6 +171,15 @@ export default function ExamFilters({ exams, courses, batches }: Props) {
                   <FileText className="h-3.5 w-3.5" />
                   Questions
                 </Link>
+                {e.exam_mode === "practical" && (
+                  <Link
+                    href={`/admin/exams/${e.id}/case-studies`}
+                    className="btn-secondary flex items-center gap-1.5 text-xs"
+                  >
+                    <BookOpen className="h-3.5 w-3.5" />
+                    Cases
+                  </Link>
+                )}
                 <Link
                   href={`/admin/exams/${e.id}/sections`}
                   className="btn-secondary flex items-center gap-1.5 text-xs"

@@ -1,69 +1,109 @@
 import Link from "next/link";
+import { Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import ExamForm from "./ExamForm";
 import ExamFilters from "./ExamFilters";
-import { Trash2 } from "lucide-react";
+
+interface BatchRow {
+  id: string;
+  name: string;
+}
+
+interface CourseRow {
+  id: string;
+  name: string;
+  batches: BatchRow[] | null;
+}
+
+interface ExamRow {
+  id: string;
+  title: string;
+  instructions: string | null;
+  is_published: boolean;
+  duration_minutes: number;
+  pass_marks: number | string | null;
+  negative_marking: boolean;
+  shuffle_questions: boolean;
+  proctoring: boolean;
+  show_correct_answers: boolean | null;
+  show_explanations: boolean | null;
+  result_visible: boolean | null;
+  exam_mode: string | null;
+  timer_mode: string | null;
+  allow_case_navigation: boolean | null;
+  max_attempts: number;
+  start_time: string | null;
+  end_time: string | null;
+  course_id: string;
+  batch_id: string;
+  courses: { name: string } | null;
+  batches: { name: string } | null;
+  questions: { count: number }[] | null;
+}
 
 export default async function ExamsPage() {
   const supabase = await createClient();
 
-  const { data: courses } = await supabase
-    .from("courses")
-    .select("id, name, batches(id, name)")
-    .order("name");
+  const [{ data: courses }, { data: exams }, { count: trashCount }] =
+    await Promise.all([
+      supabase
+        .from("courses")
+        .select("id, name, batches(id, name)")
+        .order("name"),
+      supabase
+        .from("exams")
+        .select(
+          "id, title, instructions, is_published, duration_minutes, pass_marks, negative_marking, shuffle_questions, proctoring, show_correct_answers, show_explanations, result_visible, exam_mode, timer_mode, allow_case_navigation, max_attempts, start_time, end_time, course_id, batch_id, courses(name), batches(name), questions(count)"
+        )
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("exams")
+        .select("id", { count: "exact", head: true })
+        .not("deleted_at", "is", null),
+    ]);
 
-  const { data: exams } = await supabase
-    .from("exams")
-    .select(
-      "id, title, instructions, is_published, duration_minutes, pass_marks, negative_marking, shuffle_questions, proctoring, show_correct_answers, show_explanations, result_visible, max_attempts, start_time, end_time, course_id, batch_id, courses(name), batches(name), questions(count)"
-    )
-    .is("deleted_at", null)
-    .order("created_at", { ascending: false });
-
-  const { count: trashCount } = await supabase
-    .from("exams")
-    .select("id", { count: "exact", head: true })
-    .not("deleted_at", "is", null);
-
-  const hasCourses = (courses?.length ?? 0) > 0;
-
-  const courseList =
-    courses?.map((c) => ({ id: c.id, name: c.name })) ?? [];
+  const courseRows = (courses as CourseRow[] | null) ?? [];
+  const examRows = (exams as ExamRow[] | null) ?? [];
+  const formCourses = courseRows.map((course) => ({
+    id: course.id,
+    name: course.name,
+    batches: course.batches ?? [],
+  }));
+  const hasCourses = formCourses.length > 0;
 
   const batchList: { id: string; label: string }[] = [];
-  courses?.forEach((c) => {
-    const batches = c.batches as { id: string; name: string }[] | null;
-    batches?.forEach((b) => {
-      batchList.push({ id: b.id, label: `${c.name} — ${b.name}` });
+  courseRows.forEach((course) => {
+    course.batches?.forEach((batch) => {
+      batchList.push({ id: batch.id, label: `${course.name} - ${batch.name}` });
     });
   });
 
-  const examList =
-    exams?.map((e) => ({
-      id: e.id,
-      title: e.title,
-      is_published: e.is_published,
-      duration_minutes: e.duration_minutes,
-      pass_marks: Number(e.pass_marks) || 0,
-      negative_marking: e.negative_marking,
-      shuffle_questions: e.shuffle_questions,
-      proctoring: e.proctoring,
-      show_correct_answers: e.show_correct_answers ?? true,
-      show_explanations: e.show_explanations ?? true,
-      result_visible: e.result_visible ?? true,
-      max_attempts: e.max_attempts,
-      start_time: e.start_time,
-      end_time: e.end_time,
-      instructions: e.instructions,
-      course_id: e.course_id,
-      batch_id: e.batch_id,
-      courseName:
-        (e.courses as unknown as { name: string } | null)?.name ?? "",
-      batchName:
-        (e.batches as unknown as { name: string } | null)?.name ?? "",
-      qCount:
-        (e.questions as { count: number }[] | null)?.[0]?.count ?? 0,
-    })) ?? [];
+  const examList = examRows.map((exam) => ({
+    id: exam.id,
+    title: exam.title,
+    is_published: exam.is_published,
+    duration_minutes: exam.duration_minutes,
+    pass_marks: Number(exam.pass_marks) || 0,
+    negative_marking: exam.negative_marking,
+    shuffle_questions: exam.shuffle_questions,
+    proctoring: exam.proctoring,
+    show_correct_answers: exam.show_correct_answers ?? true,
+    show_explanations: exam.show_explanations ?? true,
+    result_visible: exam.result_visible ?? true,
+    exam_mode: exam.exam_mode ?? "standard",
+    timer_mode: exam.timer_mode ?? "continuous",
+    allow_case_navigation: exam.allow_case_navigation ?? true,
+    max_attempts: exam.max_attempts,
+    start_time: exam.start_time,
+    end_time: exam.end_time,
+    instructions: exam.instructions,
+    course_id: exam.course_id,
+    batch_id: exam.batch_id,
+    courseName: exam.courses?.name ?? "",
+    batchName: exam.batches?.name ?? "",
+    qCount: exam.questions?.[0]?.count ?? 0,
+  }));
 
   return (
     <div>
@@ -87,9 +127,9 @@ export default async function ExamsPage() {
       </div>
 
       {hasCourses ? (
-        <ExamForm courses={(courses as never) ?? []} />
+        <ExamForm courses={formCourses} />
       ) : (
-        <div className="mb-8 card border-amber-200 bg-amber-50 p-4">
+        <div className="card mb-8 border-amber-200 bg-amber-50 p-4">
           <p className="text-sm text-amber-700">
             To create an exam, first{" "}
             <Link href="/admin/courses" className="font-semibold underline">
@@ -102,7 +142,7 @@ export default async function ExamsPage() {
 
       <ExamFilters
         exams={examList}
-        courses={(courses as never) ?? []}
+        courses={formCourses}
         batches={batchList}
       />
     </div>

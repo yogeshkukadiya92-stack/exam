@@ -34,6 +34,7 @@ export async function addQuestion(formData: FormData): Promise<{
     const negativeMarks = Number(formData.get("negative_marks")) || 0;
     const explanation = (formData.get("explanation") as string)?.trim() || null;
     const correctText = (formData.get("correct_text") as string)?.trim() || null;
+    const caseStudyId = ((formData.get("case_study_id") as string) || "").trim() || null;
 
     if (!examId || !questionText) {
       return { ok: false, message: "Question text is required." };
@@ -69,6 +70,7 @@ export async function addQuestion(formData: FormData): Promise<{
       .from("questions")
       .insert({
         exam_id: examId,
+        case_study_id: caseStudyId,
         type,
         question_text: questionText,
         marks,
@@ -185,6 +187,7 @@ export async function updateQuestion(formData: FormData): Promise<{
     const negativeMarks = Number(formData.get("negative_marks")) || 0;
     const explanation = (formData.get("explanation") as string)?.trim() || null;
     const correctText = (formData.get("correct_text") as string)?.trim() || null;
+    const caseStudyId = ((formData.get("case_study_id") as string) || "").trim() || null;
 
     if (!id || !examId || !questionText) {
       return { ok: false, message: "Question text is required." };
@@ -218,6 +221,7 @@ export async function updateQuestion(formData: FormData): Promise<{
     const { error } = await supabase
       .from("questions")
       .update({
+        case_study_id: caseStudyId,
         type,
         question_text: questionText,
         marks,
