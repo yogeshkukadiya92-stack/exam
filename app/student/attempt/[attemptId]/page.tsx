@@ -34,11 +34,19 @@ export default async function AttemptPage({
   const { attemptId } = await params;
   const supabase = await createClient();
 
-  const { data: attempt } = await supabase
+  const attemptQuery = await supabase
     .from("attempts")
     .select("id, exam_id, status, started_at, exams(title, duration_minutes, negative_marking, end_time, shuffle_questions, proctoring, exam_mode, timer_mode, allow_case_navigation)")
     .eq("id", attemptId)
     .single();
+  const fallbackAttemptQuery = attemptQuery.error
+    ? await supabase
+        .from("attempts")
+        .select("id, exam_id, status, started_at, exams(title, duration_minutes, negative_marking, end_time, shuffle_questions, proctoring)")
+        .eq("id", attemptId)
+        .single()
+    : null;
+  const attempt = attemptQuery.data ?? fallbackAttemptQuery?.data;
 
   if (!attempt) notFound();
   if (attempt.status !== "in_progress") {
@@ -52,9 +60,9 @@ export default async function AttemptPage({
     end_time: string | null;
     shuffle_questions: boolean;
     proctoring: boolean;
-    exam_mode: string;
-    timer_mode: string;
-    allow_case_navigation: boolean;
+    exam_mode?: string | null;
+    timer_mode?: string | null;
+    allow_case_navigation?: boolean | null;
   };
 
   const isPausablePractical =
@@ -113,9 +121,9 @@ export default async function AttemptPage({
         <ExamRunner
           attemptId={attemptId}
           title={exam.title}
-          examMode={exam.exam_mode}
-          timerMode={exam.timer_mode}
-          allowCaseNavigation={exam.allow_case_navigation}
+          examMode={exam.exam_mode ?? "standard"}
+          timerMode={exam.timer_mode ?? "continuous"}
+          allowCaseNavigation={exam.allow_case_navigation ?? true}
           startedAt={attempt.started_at as string}
           durationMinutes={exam.duration_minutes}
           examEndTime={exam.end_time}

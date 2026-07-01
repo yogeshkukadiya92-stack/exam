@@ -19,19 +19,31 @@ export default async function ExamIntro({
   const { error } = await searchParams;
   const supabase = await createClient();
 
-  const { data: exam } = await supabase
+  const examQuery = await supabase
     .from("exams")
-    .select("id, title, instructions, duration_minutes, pass_marks, negative_marking, max_attempts, start_time, end_time, deleted_at, exam_mode, timer_mode, allow_case_navigation, courses(name), batches(name), questions(count), case_studies(count)")
+    .select("id, title, instructions, duration_minutes, pass_marks, negative_marking, max_attempts, start_time, end_time, deleted_at, exam_mode, timer_mode, allow_case_navigation, courses(name), batches(name), questions(count)")
     .eq("id", examId)
     .single();
+  const fallbackExamQuery = examQuery.error
+    ? await supabase
+        .from("exams")
+        .select("id, title, instructions, duration_minutes, pass_marks, negative_marking, max_attempts, start_time, end_time, deleted_at, courses(name), batches(name), questions(count)")
+        .eq("id", examId)
+        .single()
+    : null;
+  const exam = examQuery.data ?? fallbackExamQuery?.data;
 
   if (!exam || exam.deleted_at) {
     return <ExamUnavailable />;
   }
 
   const qCount = (exam.questions as { count: number }[] | null)?.[0]?.count ?? 0;
-  const caseCount = (exam.case_studies as { count: number }[] | null)?.[0]?.count ?? 0;
-  const isPractical = exam.exam_mode === "practical";
+  const examSettings = exam as typeof exam & {
+    exam_mode?: string | null;
+    timer_mode?: string | null;
+    allow_case_navigation?: boolean | null;
+  };
+  const isPractical = examSettings.exam_mode === "practical";
   const course = (exam.courses as unknown as { name: string } | null)?.name;
   const batch = (exam.batches as unknown as { name: string } | null)?.name;
 
@@ -39,7 +51,7 @@ export default async function ExamIntro({
   const { data: auth } = await supabase.auth.getUser();
   const studentId = auth.user?.id;
 
-  const [{ data: myAttempts }, { data: override }] = await Promise.all([
+  const [{ data: myAttempts }, { data: override }, caseCountResult] = await Promise.all([
     supabase
       .from("attempts")
       .select("id, status")
@@ -52,7 +64,14 @@ export default async function ExamIntro({
       .eq("exam_id", examId)
       .eq("student_id", studentId ?? "")
       .maybeSingle(),
+    isPractical
+      ? supabase
+          .from("case_studies")
+          .select("id", { count: "exact", head: true })
+          .eq("exam_id", examId)
+      : Promise.resolve({ count: 0 }),
   ]);
+  const caseCount = caseCountResult.count ?? 0;
 
   const attempts = (myAttempts ?? []) as AttemptSummary[];
   const inProgress = attempts.find((a) => a.status === "in_progress");
@@ -131,7 +150,7 @@ export default async function ExamIntro({
                   Timer
                 </p>
                 <p className="mt-1 text-lg font-semibold">
-                  {exam.timer_mode === "pausable" ? "Pausable" : "Continuous"}
+                  {examSettings.timer_mode === "pausable" ? "Pausable" : "Continuous"}
                 </p>
               </div>
             </div>
@@ -165,7 +184,7 @@ export default async function ExamIntro({
           )}
 
           <div className="mt-4 rounded-xl bg-amber-50 border border-amber-100 p-3 text-xs text-amber-700 dark:bg-amber-950/30 dark:border-amber-800 dark:text-amber-400">
-            {isPractical && exam.timer_mode === "pausable"
+            {isPractical && examSettings.timer_mode === "pausable"
               ? "Your active timer pauses when you pause or leave the practical exam. Answers are auto-saved."
               : "Once started, the timer begins. Answers are auto-saved. Navigate using the question palette and submit when done."}
             {" "}Once you submit, you cannot retake this exam or change your answers.

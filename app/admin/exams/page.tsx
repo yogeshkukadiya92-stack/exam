@@ -44,7 +44,7 @@ interface ExamRow {
 export default async function ExamsPage() {
   const supabase = await createClient();
 
-  const [{ data: courses }, { data: exams }, { count: trashCount }] =
+  const [{ data: courses }, examsQuery, { count: trashCount }] =
     await Promise.all([
       supabase
         .from("courses")
@@ -62,9 +62,18 @@ export default async function ExamsPage() {
         .select("id", { count: "exact", head: true })
         .not("deleted_at", "is", null),
     ]);
+  const fallbackExamsQuery = examsQuery.error
+    ? await supabase
+        .from("exams")
+        .select(
+          "id, title, instructions, is_published, duration_minutes, pass_marks, negative_marking, shuffle_questions, proctoring, show_correct_answers, show_explanations, result_visible, max_attempts, start_time, end_time, course_id, batch_id, courses(name), batches(name), questions(count)"
+        )
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false })
+    : null;
 
   const courseRows = (courses as CourseRow[] | null) ?? [];
-  const examRows = (exams as ExamRow[] | null) ?? [];
+  const examRows = ((examsQuery.data ?? fallbackExamsQuery?.data) as ExamRow[] | null) ?? [];
   const formCourses = courseRows.map((course) => ({
     id: course.id,
     name: course.name,

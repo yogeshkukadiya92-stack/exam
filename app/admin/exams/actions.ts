@@ -33,6 +33,16 @@ function timerModeFromForm(formData: FormData, examMode: string) {
   return formData.get("timer_mode") === "continuous" ? "continuous" : "pausable";
 }
 
+function isMissingPracticalSchema(error: unknown) {
+  const message = toMessage(error, "").toLowerCase();
+  return (
+    message.includes("exam_mode") ||
+    message.includes("timer_mode") ||
+    message.includes("allow_case_navigation") ||
+    message.includes("schema cache")
+  );
+}
+
 export async function createExam(formData: FormData) {
   const profile = await requireAdmin();
   const supabase = await createClient();
@@ -47,7 +57,7 @@ export async function createExam(formData: FormData) {
   const examMode = examModeFromForm(formData);
   const timerMode = timerModeFromForm(formData, examMode);
 
-  await supabase.from("exams").insert({
+  const payload = {
     title,
     course_id: courseId,
     batch_id: batchId,
@@ -68,7 +78,13 @@ export async function createExam(formData: FormData) {
     start_time: indiaDateTimeLocalToIso(startRaw),
     end_time: indiaDateTimeLocalToIso(endRaw),
     created_by: profile.id,
-  });
+  };
+
+  const { error } = await supabase.from("exams").insert(payload);
+  if (error && isMissingPracticalSchema(error)) {
+    const { exam_mode, timer_mode, allow_case_navigation, ...fallbackPayload } = payload;
+    await supabase.from("exams").insert(fallbackPayload);
+  }
 
   revalidatePath("/admin/exams");
 }
@@ -94,30 +110,38 @@ export async function updateExam(formData: FormData): Promise<{
     const examMode = examModeFromForm(formData);
     const timerMode = timerModeFromForm(formData, examMode);
 
-    const { error } = await supabase
+    const payload = {
+      title,
+      course_id: courseId,
+      batch_id: batchId,
+      exam_mode: examMode,
+      timer_mode: timerMode,
+      allow_case_navigation:
+        examMode === "practical" ? formData.get("allow_case_navigation") === "on" : true,
+      instructions: (formData.get("instructions") as string)?.trim() || null,
+      duration_minutes: Number(formData.get("duration_minutes")) || 60,
+      pass_marks: Number(formData.get("pass_marks")) || 0,
+      negative_marking: formData.get("negative_marking") === "on",
+      shuffle_questions: formData.get("shuffle_questions") === "on",
+      proctoring: formData.get("proctoring") === "on",
+      show_correct_answers: formData.get("show_correct_answers") === "on",
+      show_explanations: formData.get("show_explanations") === "on",
+      result_visible: formData.get("result_visible") === "on",
+      max_attempts: Number(formData.get("max_attempts")) || 1,
+      start_time: indiaDateTimeLocalToIso(startRaw),
+      end_time: indiaDateTimeLocalToIso(endRaw),
+    };
+
+    let { error } = await supabase
       .from("exams")
-      .update({
-        title,
-        course_id: courseId,
-        batch_id: batchId,
-        exam_mode: examMode,
-        timer_mode: timerMode,
-        allow_case_navigation:
-          examMode === "practical" ? formData.get("allow_case_navigation") === "on" : true,
-        instructions: (formData.get("instructions") as string)?.trim() || null,
-        duration_minutes: Number(formData.get("duration_minutes")) || 60,
-        pass_marks: Number(formData.get("pass_marks")) || 0,
-        negative_marking: formData.get("negative_marking") === "on",
-        shuffle_questions: formData.get("shuffle_questions") === "on",
-        proctoring: formData.get("proctoring") === "on",
-        show_correct_answers: formData.get("show_correct_answers") === "on",
-        show_explanations: formData.get("show_explanations") === "on",
-        result_visible: formData.get("result_visible") === "on",
-        max_attempts: Number(formData.get("max_attempts")) || 1,
-        start_time: indiaDateTimeLocalToIso(startRaw),
-        end_time: indiaDateTimeLocalToIso(endRaw),
-      })
+      .update(payload)
       .eq("id", id);
+
+    if (error && isMissingPracticalSchema(error)) {
+      const { exam_mode, timer_mode, allow_case_navigation, ...fallbackPayload } = payload;
+      const retry = await supabase.from("exams").update(fallbackPayload).eq("id", id);
+      error = retry.error;
+    }
 
     if (error) {
       return { ok: false, message: `Exam save failed: ${toMessage(error, "Unknown error")}` };
@@ -179,28 +203,42 @@ export async function duplicateExam(formData: FormData) {
     .single();
   if (!source) return;
 
-  const { data: newExam } = await supabase
+  const duplicatePayload = {
+    title: source.title + " (Copy)",
+    course_id: source.course_id,
+    batch_id: targetBatchId || source.batch_id,
+    exam_mode: source.exam_mode ?? "standard",
+    timer_mode: source.timer_mode ?? "continuous",
+    allow_case_navigation: source.allow_case_navigation ?? true,
+    instructions: source.instructions,
+    duration_minutes: source.duration_minutes,
+    pass_marks: source.pass_marks,
+    negative_marking: source.negative_marking,
+    shuffle_questions: source.shuffle_questions,
+    max_attempts: source.max_attempts,
+    start_time: null,
+    end_time: null,
+    is_published: false,
+    created_by: profile.id,
+  };
+
+  let duplicateResult = await supabase
     .from("exams")
-    .insert({
-      title: source.title + " (Copy)",
-      course_id: source.course_id,
-      batch_id: targetBatchId || source.batch_id,
-      exam_mode: source.exam_mode ?? "standard",
-      timer_mode: source.timer_mode ?? "continuous",
-      allow_case_navigation: source.allow_case_navigation ?? true,
-      instructions: source.instructions,
-      duration_minutes: source.duration_minutes,
-      pass_marks: source.pass_marks,
-      negative_marking: source.negative_marking,
-      shuffle_questions: source.shuffle_questions,
-      max_attempts: source.max_attempts,
-      start_time: null,
-      end_time: null,
-      is_published: false,
-      created_by: profile.id,
-    })
+    .insert(duplicatePayload)
     .select("id")
     .single();
+
+  if (duplicateResult.error && isMissingPracticalSchema(duplicateResult.error)) {
+    const { exam_mode, timer_mode, allow_case_navigation, ...fallbackPayload } =
+      duplicatePayload;
+    duplicateResult = await supabase
+      .from("exams")
+      .insert(fallbackPayload)
+      .select("id")
+      .single();
+  }
+
+  const newExam = duplicateResult.data;
 
   if (!newExam) return;
 

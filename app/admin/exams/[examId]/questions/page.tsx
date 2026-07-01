@@ -50,7 +50,7 @@ export default async function ExamQuestionsPage({
 
   if (!exam) notFound();
 
-  const [{ data: questions }, { data: bankQuestions }, { data: caseStudies }] =
+  const [questionsQuery, { data: bankQuestions }, caseStudiesQuery] =
     await Promise.all([
       supabase
         .from("questions")
@@ -69,9 +69,17 @@ export default async function ExamQuestionsPage({
         .order("position", { ascending: true })
         .order("created_at", { ascending: true }),
     ]);
+  const fallbackQuestionsQuery = questionsQuery.error
+    ? await supabase
+        .from("questions")
+        .select("id, question_text, type, marks, negative_marks, explanation, correct_text, options(id, option_text, is_correct, position)")
+        .eq("exam_id", examId)
+        .order("created_at", { ascending: true })
+    : null;
 
-  const questionRows = (questions as QuestionRow[] | null) ?? [];
-  const caseStudyRows = (caseStudies as CaseStudyRow[] | null) ?? [];
+  const questionRows =
+    ((questionsQuery.data ?? fallbackQuestionsQuery?.data) as QuestionRow[] | null) ?? [];
+  const caseStudyRows = (caseStudiesQuery.data as CaseStudyRow[] | null) ?? [];
   const totalMarks = questionRows.reduce((sum, q) => sum + Number(q.marks), 0);
 
   return (
