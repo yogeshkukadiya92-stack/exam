@@ -1,7 +1,9 @@
 "use server";
 
+import * as mammoth from "mammoth";
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/auth";
+import { parsePracticalWordText } from "@/lib/practical-word";
 import { revalidatePath } from "next/cache";
 
 function toMessage(error: unknown, fallback: string) {
@@ -27,6 +29,12 @@ function isMissingCaseStudySchema(error: unknown) {
     message.includes("schema cache")
   );
 }
+
+const normalizeCaseTitle = (value: string | null | undefined) =>
+  (value ?? "").trim().toLowerCase();
+
+const normalizeQuestionText = (value: string | null | undefined) =>
+  (value ?? "").trim().replace(/\s+/g, " ").toLowerCase();
 
 export async function addQuestion(formData: FormData): Promise<{
   ok: boolean;
@@ -145,9 +153,6 @@ export async function bulkAddQuestions(
   let failed = 0;
   let caseStudiesCreated = 0;
 
-  const normalizeCaseTitle = (value: string | null | undefined) =>
-    (value ?? "").trim().toLowerCase();
-
   const { data: existingCases } = await supabase
     .from("case_studies")
     .select("id, title")
@@ -248,6 +253,225 @@ export async function bulkAddQuestions(
   revalidatePath(`/admin/exams/${examId}/questions`);
   revalidatePath(`/admin/exams/${examId}/case-studies`);
   return { added, failed, caseStudiesCreated };
+}
+
+export async function importPracticalWordFile(formData: FormData): Promise<{
+  ok: boolean;
+  message: string;
+  caseStudiesCreated: number;
+  caseStudiesUpdated: number;
+  questionsAdded: number;
+  questionsSkipped: number;
+  questionsFailed: number;
+  parsedCases: number;
+  parsedQuestions: number;
+  warnings: string[];
+}> {
+  try {
+    const profile = await requireAdmin();
+    const supabase = await createClient();
+
+    const examId = String(formData.get("exam_id") ?? "");
+    const file = formData.get("file");
+
+    if (!examId) {
+      return {
+        ok: false,
+        message: "Exam is required.",
+        caseStudiesCreated: 0,
+        caseStudiesUpdated: 0,
+        questionsAdded: 0,
+        questionsSkipped: 0,
+        questionsFailed: 0,
+        parsedCases: 0,
+        parsedQuestions: 0,
+        warnings: [],
+      };
+    }
+
+    if (!(file instanceof File) || !file.name.toLowerCase().endsWith(".docx")) {
+      return {
+        ok: false,
+        message: "Upload a .docx Word file.",
+        caseStudiesCreated: 0,
+        caseStudiesUpdated: 0,
+        questionsAdded: 0,
+        questionsSkipped: 0,
+        questionsFailed: 0,
+        parsedCases: 0,
+        parsedQuestions: 0,
+        warnings: [],
+      };
+    }
+
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const extracted = await mammoth.extractRawText({ buffer });
+    const parsed = parsePracticalWordText(extracted.value);
+
+    if (parsed.cases.length === 0 || parsed.totalQuestions === 0) {
+      return {
+        ok: false,
+        message:
+          "No questions found. Use the Word format with Direction, [Q], (a)-(d), [ans], [Marks], and [sortid].",
+        caseStudiesCreated: 0,
+        caseStudiesUpdated: 0,
+        questionsAdded: 0,
+        questionsSkipped: parsed.skippedQuestions,
+        questionsFailed: 0,
+        parsedCases: parsed.cases.length,
+        parsedQuestions: parsed.totalQuestions,
+        warnings: parsed.warnings.slice(0, 10),
+      };
+    }
+
+    const { data: existingCases } = await supabase
+      .from("case_studies")
+      .select("id, title")
+      .eq("exam_id", examId);
+
+    const caseIdByTitle = new Map<string, string>();
+    ((existingCases as { id: string; title: string }[] | null) ?? []).forEach((study) => {
+      caseIdByTitle.set(normalizeCaseTitle(study.title), study.id);
+    });
+
+    const { data: existingQuestions } = await supabase
+      .from("questions")
+      .select("id, case_study_id, question_text")
+      .eq("exam_id", examId);
+
+    const questionKeys = new Set(
+      ((existingQuestions as {
+        case_study_id: string | null;
+        question_text: string;
+      }[] | null) ?? []).map(
+        (question) =>
+          `${question.case_study_id ?? "no-case"}:${normalizeQuestionText(question.question_text)}`
+      )
+    );
+
+    let caseStudiesCreated = 0;
+    let caseStudiesUpdated = 0;
+    let questionsAdded = 0;
+    let questionsSkipped = parsed.skippedQuestions;
+    let questionsFailed = 0;
+
+    for (const study of parsed.cases) {
+      let caseStudyId = caseIdByTitle.get(normalizeCaseTitle(study.title)) ?? null;
+
+      if (caseStudyId) {
+        const { error } = await supabase
+          .from("case_studies")
+          .update({
+            title: study.title,
+            content: study.content,
+            position: study.position,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", caseStudyId)
+          .eq("exam_id", examId);
+
+        if (error) {
+          questionsFailed += study.questions.length;
+          continue;
+        }
+        caseStudiesUpdated++;
+      } else {
+        const { data: insertedCase, error } = await supabase
+          .from("case_studies")
+          .insert({
+            exam_id: examId,
+            title: study.title,
+            content: study.content,
+            position: study.position,
+            created_by: profile.id,
+          })
+          .select("id")
+          .single();
+
+        if (error || !insertedCase) {
+          questionsFailed += study.questions.length;
+          continue;
+        }
+
+        caseStudyId = insertedCase.id as string;
+        caseIdByTitle.set(normalizeCaseTitle(study.title), caseStudyId);
+        caseStudiesCreated++;
+      }
+
+      for (const question of study.questions) {
+        const duplicateKey = `${caseStudyId}:${normalizeQuestionText(question.question_text)}`;
+        if (questionKeys.has(duplicateKey)) {
+          questionsSkipped++;
+          continue;
+        }
+
+        const { data: insertedQuestion, error: questionError } = await supabase
+          .from("questions")
+          .insert({
+            exam_id: examId,
+            case_study_id: caseStudyId,
+            type: question.type,
+            question_text: question.question_text,
+            marks: question.marks,
+            negative_marks: question.negative_marks,
+            explanation: question.explanation,
+          })
+          .select("id")
+          .single();
+
+        if (questionError || !insertedQuestion) {
+          questionsFailed++;
+          continue;
+        }
+
+        const optionRows = question.options.map((text, index) => ({
+          question_id: insertedQuestion.id,
+          option_text: text,
+          is_correct: question.correct.includes(index),
+          position: index,
+        }));
+
+        const { error: optionsError } = await supabase.from("options").insert(optionRows);
+        if (optionsError) {
+          await supabase.from("questions").delete().eq("id", insertedQuestion.id);
+          questionsFailed++;
+          continue;
+        }
+
+        questionKeys.add(duplicateKey);
+        questionsAdded++;
+      }
+    }
+
+    revalidatePath(`/admin/exams/${examId}/questions`);
+    revalidatePath(`/admin/exams/${examId}/case-studies`);
+
+    return {
+      ok: questionsAdded > 0 || caseStudiesCreated > 0 || caseStudiesUpdated > 0,
+      message: `${questionsAdded} questions added from Word.`,
+      caseStudiesCreated,
+      caseStudiesUpdated,
+      questionsAdded,
+      questionsSkipped,
+      questionsFailed,
+      parsedCases: parsed.cases.length,
+      parsedQuestions: parsed.totalQuestions,
+      warnings: parsed.warnings.slice(0, 10),
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      message: toMessage(error, "Unable to import the Word file."),
+      caseStudiesCreated: 0,
+      caseStudiesUpdated: 0,
+      questionsAdded: 0,
+      questionsSkipped: 0,
+      questionsFailed: 0,
+      parsedCases: 0,
+      parsedQuestions: 0,
+      warnings: [],
+    };
+  }
 }
 
 export async function updateQuestion(formData: FormData): Promise<{

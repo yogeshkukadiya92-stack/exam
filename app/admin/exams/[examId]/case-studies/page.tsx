@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { BookOpen, ChevronRight, FileText, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import CaseStudyExcelUpload from "./CaseStudyExcelUpload";
+import WordPracticalUpload from "../questions/WordPracticalUpload";
 import { addCaseStudy, deleteCaseStudy, updateCaseStudy } from "./actions";
 
 interface CaseStudyRow {
@@ -73,6 +74,7 @@ export default async function CaseStudiesPage({
       )}
 
       <CaseStudyExcelUpload examId={examId} />
+      {exam.exam_mode === "practical" && <WordPracticalUpload examId={examId} />}
 
       <form action={addCaseStudy} className="card mb-6 space-y-4 p-5">
         <input type="hidden" name="exam_id" value={examId} />

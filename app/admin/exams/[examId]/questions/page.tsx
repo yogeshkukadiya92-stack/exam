@@ -7,6 +7,7 @@ import ExcelQuestionUpload from "./ExcelQuestionUpload";
 import QuestionBankPicker from "./QuestionBankPicker";
 import EditQuestionButton from "./EditQuestionButton";
 import CaseStudyExcelUpload from "../case-studies/CaseStudyExcelUpload";
+import WordPracticalUpload from "./WordPracticalUpload";
 import { deleteQuestion } from "./actions";
 
 interface CaseStudyRow {
@@ -110,7 +111,12 @@ export default async function ExamQuestionsPage({
       </div>
 
       <ExcelQuestionUpload examId={examId} />
-      {exam.exam_mode === "practical" && <CaseStudyExcelUpload examId={examId} />}
+      {exam.exam_mode === "practical" && (
+        <>
+          <CaseStudyExcelUpload examId={examId} />
+          <WordPracticalUpload examId={examId} />
+        </>
+      )}
       <QuestionBankPicker
         examId={examId}
         questions={(bankQuestions as never) ?? []}
