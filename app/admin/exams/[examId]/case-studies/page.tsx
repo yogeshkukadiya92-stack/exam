@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BookOpen, ChevronRight, FileText, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import CaseStudyExcelUpload from "./CaseStudyExcelUpload";
 import { addCaseStudy, deleteCaseStudy, updateCaseStudy } from "./actions";
 
 interface CaseStudyRow {
@@ -70,6 +71,8 @@ export default async function CaseStudiesPage({
           This exam is currently set as Standard. Change the exam type to Practical to use the split case-study runner.
         </div>
       )}
+
+      <CaseStudyExcelUpload examId={examId} />
 
       <form action={addCaseStudy} className="card mb-6 space-y-4 p-5">
         <input type="hidden" name="exam_id" value={examId} />

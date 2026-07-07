@@ -19,6 +19,16 @@ function toMessage(error: unknown, fallback: string) {
   return fallback;
 }
 
+interface BulkCaseStudy {
+  title: string;
+  content: string;
+  position: number | null;
+}
+
+function normalizeTitle(value: string | null | undefined) {
+  return (value ?? "").trim().toLowerCase();
+}
+
 export async function addCaseStudy(formData: FormData) {
   try {
     const profile = await requireAdmin();
@@ -50,6 +60,82 @@ export async function addCaseStudy(formData: FormData) {
   } catch (error) {
     console.error("Unable to add case study:", toMessage(error, "Unknown error"));
   }
+}
+
+export async function bulkImportCaseStudies(
+  examId: string,
+  studies: BulkCaseStudy[]
+): Promise<{ added: number; updated: number; failed: number }> {
+  const profile = await requireAdmin();
+  const supabase = await createClient();
+
+  let added = 0;
+  let updated = 0;
+  let failed = 0;
+
+  const { data: existingCases } = await supabase
+    .from("case_studies")
+    .select("id, title")
+    .eq("exam_id", examId);
+
+  const caseIdByTitle = new Map<string, string>();
+  ((existingCases as { id: string; title: string }[] | null) ?? []).forEach((study) => {
+    caseIdByTitle.set(normalizeTitle(study.title), study.id);
+  });
+
+  for (const study of studies) {
+    const title = study.title.trim();
+    const content = study.content.trim();
+
+    if (!examId || !title || !content) {
+      failed++;
+      continue;
+    }
+
+    const position = study.position ?? caseIdByTitle.size + 1;
+    const existingId = caseIdByTitle.get(normalizeTitle(title));
+
+    if (existingId) {
+      const { error } = await supabase
+        .from("case_studies")
+        .update({
+          title,
+          content,
+          position,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", existingId)
+        .eq("exam_id", examId);
+
+      if (error) failed++;
+      else updated++;
+      continue;
+    }
+
+    const { data: inserted, error } = await supabase
+      .from("case_studies")
+      .insert({
+        exam_id: examId,
+        title,
+        content,
+        position,
+        created_by: profile.id,
+      })
+      .select("id")
+      .single();
+
+    if (error || !inserted) {
+      failed++;
+      continue;
+    }
+
+    caseIdByTitle.set(normalizeTitle(title), inserted.id as string);
+    added++;
+  }
+
+  revalidatePath(`/admin/exams/${examId}/case-studies`);
+  revalidatePath(`/admin/exams/${examId}/questions`);
+  return { added, updated, failed };
 }
 
 export async function updateCaseStudy(formData: FormData) {

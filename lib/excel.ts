@@ -98,6 +98,69 @@ export async function parseQuestionsFile(file: File): Promise<ParsedQuestion[]> 
   });
 }
 
+/* ----------------------- Case Study Excel ----------------------- */
+
+export interface ParsedCaseStudy {
+  row: number;
+  title: string;
+  content: string;
+  position: number | null;
+  error?: string;
+}
+
+const CASE_STUDY_HEADERS = ["Title", "Content", "Order"];
+
+export function downloadCaseStudyTemplate() {
+  const example = [
+    "Case Study 1",
+    "A company wants to reduce delivery delays. Students should read this case before answering the practical questions.",
+    1,
+  ];
+  const ws = XLSX.utils.aoa_to_sheet([CASE_STUDY_HEADERS, example]);
+  ws["!cols"] = [
+    { wch: 24 },
+    { wch: 90 },
+    { wch: 12 },
+  ];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Case Studies");
+  XLSX.writeFile(wb, "case_studies_template.xlsx");
+}
+
+export async function parseCaseStudiesFile(file: File): Promise<ParsedCaseStudy[]> {
+  const buf = await file.arrayBuffer();
+  const wb = XLSX.read(buf, { type: "array" });
+  const sheet = wb.Sheets[wb.SheetNames[0]];
+  const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, {
+    defval: "",
+    raw: false,
+  });
+
+  return rows.map((r, i) => {
+    const get = (k: string) => String(r[k] ?? "").trim();
+    const title = get("Title") || get("CaseTitle") || get("Case Study") || get("CaseStudy");
+    const content =
+      get("Content") ||
+      get("CaseContent") ||
+      get("Case Study Content") ||
+      get("CaseDescription");
+    const positionRaw = get("Order") || get("Position") || get("CaseOrder") || get("CasePosition");
+    const position = positionRaw ? Number(positionRaw) || null : null;
+
+    let error: string | undefined;
+    if (!title) error = "Title is required";
+    else if (!content) error = "Content is required";
+
+    return {
+      row: i + 2,
+      title,
+      content,
+      position,
+      error,
+    };
+  });
+}
+
 /* ----------------------- Student Excel ----------------------- */
 
 export interface ParsedStudent {
