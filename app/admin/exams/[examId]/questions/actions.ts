@@ -36,6 +36,17 @@ const normalizeCaseTitle = (value: string | null | undefined) =>
 const normalizeQuestionText = (value: string | null | undefined) =>
   (value ?? "").trim().replace(/\s+/g, " ").toLowerCase();
 
+interface UploadedWordFile {
+  name: string;
+  arrayBuffer: () => Promise<ArrayBuffer>;
+}
+
+function isUploadedWordFile(value: unknown): value is UploadedWordFile {
+  if (!value || typeof value !== "object") return false;
+  const file = value as { name?: unknown; arrayBuffer?: unknown };
+  return typeof file.name === "string" && typeof file.arrayBuffer === "function";
+}
+
 export async function addQuestion(formData: FormData): Promise<{
   ok: boolean;
   message: string;
@@ -289,7 +300,7 @@ export async function importPracticalWordFile(formData: FormData): Promise<{
       };
     }
 
-    if (!(file instanceof File) || !file.name.toLowerCase().endsWith(".docx")) {
+    if (!isUploadedWordFile(file) || !file.name.toLowerCase().endsWith(".docx")) {
       return {
         ok: false,
         message: "Upload a .docx Word file.",
