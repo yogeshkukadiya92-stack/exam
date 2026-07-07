@@ -30,6 +30,7 @@ interface QuestionRow {
   type: string;
   marks: number | string;
   negative_marks: number | string;
+  position: number | null;
   explanation: string | null;
   correct_text: string | null;
   case_studies: CaseStudyRow | null;
@@ -56,8 +57,9 @@ export default async function ExamQuestionsPage({
     await Promise.all([
       supabase
         .from("questions")
-        .select("id, case_study_id, question_text, type, marks, negative_marks, explanation, correct_text, case_studies(id, title, position), options(id, option_text, is_correct, position)")
+        .select("id, case_study_id, question_text, type, marks, negative_marks, position, explanation, correct_text, case_studies(id, title, position), options(id, option_text, is_correct, position)")
         .eq("exam_id", examId)
+        .order("position", { ascending: true })
         .order("created_at", { ascending: true }),
       supabase
         .from("question_bank")
@@ -74,8 +76,9 @@ export default async function ExamQuestionsPage({
   const fallbackQuestionsQuery = questionsQuery.error
     ? await supabase
         .from("questions")
-        .select("id, question_text, type, marks, negative_marks, explanation, correct_text, options(id, option_text, is_correct, position)")
+        .select("id, question_text, type, marks, negative_marks, position, explanation, correct_text, options(id, option_text, is_correct, position)")
         .eq("exam_id", examId)
+        .order("position", { ascending: true })
         .order("created_at", { ascending: true })
     : null;
 
@@ -131,7 +134,10 @@ export default async function ExamQuestionsPage({
             <div key={q.id} className="card-hover p-5">
               <div className="flex items-start justify-between gap-3">
                 <p className="font-medium text-slate-900">
-                  <span className="text-slate-400">{idx + 1}.</span> {q.question_text}
+                  <span className="text-slate-400">
+                    {Number(q.position) > 0 ? q.position : idx + 1}.
+                  </span>{" "}
+                  {q.question_text}
                 </p>
                 <div className="flex shrink-0 items-center gap-2">
                   <EditQuestionButton

@@ -30,6 +30,10 @@ function isMissingCaseStudySchema(error: unknown) {
   );
 }
 
+function addImportWarning(warnings: string[], message: string) {
+  if (warnings.length < 25) warnings.push(message);
+}
+
 const normalizeCaseTitle = (value: string | null | undefined) =>
   (value ?? "").trim().toLowerCase();
 
@@ -318,6 +322,7 @@ export async function importPracticalWordFile(formData: FormData): Promise<{
     const buffer = Buffer.from(await file.arrayBuffer());
     const extracted = await mammoth.extractRawText({ buffer });
     const parsed = parsePracticalWordText(extracted.value);
+    const warnings = [...parsed.warnings];
 
     if (parsed.cases.length === 0 || parsed.totalQuestions === 0) {
       return {
@@ -331,24 +336,56 @@ export async function importPracticalWordFile(formData: FormData): Promise<{
         questionsFailed: 0,
         parsedCases: parsed.cases.length,
         parsedQuestions: parsed.totalQuestions,
-        warnings: parsed.warnings.slice(0, 10),
+        warnings: warnings.slice(0, 10),
       };
     }
 
-    const { data: existingCases } = await supabase
+    const { data: existingCases, error: existingCasesError } = await supabase
       .from("case_studies")
       .select("id, title")
       .eq("exam_id", examId);
+
+    if (existingCasesError && isMissingCaseStudySchema(existingCasesError)) {
+      return {
+        ok: false,
+        message:
+          "Case-study Word import needs the Phase 10 database migration. Run supabase/phase10_practical_case_studies.sql, then retry.",
+        caseStudiesCreated: 0,
+        caseStudiesUpdated: 0,
+        questionsAdded: 0,
+        questionsSkipped: parsed.skippedQuestions,
+        questionsFailed: parsed.totalQuestions,
+        parsedCases: parsed.cases.length,
+        parsedQuestions: parsed.totalQuestions,
+        warnings: [toMessage(existingCasesError, "Missing case-study database schema.")],
+      };
+    }
 
     const caseIdByTitle = new Map<string, string>();
     ((existingCases as { id: string; title: string }[] | null) ?? []).forEach((study) => {
       caseIdByTitle.set(normalizeCaseTitle(study.title), study.id);
     });
 
-    const { data: existingQuestions } = await supabase
+    const { data: existingQuestions, error: existingQuestionsError } = await supabase
       .from("questions")
       .select("id, case_study_id, question_text")
       .eq("exam_id", examId);
+
+    if (existingQuestionsError && isMissingCaseStudySchema(existingQuestionsError)) {
+      return {
+        ok: false,
+        message:
+          "Questions cannot be linked with case studies until the Phase 10 database migration is applied.",
+        caseStudiesCreated: 0,
+        caseStudiesUpdated: 0,
+        questionsAdded: 0,
+        questionsSkipped: parsed.skippedQuestions,
+        questionsFailed: parsed.totalQuestions,
+        parsedCases: parsed.cases.length,
+        parsedQuestions: parsed.totalQuestions,
+        warnings: [toMessage(existingQuestionsError, "Missing question case-study column.")],
+      };
+    }
 
     const questionKeys = new Set(
       ((existingQuestions as {
@@ -383,6 +420,10 @@ export async function importPracticalWordFile(formData: FormData): Promise<{
 
         if (error) {
           questionsFailed += study.questions.length;
+          addImportWarning(
+            warnings,
+            `Case study "${study.title}" update failed: ${toMessage(error, "Unknown error")}`
+          );
           continue;
         }
         caseStudiesUpdated++;
@@ -401,6 +442,10 @@ export async function importPracticalWordFile(formData: FormData): Promise<{
 
         if (error || !insertedCase) {
           questionsFailed += study.questions.length;
+          addImportWarning(
+            warnings,
+            `Case study "${study.title}" save failed: ${toMessage(error, "Unknown error")}`
+          );
           continue;
         }
 
@@ -426,12 +471,22 @@ export async function importPracticalWordFile(formData: FormData): Promise<{
             marks: question.marks,
             negative_marks: question.negative_marks,
             explanation: question.explanation,
+            position:
+              question.sort_id ??
+              questionsAdded + questionsSkipped + questionsFailed + 1,
           })
           .select("id")
           .single();
 
         if (questionError || !insertedQuestion) {
           questionsFailed++;
+          addImportWarning(
+            warnings,
+            `Question ${question.sort_id ?? questionsAdded + questionsFailed} save failed: ${toMessage(
+              questionError,
+              "Unknown error"
+            )}`
+          );
           continue;
         }
 
@@ -446,6 +501,13 @@ export async function importPracticalWordFile(formData: FormData): Promise<{
         if (optionsError) {
           await supabase.from("questions").delete().eq("id", insertedQuestion.id);
           questionsFailed++;
+          addImportWarning(
+            warnings,
+            `Options for question ${question.sort_id ?? questionsAdded + questionsFailed} failed: ${toMessage(
+              optionsError,
+              "Unknown error"
+            )}`
+          );
           continue;
         }
 
@@ -467,7 +529,7 @@ export async function importPracticalWordFile(formData: FormData): Promise<{
       questionsFailed,
       parsedCases: parsed.cases.length,
       parsedQuestions: parsed.totalQuestions,
-      warnings: parsed.warnings.slice(0, 10),
+      warnings: warnings.slice(0, 25),
     };
   } catch (error) {
     return {

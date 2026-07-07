@@ -104,7 +104,7 @@ export default function WordPracticalUpload({ examId }: { examId: string }) {
       </div>
 
       <p className="text-xs text-slate-400">
-        Format: Direction + LIFESTYLE case block, then [Q], (a)-(d), [ans], [Marks], [sortid], [soln].
+        Format: [P.x] Direction (...) Case Study, LIFESTYLE case details, then [Q], (a)-(d), [qtype], [ans], [Marks], [sortid], [soln].
       </p>
 
       {result && (
@@ -117,6 +117,7 @@ export default function WordPracticalUpload({ examId }: { examId: string }) {
           <p className="mt-1">
             {result.caseStudiesCreated} case studies added
             {result.caseStudiesUpdated ? `, ${result.caseStudiesUpdated} updated` : ""}
+            {result.questionsAdded ? `, ${result.questionsAdded} questions added` : ""}
             {result.questionsSkipped ? `, ${result.questionsSkipped} skipped` : ""}
             {result.questionsFailed ? `, ${result.questionsFailed} failed` : ""}.
           </p>
