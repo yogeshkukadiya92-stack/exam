@@ -5,7 +5,7 @@ import { getProfile } from "@/lib/auth";
 import PrintButton from "../result/PrintButton";
 
 interface ResultData {
-  exam: { title: string; pass_marks: number };
+  exam: { title: string; pass_marks: number; result_visible?: boolean | null };
   total_score: number | null;
 }
 
@@ -24,6 +24,23 @@ export default async function CertificatePage({
   if (error || !data) notFound();
 
   const result = data as ResultData;
+  const { data: attemptRow } = await supabase
+    .from("attempts")
+    .select("exam_id")
+    .eq("id", attemptId)
+    .maybeSingle();
+  const { data: examSettings } = attemptRow?.exam_id
+    ? await supabase
+        .from("exams")
+        .select("result_visible")
+        .eq("id", attemptRow.exam_id)
+        .maybeSingle()
+    : { data: null };
+
+  if ((examSettings?.result_visible ?? result.exam.result_visible) === false) {
+    redirect(`/student/attempt/${attemptId}/result`);
+  }
+
   const score = result.total_score ?? 0;
   const passed = score >= result.exam.pass_marks;
 

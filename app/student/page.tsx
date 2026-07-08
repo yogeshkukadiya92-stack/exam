@@ -18,6 +18,7 @@ interface ExamRow {
   duration_minutes: number;
   negative_marking: boolean;
   pass_marks: number | string | null;
+  result_visible: boolean | null;
   max_attempts: number | null;
   courses: { name: string } | null;
   batches: { name: string } | null;
@@ -60,7 +61,7 @@ export default async function StudentDashboard() {
     supabase
       .from("exams")
       .select(
-        "id, title, duration_minutes, negative_marking, pass_marks, max_attempts, courses(name), batches(name), questions(count)"
+        "id, title, duration_minutes, negative_marking, pass_marks, result_visible, max_attempts, courses(name), batches(name), questions(count)"
       )
       .is("deleted_at", null)
       .order("created_at", { ascending: false }),
@@ -97,7 +98,10 @@ export default async function StudentDashboard() {
   });
 
   const submitted = attemptRows.filter((attempt) => attempt.status !== "in_progress");
-  const scores = submitted
+  const examById = new Map(examRows.map((exam) => [exam.id, exam]));
+  const isResultVisible = (examId: string) => examById.get(examId)?.result_visible !== false;
+  const visibleSubmitted = submitted.filter((attempt) => isResultVisible(attempt.exam_id));
+  const scores = visibleSubmitted
     .map((attempt) => attempt.total_score)
     .filter((score): score is number => score != null);
   const avgScore =
@@ -111,7 +115,7 @@ export default async function StudentDashboard() {
   );
   let passCount = 0;
   const examsSeen = new Set<string>();
-  submitted.forEach((attempt) => {
+  visibleSubmitted.forEach((attempt) => {
     if (examsSeen.has(attempt.exam_id)) return;
     examsSeen.add(attempt.exam_id);
 
@@ -119,6 +123,7 @@ export default async function StudentDashboard() {
       0,
       ...(byExam.get(attempt.exam_id) ?? [])
         .filter((item) => item.status !== "in_progress")
+        .filter((item) => isResultVisible(item.exam_id))
         .map((item) => item.total_score ?? 0)
     );
     if (bestForExam >= (passMarksByExam.get(attempt.exam_id) ?? 0)) passCount++;
@@ -138,21 +143,21 @@ export default async function StudentDashboard() {
     },
     {
       label: "Average Score",
-      value: avgScore,
+      value: scores.length > 0 ? avgScore : "-",
       icon: TrendingUp,
       color: "from-violet-500 to-violet-600",
       shadow: "shadow-violet-200",
     },
     {
       label: "Pass Rate",
-      value: `${passRate}%`,
+      value: examsSeen.size > 0 ? `${passRate}%` : "-",
       icon: Award,
       color: "from-emerald-500 to-emerald-600",
       shadow: "shadow-emerald-200",
     },
     {
       label: "Best Score",
-      value: bestScore,
+      value: scores.length > 0 ? bestScore : "-",
       icon: Trophy,
       color: "from-amber-500 to-amber-600",
       shadow: "shadow-amber-200",
@@ -239,6 +244,7 @@ export default async function StudentDashboard() {
                   {recentResults.map((attempt) => {
                     const examTitle =
                       examRows.find((exam) => exam.id === attempt.exam_id)?.title ?? "Exam";
+                    const resultVisible = isResultVisible(attempt.exam_id);
                     return (
                       <tr
                         key={attempt.id}
@@ -248,8 +254,14 @@ export default async function StudentDashboard() {
                           {examTitle}
                         </td>
                         <td className="px-5 py-3.5">
-                          <span className="badge bg-indigo-50 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-400">
-                            {attempt.total_score ?? 0}
+                          <span
+                            className={`badge ${
+                              resultVisible
+                                ? "bg-indigo-50 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-400"
+                                : "bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-300"
+                            }`}
+                          >
+                            {resultVisible ? attempt.total_score ?? 0 : "Hidden"}
                           </span>
                         </td>
                         <td className="hidden px-5 py-3.5 text-slate-500 dark:text-slate-400 sm:table-cell">
@@ -294,9 +306,12 @@ export default async function StudentDashboard() {
           const list = byExam.get(exam.id) ?? [];
           const inProgress = list.find((attempt) => attempt.status === "in_progress");
           const submittedForExam = list.filter((attempt) => attempt.status !== "in_progress");
-          const examScores = submittedForExam
+          const resultVisible = exam.result_visible !== false;
+          const examScores = resultVisible
+            ? submittedForExam
             .map((attempt) => attempt.total_score)
-            .filter((score): score is number => score != null);
+            .filter((score): score is number => score != null)
+            : [];
           const best = examScores.length ? Math.max(...examScores) : null;
           const attemptLimit =
             (Number(exam.max_attempts) || 1) + (extraByExam.get(exam.id) ?? 0);
@@ -319,7 +334,7 @@ export default async function StudentDashboard() {
                       Negative marking
                     </span>
                   )}
-                  {best != null && (
+                  {resultVisible && best != null && (
                     <span className="badge bg-emerald-50 text-emerald-600">
                       <Trophy className="h-3 w-3" />
                       Best: {best}
