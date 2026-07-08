@@ -130,6 +130,7 @@ export default function ExamRunner({
   initialAnswers,
   initialTextAnswers,
   initialFlags,
+  preview = false,
 }: {
   attemptId: string;
   title: string;
@@ -147,10 +148,12 @@ export default function ExamRunner({
   initialAnswers: Record<string, string[]>;
   initialTextAnswers: Record<string, string>;
   initialFlags: Record<string, boolean>;
+  preview?: boolean;
 }) {
   const supabase = useMemo(() => createClient(), []);
   const isPractical = examMode === "practical";
-  const isPausable = isPractical && timerMode === "pausable";
+  const isPausable = !preview && isPractical && timerMode === "pausable";
+  const proctoringEnabled = !preview && proctoring;
   const durationSeconds = Math.max(1, durationMinutes * 60);
 
   const questions = useMemo(() => {
@@ -207,11 +210,15 @@ export default function ExamRunner({
 
   const doSubmit = useCallback(() => {
     if (submittedRef.current) return;
+    if (preview) {
+      setConfirmSubmit(false);
+      return;
+    }
     submittedRef.current = true;
     setConfirmSubmit(false);
     setAutoSubmitting(true);
     startTransition(() => submitAttempt(attemptId));
-  }, [attemptId]);
+  }, [attemptId, preview]);
 
   const startSession = useCallback(async () => {
     if (!isPausable || submittedRef.current || sessionIdRef.current || startingSessionRef.current) {
@@ -345,7 +352,7 @@ export default function ExamRunner({
   }, [continuousDeadline, doSubmit, durationSeconds, examEndTime, isPausable]);
 
   useEffect(() => {
-    if (!proctoring) return;
+    if (!proctoringEnabled) return;
     const onHidden = () => {
       if (document.visibilityState === "hidden") {
         setViolations((v) => {
@@ -357,9 +364,9 @@ export default function ExamRunner({
     };
     document.addEventListener("visibilitychange", onHidden);
     return () => document.removeEventListener("visibilitychange", onHidden);
-  }, [doSubmit, proctoring]);
+  }, [doSubmit, proctoringEnabled]);
 
-  const blockEvents = proctoring
+  const blockEvents = proctoringEnabled
     ? {
         onCopy: (e: React.ClipboardEvent) => e.preventDefault(),
         onPaste: (e: React.ClipboardEvent) => e.preventDefault(),
@@ -420,6 +427,7 @@ export default function ExamRunner({
 
   const save = async (qid: string, optionIds: string[], flag: boolean) => {
     if (submittedRef.current) return;
+    if (preview) return;
     setSaving(true);
     try {
       await supabase.from("answers").upsert(
@@ -438,6 +446,7 @@ export default function ExamRunner({
 
   const saveText = async (qid: string, value: string, flag: boolean) => {
     if (submittedRef.current) return;
+    if (preview) return;
     setSaving(true);
     try {
       await supabase.from("answers").upsert(
@@ -483,7 +492,7 @@ export default function ExamRunner({
           Question {idx + 1} of {questions.length}
         </span>
         <span className={`text-xs transition-colors ${saving ? "text-amber-500" : "text-emerald-500 dark:text-emerald-400"}`}>
-          {saving ? "saving..." : "saved"}
+          {preview ? "preview" : saving ? "saving..." : "saved"}
         </span>
       </div>
 
@@ -751,14 +760,19 @@ export default function ExamRunner({
   );
 
   return (
-    <div {...blockEvents} className={proctoring ? "select-none" : ""}>
+    <div {...blockEvents} className={proctoringEnabled ? "select-none" : ""}>
+      {preview && (
+        <div className="mb-3 rounded-xl border border-indigo-200 bg-indigo-50 p-3 text-sm text-indigo-700 dark:border-indigo-800 dark:bg-indigo-950/30 dark:text-indigo-300">
+          Preview mode: answers, review flags, and submit clicks are only for checking the exam flow. Nothing is saved.
+        </div>
+      )}
       {autoSubmitting && (
         <div className="mb-3 flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-700 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-400">
           <AlertTriangle className="h-4 w-4 shrink-0" />
           Time is up! Your exam is being submitted automatically...
         </div>
       )}
-      {proctoring && violations > 0 && (
+      {proctoringEnabled && violations > 0 && (
         <div className="mb-3 flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950/30 dark:text-red-400">
           <AlertTriangle className="h-4 w-4 shrink-0" />
           Warning: Tab switch detected ({violations}/{MAX_VIOLATIONS}).

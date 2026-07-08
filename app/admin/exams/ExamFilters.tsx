@@ -171,6 +171,13 @@ export default function ExamFilters({ exams, courses, batches }: Props) {
                   <FileText className="h-3.5 w-3.5" />
                   Questions
                 </Link>
+                <Link
+                  href={`/admin/exams/${e.id}/preview`}
+                  className="btn-secondary flex items-center gap-1.5 text-xs"
+                >
+                  <Eye className="h-3.5 w-3.5" />
+                  Preview
+                </Link>
                 {e.exam_mode === "practical" && (
                   <Link
                     href={`/admin/exams/${e.id}/case-studies`}
