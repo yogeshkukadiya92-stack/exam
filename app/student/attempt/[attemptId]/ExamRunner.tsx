@@ -616,6 +616,18 @@ export default function ExamRunner({
       </div>
 
       {isPractical && (
+        <button
+          type="button"
+          onClick={askSubmit}
+          disabled={pending || autoSubmitting}
+          className="mb-3 flex w-full items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-emerald-700 active:scale-[0.98] disabled:opacity-50"
+        >
+          <Check className="h-4 w-4" />
+          {pending || autoSubmitting ? "Submitting..." : "Submit exam"}
+        </button>
+      )}
+
+      {isPractical && (
         <div className="mb-3 space-y-2">
           {caseGroups.map((group, caseIndex) => {
             const answeredInCase = group.questions.filter((question) => isAnswered(question)).length;
@@ -819,6 +831,17 @@ export default function ExamRunner({
           )}
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          {isPractical && (
+            <button
+              type="button"
+              onClick={askSubmit}
+              disabled={pending || autoSubmitting}
+              className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:bg-emerald-700 active:scale-[0.98] disabled:opacity-50"
+            >
+              <Check className="h-4 w-4" />
+              {pending || autoSubmitting ? "Submitting..." : "Submit exam"}
+            </button>
+          )}
           {isPausable && (
             <button
               type="button"
