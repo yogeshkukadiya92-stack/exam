@@ -30,7 +30,7 @@ export default function DuplicateExamButton({
   }
 
   return (
-    <form action={duplicateExam} className="flex items-center gap-2">
+    <form action={duplicateExam} className="flex flex-wrap items-center gap-2">
       <input type="hidden" name="exam_id" value={examId} />
       <select
         name="batch_id"
@@ -42,6 +42,15 @@ export default function DuplicateExamButton({
             {b.label}
           </option>
         ))}
+      </select>
+      <select
+        name="copy_questions"
+        defaultValue="true"
+        className="input py-1.5 text-xs"
+        aria-label="Duplicate question option"
+      >
+        <option value="true">With questions</option>
+        <option value="false">Without questions</option>
       </select>
       <button type="submit" className="btn-primary text-xs py-1.5 px-3">
         Copy

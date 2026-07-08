@@ -195,6 +195,7 @@ export async function duplicateExam(formData: FormData) {
 
   const examId = formData.get("exam_id") as string;
   const targetBatchId = (formData.get("batch_id") as string) || null;
+  const copyQuestions = formData.get("copy_questions") !== "false";
 
   const { data: source } = await supabase
     .from("exams")
@@ -241,6 +242,10 @@ export async function duplicateExam(formData: FormData) {
   const newExam = duplicateResult.data;
 
   if (!newExam) return;
+  if (!copyQuestions) {
+    revalidatePath("/admin/exams");
+    return;
+  }
 
   const caseStudyMap = new Map<string, string>();
   const { data: caseStudies } = await supabase
