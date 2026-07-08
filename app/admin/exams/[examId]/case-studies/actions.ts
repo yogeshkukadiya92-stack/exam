@@ -1,6 +1,7 @@
 "use server";
 
 import { requireAdmin } from "@/lib/auth";
+import { normalizeRichTextContent, richTextToPlainText } from "@/lib/rich-text";
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 
@@ -36,9 +37,9 @@ export async function addCaseStudy(formData: FormData) {
 
     const examId = formData.get("exam_id") as string;
     const title = (formData.get("title") as string)?.trim();
-    const content = (formData.get("content") as string)?.trim();
+    const content = normalizeRichTextContent(formData.get("content") as string);
 
-    if (!examId || !title || !content) {
+    if (!examId || !title || !richTextToPlainText(content)) {
       return;
     }
 
@@ -85,9 +86,9 @@ export async function bulkImportCaseStudies(
 
   for (const study of studies) {
     const title = study.title.trim();
-    const content = study.content.trim();
+    const content = normalizeRichTextContent(study.content);
 
-    if (!examId || !title || !content) {
+    if (!examId || !title || !richTextToPlainText(content)) {
       failed++;
       continue;
     }
@@ -146,9 +147,9 @@ export async function updateCaseStudy(formData: FormData) {
     const id = formData.get("id") as string;
     const examId = formData.get("exam_id") as string;
     const title = (formData.get("title") as string)?.trim();
-    const content = (formData.get("content") as string)?.trim();
+    const content = normalizeRichTextContent(formData.get("content") as string);
 
-    if (!id || !examId || !title || !content) {
+    if (!id || !examId || !title || !richTextToPlainText(content)) {
       return;
     }
 

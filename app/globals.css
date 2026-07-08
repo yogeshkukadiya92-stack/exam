@@ -62,6 +62,46 @@
   .gradient-text {
     @apply bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent;
   }
+
+  .rich-text {
+    @apply whitespace-normal break-words;
+  }
+
+  .rich-text b,
+  .rich-text strong {
+    @apply font-semibold text-slate-900 dark:text-slate-100;
+  }
+
+  .rich-text i,
+  .rich-text em {
+    @apply italic;
+  }
+
+  .rich-text u {
+    @apply underline underline-offset-2;
+  }
+
+  .rich-text ul {
+    @apply my-2 list-disc space-y-1 pl-5;
+  }
+
+  .rich-text ol {
+    @apply my-2 list-decimal space-y-1 pl-5;
+  }
+
+  .rich-text p,
+  .rich-text div {
+    @apply my-1;
+  }
+
+  .rich-editor {
+    @apply leading-6;
+  }
+
+  .rich-editor:empty::before {
+    content: attr(data-placeholder);
+    @apply text-slate-400;
+  }
 }
 
 @layer utilities {

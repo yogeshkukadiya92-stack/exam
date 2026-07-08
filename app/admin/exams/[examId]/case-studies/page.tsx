@@ -2,6 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BookOpen, ChevronRight, FileText, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import RichTextContent from "@/components/RichTextContent";
+import RichTextEditor from "@/components/RichTextEditor";
 import CaseStudyExcelUpload from "./CaseStudyExcelUpload";
 import WordPracticalUpload from "../questions/WordPracticalUpload";
 import { addCaseStudy, deleteCaseStudy, updateCaseStudy } from "./actions";
@@ -94,12 +96,10 @@ export default async function CaseStudiesPage({
         </div>
         <div>
           <label className={label}>Content</label>
-          <textarea
+          <RichTextEditor
             name="content"
             required
-            rows={8}
             placeholder="Paste the case study, scenario, chart notes, or instructions..."
-            className="input"
           />
         </div>
         <button className="btn-primary">Add case study</button>
@@ -124,9 +124,11 @@ export default async function CaseStudiesPage({
                   <h2 className="mt-2 font-semibold text-slate-900">
                     {study.title}
                   </h2>
-                  <p className="mt-1 line-clamp-2 whitespace-pre-line text-sm text-slate-500">
-                    {study.content}
-                  </p>
+                  <RichTextContent
+                    content={study.content}
+                    clamp
+                    className="mt-1 text-sm text-slate-500"
+                  />
                 </div>
                 <form action={deleteCaseStudy}>
                   <input type="hidden" name="exam_id" value={examId} />
@@ -157,12 +159,11 @@ export default async function CaseStudiesPage({
                   </div>
                   <div>
                     <label className={label}>Content</label>
-                    <textarea
+                    <RichTextEditor
                       name="content"
                       required
-                      rows={8}
-                      defaultValue={study.content}
-                      className="input"
+                      initialContent={study.content}
+                      placeholder="Paste the case study, scenario, chart notes, or instructions..."
                     />
                   </div>
                   <button className="btn-primary">Save case study</button>

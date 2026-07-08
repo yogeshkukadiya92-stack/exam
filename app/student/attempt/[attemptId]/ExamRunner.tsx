@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { createClient } from "@/lib/supabase/client";
+import RichTextContent from "@/components/RichTextContent";
 import { pauseAttempt, submitAttempt } from "./actions";
 import {
   AlertTriangle,
@@ -891,9 +892,10 @@ export default function ExamRunner({
             <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
               {currentCase.title}
             </h2>
-            <div className="mt-4 whitespace-pre-line break-words text-sm leading-7 text-slate-700 dark:text-slate-300">
-              {currentCase.content}
-            </div>
+            <RichTextContent
+              content={currentCase.content}
+              className="mt-4 text-sm leading-7 text-slate-700 dark:text-slate-300"
+            />
             <div className="mt-5 flex flex-wrap gap-2">
               <button
                 type="button"

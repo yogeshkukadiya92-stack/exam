@@ -1,5 +1,6 @@
 import * as XLSX from "xlsx";
 import { normalizePhoneNumber } from "./phone";
+import { normalizeRichTextContent, richTextToPlainText } from "./rich-text";
 
 /* ----------------------- Question Excel ----------------------- */
 
@@ -50,17 +51,29 @@ export function downloadQuestionTemplate() {
 /** Parse an uploaded question Excel/CSV into validated rows. */
 export async function parseQuestionsFile(file: File): Promise<ParsedQuestion[]> {
   const buf = await file.arrayBuffer();
-  const wb = XLSX.read(buf, { type: "array" });
+  const wb = XLSX.read(buf, { type: "array", cellHTML: true });
   const sheet = wb.Sheets[wb.SheetNames[0]];
+  const range = XLSX.utils.decode_range(sheet["!ref"] ?? "A1:A1");
+  const headerByName = getHeaderMap(sheet);
+  const caseContentCol = findHeaderCol(headerByName, "CaseContent", "Case Study Content", "CaseDescription");
   const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, {
     defval: "",
     raw: false,
   });
 
   return rows.map((r, i) => {
+    const rowIndex = range.s.r + i + 1;
+    const caseContentCell =
+      caseContentCol === null
+        ? null
+        : sheet[XLSX.utils.encode_cell({ r: rowIndex, c: caseContentCol })];
     const get = (k: string) => String(r[k] ?? "").trim();
     const case_title = get("CaseTitle") || get("Case Study") || get("CaseStudy");
-    const case_content = get("CaseContent") || get("Case Study Content") || get("CaseDescription");
+    const case_content =
+      richCellToHtml(caseContentCell) ||
+      normalizeRichTextContent(
+        get("CaseContent") || get("Case Study Content") || get("CaseDescription")
+      );
     const case_order_raw = get("CaseOrder") || get("CasePosition");
     const case_order = case_order_raw ? Number(case_order_raw) || null : null;
     const question_text = get("Question");
@@ -129,27 +142,53 @@ export function downloadCaseStudyTemplate() {
 
 export async function parseCaseStudiesFile(file: File): Promise<ParsedCaseStudy[]> {
   const buf = await file.arrayBuffer();
-  const wb = XLSX.read(buf, { type: "array" });
+  const wb = XLSX.read(buf, { type: "array", cellHTML: true });
   const sheet = wb.Sheets[wb.SheetNames[0]];
+  const range = XLSX.utils.decode_range(sheet["!ref"] ?? "A1:A1");
+  const headerByName = getHeaderMap(sheet);
+  const titleCol = findHeaderCol(headerByName, "Title", "CaseTitle", "Case Study", "CaseStudy");
+  const contentCol = findHeaderCol(headerByName, "Content", "CaseContent", "Case Study Content", "CaseDescription");
+  const orderCol = findHeaderCol(headerByName, "Order", "Position", "CaseOrder", "CasePosition");
+
   const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, {
     defval: "",
     raw: false,
   });
 
   return rows.map((r, i) => {
+    const rowIndex = range.s.r + i + 1;
+    const contentCell =
+      contentCol === null
+        ? null
+        : sheet[XLSX.utils.encode_cell({ r: rowIndex, c: contentCol })];
     const get = (k: string) => String(r[k] ?? "").trim();
-    const title = get("Title") || get("CaseTitle") || get("Case Study") || get("CaseStudy");
+    const title =
+      get("Title") ||
+      get("CaseTitle") ||
+      get("Case Study") ||
+      get("CaseStudy") ||
+      (titleCol === null
+        ? ""
+        : String(sheet[XLSX.utils.encode_cell({ r: rowIndex, c: titleCol })]?.w ?? "").trim());
     const content =
-      get("Content") ||
-      get("CaseContent") ||
-      get("Case Study Content") ||
-      get("CaseDescription");
+      richCellToHtml(contentCell) ||
+      normalizeRichTextContent(
+        get("Content") ||
+          get("CaseContent") ||
+          get("Case Study Content") ||
+          get("CaseDescription")
+      );
     const positionRaw = get("Order") || get("Position") || get("CaseOrder") || get("CasePosition");
-    const position = positionRaw ? Number(positionRaw) || null : null;
+    const positionCell =
+      orderCol === null
+        ? null
+        : sheet[XLSX.utils.encode_cell({ r: rowIndex, c: orderCol })];
+    const positionValue = positionRaw || String(positionCell?.w ?? positionCell?.v ?? "").trim();
+    const position = positionValue ? Number(positionValue) || null : null;
 
     let error: string | undefined;
     if (!title) error = "Title is required";
-    else if (!content) error = "Content is required";
+    else if (!richTextToPlainText(content)) error = "Content is required";
 
     return {
       row: i + 2,
@@ -159,6 +198,82 @@ export async function parseCaseStudiesFile(file: File): Promise<ParsedCaseStudy[
       error,
     };
   });
+}
+
+function getHeaderMap(sheet: XLSX.WorkSheet) {
+  const range = XLSX.utils.decode_range(sheet["!ref"] ?? "A1:A1");
+  const headerByName = new Map<string, number>();
+  for (let col = range.s.c; col <= range.e.c; col++) {
+    const cell = sheet[XLSX.utils.encode_cell({ r: range.s.r, c: col })];
+    const header = String(cell?.w ?? cell?.v ?? "").trim();
+    if (header) headerByName.set(header.toLowerCase(), col);
+  }
+  return headerByName;
+}
+
+function findHeaderCol(headerByName: Map<string, number>, ...names: string[]) {
+  for (const name of names) {
+    const col = headerByName.get(name.toLowerCase());
+    if (col !== undefined) return col;
+  }
+  return null;
+}
+
+function richCellToHtml(cell: XLSX.CellObject | undefined | null) {
+  if (!cell) return "";
+
+  const richRuns = (cell as { r?: unknown }).r;
+  if (Array.isArray(richRuns)) {
+    const html = richRuns
+      .map((run) => {
+        const item = run as {
+          t?: unknown;
+          s?: { b?: boolean; bold?: boolean; i?: boolean; italic?: boolean; u?: boolean };
+          font?: { bold?: boolean; italic?: boolean; underline?: boolean };
+        };
+        let text = escapeHtml(String(item.t ?? ""));
+        const bold = item.s?.b || item.s?.bold || item.font?.bold;
+        const italic = item.s?.i || item.s?.italic || item.font?.italic;
+        const underline = item.s?.u || item.font?.underline;
+        if (underline) text = `<u>${text}</u>`;
+        if (italic) text = `<i>${text}</i>`;
+        if (bold) text = `<b>${text}</b>`;
+        return text;
+      })
+      .join("");
+    if (html) return normalizeRichTextContent(html.replace(/\r?\n/g, "<br>"));
+  }
+
+  const rawHtml = String((cell as { h?: unknown }).h ?? "");
+  if (rawHtml) {
+    return normalizeRichTextContent(convertStyledSpans(rawHtml));
+  }
+
+  return normalizeRichTextContent(String(cell.w ?? cell.v ?? ""));
+}
+
+function convertStyledSpans(html: string) {
+  return html
+    .replace(
+      /<span([^>]*)>([\s\S]*?)<\/span>/gi,
+      (_match, attrs: string, body: string) => {
+        let next = body;
+        if (/font-weight\s*:\s*(bold|[6-9]00)/i.test(attrs)) next = `<b>${next}</b>`;
+        if (/font-style\s*:\s*italic/i.test(attrs)) next = `<i>${next}</i>`;
+        if (/text-decoration\s*:\s*underline/i.test(attrs)) next = `<u>${next}</u>`;
+        return next;
+      }
+    )
+    .replace(/\r?\n/g, "<br>");
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 /* ----------------------- Student Excel ----------------------- */

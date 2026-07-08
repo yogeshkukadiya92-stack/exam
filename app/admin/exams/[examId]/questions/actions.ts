@@ -4,6 +4,7 @@ import * as mammoth from "mammoth";
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/auth";
 import { parsePracticalWordText } from "@/lib/practical-word";
+import { normalizeRichTextContent, richTextToPlainText } from "@/lib/rich-text";
 import { revalidatePath } from "next/cache";
 
 function toMessage(error: unknown, fallback: string) {
@@ -192,8 +193,8 @@ export async function bulkAddQuestions(
       caseStudyId = caseIdByTitle.get(key) ?? null;
 
       if (!caseStudyId) {
-        const caseContent = (q.case_content ?? "").trim();
-        if (!caseContent) {
+        const caseContent = normalizeRichTextContent(q.case_content ?? "");
+        if (!richTextToPlainText(caseContent)) {
           failed++;
           continue;
         }
@@ -405,13 +406,14 @@ export async function importPracticalWordFile(formData: FormData): Promise<{
 
     for (const study of parsed.cases) {
       let caseStudyId = caseIdByTitle.get(normalizeCaseTitle(study.title)) ?? null;
+      const caseContent = normalizeRichTextContent(study.content);
 
       if (caseStudyId) {
         const { error } = await supabase
           .from("case_studies")
           .update({
             title: study.title,
-            content: study.content,
+            content: caseContent,
             position: study.position,
             updated_at: new Date().toISOString(),
           })
@@ -433,7 +435,7 @@ export async function importPracticalWordFile(formData: FormData): Promise<{
           .insert({
             exam_id: examId,
             title: study.title,
-            content: study.content,
+            content: caseContent,
             position: study.position,
             created_by: profile.id,
           })

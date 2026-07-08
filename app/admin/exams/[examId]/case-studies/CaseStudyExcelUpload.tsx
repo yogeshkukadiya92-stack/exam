@@ -7,6 +7,7 @@ import {
   parseCaseStudiesFile,
   type ParsedCaseStudy,
 } from "@/lib/excel";
+import RichTextContent from "@/components/RichTextContent";
 import { bulkImportCaseStudies } from "./actions";
 
 export default function CaseStudyExcelUpload({ examId }: { examId: string }) {
@@ -137,9 +138,11 @@ export default function CaseStudyExcelUpload({ examId }: { examId: string }) {
                     <td className="px-3 py-2">{r.title || "-"}</td>
                     <td className="px-3 py-2">{r.position ?? "-"}</td>
                     <td className="max-w-md px-3 py-2 text-slate-600">
-                      <span className="line-clamp-2 whitespace-pre-line">
-                        {r.content || "-"}
-                      </span>
+                      {r.content ? (
+                        <RichTextContent content={r.content} clamp />
+                      ) : (
+                        "-"
+                      )}
                     </td>
                     <td className="px-3 py-2">
                       {r.error ? (
