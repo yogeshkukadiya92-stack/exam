@@ -116,7 +116,10 @@ export default async function AttemptPage({
   // Break out of the student layout's max-w-4xl container so the exam uses
   // the full screen width on desktop (more room for question + palette).
   return (
-    <div className="mx-[calc(50%-50vw)] w-screen px-4 sm:px-6 lg:px-8">
+    <div
+      data-exam-attempt
+      className="mx-[calc(50%-50vw)] w-screen px-4 sm:px-6 lg:px-8"
+    >
       <div className="mx-auto max-w-6xl">
         <ExamRunner
           attemptId={attemptId}

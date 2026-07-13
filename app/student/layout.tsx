@@ -15,7 +15,10 @@ export default async function StudentLayout({
 
   return (
     <div className="min-h-screen">
-      <header className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/80 backdrop-blur-xl print:hidden dark:border-slate-700/80 dark:bg-slate-900/80">
+      <header
+        data-student-header
+        className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/80 backdrop-blur-xl print:hidden dark:border-slate-700/80 dark:bg-slate-900/80"
+      >
         <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-3 sm:px-6">
           <Link href="/student" className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-600 to-violet-600 shadow-sm shadow-indigo-200 dark:shadow-indigo-900/40">
@@ -53,7 +56,9 @@ export default async function StudentLayout({
           </div>
         </div>
       </header>
-      <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6">{children}</main>
+      <main data-student-main className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
+        {children}
+      </main>
     </div>
   );
 }

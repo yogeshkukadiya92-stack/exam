@@ -600,7 +600,13 @@ export default function ExamRunner({
   );
 
   const palette = (
-    <div className="card p-4 lg:sticky lg:top-20 lg:max-h-[calc(100vh-7rem)] lg:overflow-hidden">
+    <div
+      className={`card p-4 lg:sticky lg:overflow-hidden ${
+        preview
+          ? "lg:top-20 lg:max-h-[calc(100vh-7rem)]"
+          : "lg:top-4 lg:max-h-[calc(100vh-2rem)]"
+      }`}
+    >
       <div className="mb-3 flex items-center justify-between">
         <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">
           {isPractical ? "Progress" : "Question palette"}
@@ -626,6 +632,28 @@ export default function ExamRunner({
       </div>
 
       {isPractical && (
+        <label className="mb-3 block text-xs font-semibold text-slate-600 dark:text-slate-300">
+          Go to question
+          <select
+            value={q.id}
+            onChange={(event) => goToQuestion(event.target.value)}
+            disabled={autoSubmitting}
+            className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm outline-none transition-colors focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
+          >
+            {questions.map((question, questionIndex) => {
+              const caseIndex = caseIndexByQuestionId.get(question.id) ?? 0;
+              const locked = !canEnterCase(caseIndex);
+              return (
+                <option key={question.id} value={question.id} disabled={locked}>
+                  Question {questionIndex + 1}
+                </option>
+              );
+            })}
+          </select>
+        </label>
+      )}
+
+      {isPractical && (
         <button
           type="button"
           onClick={askSubmit}
@@ -635,6 +663,39 @@ export default function ExamRunner({
           <Check className="h-4 w-4" />
           {pending || autoSubmitting ? "Submitting..." : "Submit exam"}
         </button>
+      )}
+
+      {isPractical && (
+        <div className="mb-3 rounded-xl border border-slate-100 p-2 dark:border-slate-700">
+          <p className="mb-2 text-xs font-semibold text-slate-500">Jump to question</p>
+          <div className="grid grid-cols-5 gap-2 lg:grid-cols-6">
+            {questions.map((question, i) => {
+              const answered = isAnswered(question);
+              const flagged = flags[question.id];
+              const caseIndex = caseIndexByQuestionId.get(question.id) ?? 0;
+              const locked = !canEnterCase(caseIndex);
+              return (
+                <button
+                  key={question.id}
+                  type="button"
+                  onClick={() => goToQuestion(question.id)}
+                  disabled={locked || autoSubmitting}
+                  className={`flex h-9 w-9 items-center justify-center rounded-lg border text-sm font-medium transition-all ${
+                    i === idx ? "ring-2 ring-indigo-500 ring-offset-1 dark:ring-offset-slate-800" : ""
+                  } ${
+                    flagged
+                      ? "border-amber-400 bg-amber-100 text-amber-700 dark:border-amber-600 dark:bg-amber-900/50 dark:text-amber-400"
+                      : answered
+                      ? "border-emerald-400 bg-emerald-100 text-emerald-700 dark:border-emerald-600 dark:bg-emerald-900/50 dark:text-emerald-400"
+                      : "border-slate-200 bg-slate-50 text-slate-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-400"
+                  } disabled:cursor-not-allowed disabled:opacity-40`}
+                >
+                  {i + 1}
+                </button>
+              );
+            })}
+          </div>
+        </div>
       )}
 
       {isPractical && (
@@ -685,44 +746,8 @@ export default function ExamRunner({
         </span>
       </div>
 
-      <div className="max-h-[46vh] overflow-y-auto rounded-xl border border-slate-100 p-2 dark:border-slate-700">
-        {isPractical ? (
-          <div className="space-y-3">
-            {caseGroups.map((group, caseIndex) => (
-              <div key={group.id}>
-                <p className="mb-1 truncate text-xs font-semibold text-slate-500">
-                  Case {caseIndex + 1}
-                </p>
-                <div className="grid grid-cols-5 gap-2 lg:grid-cols-6">
-                  {group.questions.map((question) => {
-                    const i = questionIndexById.get(question.id) ?? 0;
-                    const answered = isAnswered(question);
-                    const flagged = flags[question.id];
-                    const locked = !canEnterCase(caseIndex);
-                    return (
-                      <button
-                        key={question.id}
-                        onClick={() => goToQuestion(question.id)}
-                        disabled={locked || autoSubmitting}
-                        className={`flex h-9 w-9 items-center justify-center rounded-lg border text-sm font-medium transition-all ${
-                          i === idx ? "ring-2 ring-indigo-500 ring-offset-1 dark:ring-offset-slate-800" : ""
-                        } ${
-                          flagged
-                            ? "border-amber-400 bg-amber-100 text-amber-700 dark:border-amber-600 dark:bg-amber-900/50 dark:text-amber-400"
-                            : answered
-                            ? "border-emerald-400 bg-emerald-100 text-emerald-700 dark:border-emerald-600 dark:bg-emerald-900/50 dark:text-emerald-400"
-                            : "border-slate-200 bg-slate-50 text-slate-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-400"
-                        } disabled:cursor-not-allowed disabled:opacity-40`}
-                      >
-                        {i + 1}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
+      {!isPractical && (
+        <div className="max-h-[46vh] overflow-y-auto rounded-xl border border-slate-100 p-2 dark:border-slate-700">
           <div className="grid grid-cols-5 gap-2 sm:grid-cols-8 lg:grid-cols-6">
             {questions.map((question, i) => {
               const answered = isAnswered(question);
@@ -747,8 +772,8 @@ export default function ExamRunner({
               );
             })}
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       <button
         onClick={askSubmit}
@@ -882,7 +907,13 @@ export default function ExamRunner({
 
       {isPractical ? (
         <div className="grid gap-4 xl:grid-cols-[minmax(260px,0.9fr)_minmax(0,1.15fr)_280px]">
-          <div className="card p-5 xl:sticky xl:top-20 xl:max-h-[calc(100vh-7rem)] xl:overflow-y-auto">
+          <div
+            className={`card p-5 xl:sticky xl:overflow-y-auto ${
+              preview
+                ? "xl:top-20 xl:max-h-[calc(100vh-7rem)]"
+                : "xl:top-4 xl:max-h-[calc(100vh-2rem)]"
+            }`}
+          >
             <div className="mb-3 flex items-center gap-2">
               <BookOpen className="h-4 w-4 text-cyan-600" />
               <span className="text-xs font-semibold uppercase tracking-wider text-cyan-600">
