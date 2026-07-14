@@ -56,72 +56,93 @@ export default function ManualStudentForm({
   };
 
   return (
-    <form onSubmit={onSubmit} autoComplete="off" className="mb-5 space-y-4 rounded-xl border bg-white p-5">
+    <form onSubmit={onSubmit} autoComplete="off" className="card mb-5 space-y-5 p-5">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h2 className="font-medium">Add student manually</h2>
-          <p className="text-sm text-gray-500">Create a student account, enable mobile login, and optionally enroll the student in a batch.</p>
+          <h2 className="section-title">Add student manually</h2>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            Create a student account, enable mobile login, and optionally enroll the student in a batch.
+          </p>
         </div>
       </div>
 
       <div className="grid gap-3 md:grid-cols-2">
-        <input
-          value={fullName}
-          onChange={(e) => setFullName(e.target.value)}
-          placeholder="Full name"
-          className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:border-gray-400"
-        />
-        <input
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          type="email"
-          required
-          autoComplete="off"
-          name="student-email"
-          placeholder="Email"
-          className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:border-gray-400"
-        />
+        <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+          Full name
+          <input
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+            placeholder="e.g. Nilesh Patel"
+            className="input mt-1.5"
+          />
+        </label>
+        <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+          Email
+          <input
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            type="email"
+            required
+            autoComplete="off"
+            name="student-email"
+            placeholder="student@example.com"
+            className="input mt-1.5"
+          />
+        </label>
       </div>
 
       <div className="grid gap-3 md:grid-cols-2">
-        <input
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-          type="tel"
-          required
-          placeholder="Mobile number (e.g. +91 9876543210)"
-          className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:border-gray-400"
-        />
-        <input
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          type="password"
-          required
-          minLength={6}
-          autoComplete="new-password"
-          name="student-password"
-          placeholder="Password"
-          className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:border-gray-400"
-        />
+        <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+          Mobile number
+          <input
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            type="tel"
+            required
+            placeholder="+91 9876543210"
+            className="input mt-1.5"
+          />
+        </label>
+        <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+          Password
+          <input
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            type="password"
+            required
+            minLength={6}
+            autoComplete="new-password"
+            name="student-password"
+            placeholder="Minimum 6 characters"
+            className="input mt-1.5"
+          />
+        </label>
       </div>
 
       <div className="grid gap-3 md:grid-cols-2">
-        <select
-          value={batchId}
-          onChange={(e) => setBatchId(e.target.value)}
-          className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:border-gray-400"
-        >
-          <option value="">Do not enroll in a batch</option>
-          {batches.map((b) => (
-            <option key={b.id} value={b.id}>
-              {b.label}
-            </option>
-          ))}
-        </select>
+        <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+          Batch enrollment
+          <select
+            value={batchId}
+            onChange={(e) => setBatchId(e.target.value)}
+            className="input mt-1.5"
+          >
+            <option value="">Do not enroll in a batch</option>
+            {batches.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.label}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
 
       {message && (
-        <p className={`rounded-md p-2 text-sm ${ok ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"}`}>
+        <p className={`rounded-xl border p-3 text-sm ${
+          ok
+            ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+            : "border-red-200 bg-red-50 text-red-700"
+        }`}>
           {message}
         </p>
       )}
@@ -129,7 +150,7 @@ export default function ManualStudentForm({
       <button
         type="submit"
         disabled={busy}
-        className="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-40"
+        className="btn-primary w-full sm:w-auto"
       >
         {busy ? "Adding..." : "Add student"}
       </button>

@@ -73,10 +73,10 @@ export default async function AnnouncementsPage() {
         )}
         {rows.map((a) => (
           <div key={a.id} className="card-hover p-5">
-            <div className="flex items-start justify-between gap-4">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div className="min-w-0">
-                <div className="flex items-center gap-2.5">
-                  <span className="font-semibold text-slate-900 truncate">
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <span className="break-words font-semibold text-slate-900 dark:text-slate-100">
                     {a.title}
                   </span>
                   <span
@@ -102,7 +102,7 @@ export default async function AnnouncementsPage() {
                   })}
                 </p>
               </div>
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex shrink-0 flex-wrap items-center gap-2">
                 <form action={toggleAnnouncement}>
                   <input type="hidden" name="id" value={a.id} />
                   <input

@@ -52,10 +52,40 @@ function createMissingClient() {
     },
     from() {
       const empty = {
+        data: [],
+        error: null,
+        count: 0,
         select() {
           return empty;
         },
         eq() {
+          return empty;
+        },
+        neq() {
+          return empty;
+        },
+        is() {
+          return empty;
+        },
+        not() {
+          return empty;
+        },
+        in() {
+          return empty;
+        },
+        ilike() {
+          return empty;
+        },
+        gte() {
+          return empty;
+        },
+        lte() {
+          return empty;
+        },
+        gt() {
+          return empty;
+        },
+        lt() {
           return empty;
         },
         single: async () => ({
@@ -63,6 +93,10 @@ function createMissingClient() {
           error: new Error("Supabase env vars are missing."),
         }),
         insert: async () => ({
+          data: null,
+          error: new Error("Supabase env vars are missing."),
+        }),
+        upsert: async () => ({
           data: null,
           error: new Error("Supabase env vars are missing."),
         }),

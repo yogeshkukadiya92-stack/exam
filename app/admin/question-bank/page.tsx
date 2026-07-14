@@ -40,7 +40,7 @@ export default async function QuestionBankPage({
 
   return (
     <div>
-      <div className="mb-8 flex items-center justify-between">
+      <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="page-title">Question Bank</h1>
           <p className="mt-1 text-sm text-slate-500">
@@ -138,9 +138,9 @@ export default async function QuestionBankPage({
           </div>
         )}
         {rows.map((q) => (
-          <div key={q.id} className="card-hover flex items-start justify-between gap-4 p-4">
-            <div>
-              <p className="font-medium text-slate-900">{q.question_text}</p>
+          <div key={q.id} className="card-hover flex flex-col gap-4 p-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0">
+              <p className="break-words font-medium text-slate-900 dark:text-slate-100">{q.question_text}</p>
               <div className="mt-2 flex flex-wrap gap-2 text-xs">
                 <span className="badge bg-slate-100 text-slate-600">{q.type}</span>
                 {q.subject && <span className="badge bg-blue-50 text-blue-700">{q.subject}</span>}
@@ -149,7 +149,7 @@ export default async function QuestionBankPage({
                 <span className="badge bg-emerald-50 text-emerald-700">+{q.marks}</span>
               </div>
             </div>
-            <form action={deleteBankQuestion}>
+            <form action={deleteBankQuestion} className="shrink-0">
               <input type="hidden" name="id" value={q.id} />
               <button className="btn-danger p-2" title="Delete">
                 <Trash2 className="h-4 w-4" />

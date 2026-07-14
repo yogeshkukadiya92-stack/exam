@@ -101,7 +101,7 @@ export default function ExamFilters({ exams, courses, batches }: Props) {
             </option>
           ))}
         </select>
-        <div className="flex rounded-xl border border-slate-200 bg-white p-0.5">
+        <div className="flex rounded-xl border border-slate-200 bg-white p-0.5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
           {(["all", "published", "draft"] as const).map((s) => (
             <button
               key={s}
@@ -130,7 +130,7 @@ export default function ExamFilters({ exams, courses, batches }: Props) {
 
         {filtered.map((e) => (
           <div key={e.id} className="card-hover p-5">
-            <div className="flex items-start justify-between gap-4">
+            <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2.5">
                   <span className="truncate font-semibold text-slate-900">
@@ -163,7 +163,7 @@ export default function ExamFilters({ exams, courses, batches }: Props) {
                 </p>
               </div>
 
-              <div className="flex flex-wrap items-center justify-end gap-2">
+              <div className="flex flex-wrap items-center gap-2 xl:max-w-[680px] xl:justify-end">
                 <Link
                   href={`/admin/exams/${e.id}/questions`}
                   className="btn-secondary flex items-center gap-1.5 text-xs"

@@ -36,7 +36,7 @@ interface EditValues {
 }
 
 const editInput =
-  "w-full rounded-md border px-2.5 py-1.5 text-xs outline-none focus:border-slate-400";
+  "w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs outline-none transition-colors focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100";
 
 export default function StudentSearch({
   students,
@@ -149,25 +149,25 @@ export default function StudentSearch({
         />
       </div>
 
-      <div className="card overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="border-b border-slate-100 bg-slate-50/50 text-left">
+      <div className="table-shell">
+        <table className="admin-table min-w-[760px]">
+          <thead className="border-b border-slate-100 bg-slate-50/50 text-left dark:border-slate-700 dark:bg-slate-800/70">
             <tr>
-              <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
+              <th>
                 Name
               </th>
-              <th className="hidden px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500 sm:table-cell">
+              <th className="hidden sm:table-cell">
                 Email / Mobile
               </th>
-              <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
+              <th>
                 Batches / Courses
               </th>
-              <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-500">
+              <th className="text-right">
                 Actions
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
             {filtered.map((s) => {
               const enrolled = enrollmentsByStudent[s.id] ?? [];
               const enrolledIds = new Set(enrolled.map((e) => e.batchId));
@@ -175,8 +175,8 @@ export default function StudentSearch({
               const isEditing = editingFor === s.id;
 
               return (
-                <tr key={s.id} className="align-top transition-colors hover:bg-slate-50/50">
-                  <td className="px-5 py-3.5 font-medium text-slate-900">
+                <tr key={s.id} className="align-top transition-colors hover:bg-slate-50/50 dark:hover:bg-slate-700/30">
+                  <td className="font-medium text-slate-900 dark:text-slate-100">
                     {isEditing ? (
                       <div className="space-y-2">
                         <input
@@ -206,7 +206,7 @@ export default function StudentSearch({
                       </>
                     )}
                   </td>
-                  <td className="hidden px-5 py-3.5 text-slate-500 sm:table-cell">
+                  <td className="hidden text-slate-500 dark:text-slate-300 sm:table-cell">
                     {isEditing ? (
                       <div className="space-y-2">
                         <input
@@ -233,7 +233,7 @@ export default function StudentSearch({
                       </div>
                     )}
                   </td>
-                  <td className="px-5 py-3.5">
+                  <td>
                     {enrolled.length === 0 ? (
                       <span className="text-xs text-slate-400">No batch</span>
                     ) : (
@@ -267,7 +267,7 @@ export default function StudentSearch({
                       </p>
                     )}
                   </td>
-                  <td className="px-5 py-3.5 text-right">
+                  <td className="text-right">
                     {isEditing ? (
                       <div className="flex flex-wrap items-center justify-end gap-2">
                         <button

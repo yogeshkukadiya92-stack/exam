@@ -74,14 +74,14 @@ export default async function CourseBatchesPage({
           const studentCount =
             (b.enrollments as { count: number }[] | null)?.[0]?.count ?? 0;
           return (
-            <div key={b.id} className="card-hover flex items-center justify-between p-5">
-              <div>
-                <p className="font-semibold text-slate-900">{b.name}</p>
+            <div key={b.id} className="card-hover flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
+                <p className="break-words font-semibold text-slate-900 dark:text-slate-100">{b.name}</p>
                 <p className="mt-0.5 text-xs text-slate-400">
                   {studentCount} {studentCount === 1 ? "student" : "students"}
                 </p>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2 sm:justify-end">
                 <EditBatchButton id={b.id} courseId={courseId} name={b.name} />
                 <form action={deleteBatch}>
                   <input type="hidden" name="id" value={b.id} />

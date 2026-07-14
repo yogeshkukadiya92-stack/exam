@@ -62,11 +62,11 @@ export default async function CoursesPage() {
           const batchCount =
             (c.batches as { count: number }[] | null)?.[0]?.count ?? 0;
           return (
-            <div key={c.id} className="card-hover flex items-center justify-between p-5">
-              <div>
+            <div key={c.id} className="card-hover flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
                 <Link
                   href={`/admin/courses/${c.id}`}
-                  className="font-semibold text-slate-900 hover:text-indigo-600 transition-colors"
+                  className="break-words font-semibold text-slate-900 transition-colors hover:text-indigo-600 dark:text-slate-100"
                 >
                   {c.name}
                 </Link>
@@ -77,7 +77,7 @@ export default async function CoursesPage() {
                   {batchCount} {batchCount === 1 ? "batch" : "batches"}
                 </p>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2 sm:justify-end">
                 <EditCourseButton
                   id={c.id}
                   name={c.name}

@@ -33,30 +33,37 @@ export default async function LiveMonitorPage({
       <h1 className="page-title mt-2">{exam.title} Live Monitor</h1>
       <p className="mb-6 mt-1 text-sm text-slate-500">Refresh page for latest status.</p>
 
-      <div className="card overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-slate-50 text-left text-xs uppercase tracking-wider text-slate-500">
+      <div className="table-shell">
+        <table className="admin-table min-w-[760px]">
+          <thead className="bg-slate-50 text-left text-xs uppercase tracking-wider text-slate-500 dark:bg-slate-800/70">
             <tr>
-              <th className="px-4 py-3">Student</th>
-              <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3">Time left</th>
-              <th className="px-4 py-3">Tab switches</th>
-              <th className="px-4 py-3">Last seen</th>
+              <th>Student</th>
+              <th>Status</th>
+              <th>Time left</th>
+              <th>Tab switches</th>
+              <th>Last seen</th>
             </tr>
           </thead>
-          <tbody className="divide-y">
+          <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
             {students.map((s) => (
-              <tr key={`${s.email}-${s.attempt_id ?? "none"}`}>
-                <td className="px-4 py-3">
+              <tr key={`${s.email}-${s.attempt_id ?? "none"}`} className="transition-colors hover:bg-slate-50/60 dark:hover:bg-slate-700/30">
+                <td>
                   <p className="font-medium">{s.student_name}</p>
                   <p className="text-xs text-slate-400">{s.email}</p>
                 </td>
-                <td className="px-4 py-3"><span className="badge bg-slate-100 text-slate-700">{s.status}</span></td>
-                <td className="px-4 py-3">{formatSeconds(s.time_left_seconds)}</td>
-                <td className="px-4 py-3">{s.tab_switch_count ?? 0}</td>
-                <td className="px-4 py-3">{s.last_seen_at ? new Date(s.last_seen_at).toLocaleString("en-IN") : "-"}</td>
+                <td><span className="badge bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200">{s.status}</span></td>
+                <td>{formatSeconds(s.time_left_seconds)}</td>
+                <td>{s.tab_switch_count ?? 0}</td>
+                <td>{s.last_seen_at ? new Date(s.last_seen_at).toLocaleString("en-IN") : "-"}</td>
               </tr>
             ))}
+            {students.length === 0 && (
+              <tr>
+                <td colSpan={5} className="py-10 text-center text-sm text-slate-500">
+                  No enrolled students are visible for this exam yet.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

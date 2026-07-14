@@ -9,13 +9,21 @@ interface NavItem {
   label: string;
 }
 
-export default function MobileNav({ items }: { items: NavItem[] }) {
+export default function MobileNav({
+  items,
+  className = "sm:hidden",
+}: {
+  items: NavItem[];
+  className?: string;
+}) {
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="sm:hidden">
+    <div className={className}>
       <button
         onClick={() => setOpen(!open)}
+        aria-label={open ? "Close navigation menu" : "Open navigation menu"}
+        aria-expanded={open}
         className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition-colors hover:bg-slate-100 dark:border-slate-600 dark:text-slate-400 dark:hover:bg-slate-700"
       >
         {open ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}

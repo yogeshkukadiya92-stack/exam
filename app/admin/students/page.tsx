@@ -70,14 +70,14 @@ export default async function StudentsPage() {
 
   return (
     <div>
-      <div className="mb-8 flex items-center justify-between">
+      <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="page-title">Students</h1>
           <p className="mt-1 text-sm text-slate-500">
             {studentRows.length} total students
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <StudentExport students={studentList} />
           <StudentImport batches={batchOptions} />
         </div>

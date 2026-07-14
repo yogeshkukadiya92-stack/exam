@@ -48,7 +48,10 @@ export default async function StudentLayout({
               <p className="text-xs text-slate-400 dark:text-slate-500">Student</p>
             </div>
             <form action={logout}>
-              <button className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-600 transition-all hover:bg-slate-50 hover:text-slate-900 dark:border-slate-600 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200">
+              <button
+                aria-label="Logout"
+                className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-600 transition-all hover:bg-slate-50 hover:text-slate-900 dark:border-slate-600 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200"
+              >
                 <LogOut className="h-4 w-4" />
                 <span className="hidden sm:inline">Logout</span>
               </button>

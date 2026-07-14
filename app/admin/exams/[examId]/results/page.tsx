@@ -88,7 +88,7 @@ export default async function ExamResultsPage({
         <ChevronRight className="h-3.5 w-3.5" />
         <span className="text-slate-700 font-medium">{exam.title}</span>
       </div>
-      <div className="mb-8 flex items-center justify-between">
+      <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="page-title">{exam.title} — Results</h1>
           <p className="mt-1 text-sm text-slate-500">Performance analytics</p>
@@ -167,30 +167,30 @@ export default async function ExamResultsPage({
       {summary.total_attempts > 0 && (
         <div className="mt-8">
           <h2 className="section-title mb-4">Leaderboard</h2>
-          <div className="card overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="border-b border-slate-100 bg-slate-50/50 text-left">
+          <div className="table-shell">
+            <table className="admin-table min-w-[680px]">
+              <thead className="border-b border-slate-100 bg-slate-50/50 text-left dark:border-slate-700 dark:bg-slate-800/70">
                 <tr>
-                  <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">#</th>
-                  <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Student</th>
-                  <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Score</th>
-                  <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Result</th>
+                  <th>#</th>
+                  <th>Student</th>
+                  <th>Score</th>
+                  <th>Result</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                 {attempts.map((a, i) => {
                   const pass = (a.score ?? 0) >= summary.pass_marks;
                   return (
-                    <tr key={a.attempt_id} className="transition-colors hover:bg-slate-50/50">
-                      <td className="px-5 py-3.5 text-slate-400 font-medium">{i + 1}</td>
-                      <td className="px-5 py-3.5">
+                    <tr key={a.attempt_id} className="transition-colors hover:bg-slate-50/50 dark:hover:bg-slate-700/30">
+                      <td className="font-medium text-slate-400">{i + 1}</td>
+                      <td>
                         <p className="font-medium text-slate-900">{a.student_name}</p>
                         <p className="text-xs text-slate-400">{a.email}</p>
                       </td>
-                      <td className="px-5 py-3.5 font-semibold">
+                      <td className="font-semibold">
                         {a.score ?? 0} <span className="text-slate-400 font-normal">/ {summary.total_marks}</span>
                       </td>
-                      <td className="px-5 py-3.5">
+                      <td>
                         <span className={`badge ${pass ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"}`}>
                           {pass ? "Pass" : "Fail"}
                         </span>

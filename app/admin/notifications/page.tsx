@@ -38,25 +38,32 @@ export default async function NotificationsPage() {
         <button className="btn-primary md:col-span-2">Queue notification</button>
       </form>
 
-      <div className="card overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-slate-50 text-left text-xs uppercase tracking-wider text-slate-500">
+      <div className="table-shell">
+        <table className="admin-table min-w-[720px]">
+          <thead className="bg-slate-50 text-left text-xs uppercase tracking-wider text-slate-500 dark:bg-slate-800/70">
             <tr>
-              <th className="px-4 py-3">Type</th>
-              <th className="px-4 py-3">Recipient</th>
-              <th className="px-4 py-3">Subject</th>
-              <th className="px-4 py-3">Status</th>
+              <th>Type</th>
+              <th>Recipient</th>
+              <th>Subject</th>
+              <th>Status</th>
             </tr>
           </thead>
-          <tbody className="divide-y">
+          <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
             {rows.map((e) => (
-              <tr key={e.id}>
-                <td className="px-4 py-3">{e.event_type}</td>
-                <td className="px-4 py-3">{e.recipient ?? "-"}</td>
-                <td className="px-4 py-3">{e.subject ?? "-"}</td>
-                <td className="px-4 py-3"><span className="badge bg-slate-100 text-slate-700">{e.status}</span></td>
+              <tr key={e.id} className="transition-colors hover:bg-slate-50/60 dark:hover:bg-slate-700/30">
+                <td>{e.event_type}</td>
+                <td>{e.recipient ?? "-"}</td>
+                <td className="max-w-xs truncate">{e.subject ?? "-"}</td>
+                <td><span className="badge bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200">{e.status}</span></td>
               </tr>
             ))}
+            {rows.length === 0 && (
+              <tr>
+                <td colSpan={4} className="py-10 text-center text-sm text-slate-500">
+                  No notification events yet.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
