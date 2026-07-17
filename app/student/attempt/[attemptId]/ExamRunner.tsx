@@ -601,7 +601,7 @@ export default function ExamRunner({
 
   const palette = (
     <div
-      className={`card p-4 lg:sticky lg:overflow-hidden ${
+      className={`card flex flex-col p-4 lg:sticky lg:overflow-hidden ${
         preview
           ? "lg:top-20 lg:max-h-[calc(100vh-7rem)]"
           : "lg:top-4 lg:max-h-[calc(100vh-2rem)]"
@@ -664,8 +664,8 @@ export default function ExamRunner({
           {pending || autoSubmitting ? "Submitting..." : "Submit exam"}
         </button>
       )}
-
-      {isPractical && (
+      <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+        {isPractical && (
         <div className="mb-3 rounded-xl border border-slate-100 p-2 dark:border-slate-700">
           <p className="mb-2 text-xs font-semibold text-slate-500">Jump to question</p>
           <div className="grid grid-cols-5 gap-2 lg:grid-cols-6">
@@ -726,6 +726,7 @@ export default function ExamRunner({
           })}
         </div>
       )}
+      </div>
 
       <div className="mb-3 grid grid-cols-2 gap-2 text-xs text-slate-500 dark:text-slate-400">
         <span className="flex items-center gap-1.5">
