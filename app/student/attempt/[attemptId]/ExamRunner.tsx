@@ -653,17 +653,6 @@ export default function ExamRunner({
         </label>
       )}
 
-      {isPractical && (
-        <button
-          type="button"
-          onClick={askSubmit}
-          disabled={pending || autoSubmitting}
-          className="mb-3 flex w-full items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-emerald-700 active:scale-[0.98] disabled:opacity-50"
-        >
-          <Check className="h-4 w-4" />
-          {pending || autoSubmitting ? "Submitting..." : "Submit exam"}
-        </button>
-      )}
       <div className="min-h-0 flex-1 overflow-y-auto pr-1">
         {isPractical && (
         <div className="mb-3 rounded-xl border border-slate-100 p-2 dark:border-slate-700">
