@@ -14,6 +14,13 @@ interface MonitorRow {
   time_left_seconds: number | null;
 }
 
+interface AttemptSessionRow {
+  attempt_id: string;
+  started_at: string;
+  ended_at: string | null;
+  last_seen_at: string | null;
+}
+
 export default async function LiveMonitorPage({
   params,
 }: {
@@ -21,11 +28,50 @@ export default async function LiveMonitorPage({
 }) {
   const { examId } = await params;
   const supabase = await createClient();
-  const { data: exam } = await supabase.from("exams").select("title").eq("id", examId).single();
+  const { data: exam } = await supabase
+    .from("exams")
+    .select("title, duration_minutes, timer_mode, end_time")
+    .eq("id", examId)
+    .single();
   if (!exam) notFound();
 
   const { data } = await supabase.rpc("get_live_exam_monitor", { p_exam_id: examId });
   const students = ((data as { students?: MonitorRow[] } | null)?.students ?? []) as MonitorRow[];
+  const attemptIds = students
+    .filter((student) => student.status === "in_progress" && student.attempt_id)
+    .map((student) => student.attempt_id as string);
+  const { data: sessions } =
+    exam.timer_mode === "pausable" && attemptIds.length > 0
+      ? await supabase
+          .from("attempt_sessions")
+          .select("attempt_id, started_at, ended_at, last_seen_at")
+          .in("attempt_id", attemptIds)
+      : { data: [] };
+
+  const sessionRows = (sessions as AttemptSessionRow[] | null) ?? [];
+  const activeSecondsByAttempt = new Map<string, number>();
+  sessionRows.forEach((session) => {
+    activeSecondsByAttempt.set(
+      session.attempt_id,
+      (activeSecondsByAttempt.get(session.attempt_id) ?? 0) + sessionDurationSeconds(session)
+    );
+  });
+
+  const monitorRows = students.map((student) => ({
+    ...student,
+    display_time_left_seconds:
+      exam.timer_mode === "pausable"
+        ? getPausableTimeLeft({
+            activeSeconds: student.attempt_id
+              ? activeSecondsByAttempt.get(student.attempt_id)
+              : undefined,
+            durationMinutes: Number(exam.duration_minutes) || 0,
+            endTime: exam.end_time,
+            rpcValue: student.time_left_seconds,
+            status: student.status,
+          })
+        : student.time_left_seconds,
+  }));
 
   return (
     <div>
@@ -45,14 +91,14 @@ export default async function LiveMonitorPage({
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-            {students.map((s) => (
+            {monitorRows.map((s) => (
               <tr key={`${s.email}-${s.attempt_id ?? "none"}`} className="transition-colors hover:bg-slate-50/60 dark:hover:bg-slate-700/30">
                 <td>
                   <p className="font-medium">{s.student_name}</p>
                   <p className="text-xs text-slate-400">{s.email}</p>
                 </td>
                 <td><span className="badge bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200">{s.status}</span></td>
-                <td>{formatSeconds(s.time_left_seconds)}</td>
+                <td>{formatSeconds(s.display_time_left_seconds)}</td>
                 <td>{s.tab_switch_count ?? 0}</td>
                 <td>{s.last_seen_at ? new Date(s.last_seen_at).toLocaleString("en-IN") : "-"}</td>
               </tr>
@@ -69,6 +115,36 @@ export default async function LiveMonitorPage({
       </div>
     </div>
   );
+}
+
+function sessionDurationSeconds(session: AttemptSessionRow) {
+  const started = new Date(session.started_at).getTime();
+  const ended = new Date(session.ended_at ?? session.last_seen_at ?? new Date()).getTime();
+  if (!Number.isFinite(started) || !Number.isFinite(ended)) return 0;
+  return Math.max(0, Math.floor((ended - started) / 1000));
+}
+
+function getPausableTimeLeft({
+  activeSeconds,
+  durationMinutes,
+  endTime,
+  rpcValue,
+  status,
+}: {
+  activeSeconds: number | undefined;
+  durationMinutes: number;
+  endTime: string | null;
+  rpcValue: number | null;
+  status: string;
+}) {
+  if (status !== "in_progress") return null;
+  if (activeSeconds == null) return rpcValue;
+
+  const durationLeft = Math.max(0, durationMinutes * 60 - activeSeconds);
+  if (!endTime) return durationLeft;
+
+  const windowLeft = Math.max(0, Math.floor((new Date(endTime).getTime() - Date.now()) / 1000));
+  return Math.min(durationLeft, windowLeft);
 }
 
 function formatSeconds(value: number | null) {
