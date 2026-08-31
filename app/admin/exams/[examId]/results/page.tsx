@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { normalizePhoneNumber } from "@/lib/phone";
 import ResultsExport from "./ResultsExport";
-import { ChevronRight, TrendingUp, Users, Award, Activity } from "lucide-react";
+import { ChevronRight, TrendingUp, Users, Award, Activity, MessageCircle } from "lucide-react";
 
 interface Analytics {
   summary: {
@@ -26,6 +27,79 @@ interface Analytics {
   topics?: { topic: string; attempted: number; correct: number; wrong: number; accuracy: number }[];
 }
 
+interface AttemptOwnerRow {
+  id: string;
+  student_id: string;
+}
+
+interface StudentPhoneRow {
+  id: string;
+  phone: string | null;
+}
+
+function buildWhatsAppMessage({
+  studentName,
+  examName,
+  score,
+  totalMarks,
+  examMode,
+}: {
+  studentName: string;
+  examName: string;
+  score: number;
+  totalMarks: number;
+  examMode: string;
+}) {
+  const rawPercentage = totalMarks > 0 ? (score / totalMarks) * 100 : 0;
+  const percentage = Number(rawPercentage.toFixed(2));
+
+  if (examMode === "practical") {
+    return `🌿 *ISHF University*
+🎓 Final Nutrition Practical Exam Results 🌿
+
+*Congratulations, ${studentName}*! 🎓💫
+
+You’ve successfully completed your *ISHF Final Practical Exam* — proving your skills, confidence, and real-world understanding of nutrition. 💪🌱
+
+📊 *Your Score:* ${percentage}% / 100%
+
+*This result isn’t just about marks* — it’s a reflection of your growth, dedication, and applied knowledge to transform lives. 🌍✨
+
+*Keep applying. Keep evolving. Keep inspiring.* 🌟
+
+Best regards, 😊
+*Team CFL* ❤️`;
+  }
+
+  return `🌿 *ISHF University – ${examName} Results* 🌿
+
+Dear ${studentName},
+
+Today marks a *proud milestone* in your ISHF journey — a celebration of your hard work, focus, and *dedication to learning!* 🎓💫
+
+We are delighted to share that you have *successfully completed your ${examName}* and your performance truly reflects your *consistency, knowledge, and growth* as a future Health Coach.
+
+📊 *Your Score: ${score} / ${totalMarks} (${percentage}%)*
+
+This *result is more than just numbers* — it represents your:
+
+💪 *Discipline*
+📘 *Commitment*
+⏱️ *Consistency and countless hours of learning*
+
+✨ *Always remember:*
+“Grades don’t define you — your growth surely does.”
+
+Every effort you’ve made brings you one step closer to *transforming lives — starting with your own.* 🌱
+
+💐 *Congratulations on your achievement!*
+
+Keep learning, keep growing, and keep inspiring. 🌟
+
+Best regards, 😊
+*Team CFL* ❤️`;
+}
+
 export default async function ExamResultsPage({
   params,
 }: {
@@ -36,7 +110,7 @@ export default async function ExamResultsPage({
 
   const { data: exam } = await supabase
     .from("exams")
-    .select("title")
+    .select("title, exam_mode")
     .eq("id", examId)
     .single();
   if (!exam) notFound();
@@ -59,6 +133,36 @@ export default async function ExamResultsPage({
   const { summary, attempts, questions } = analytics;
   const sections = analytics.sections ?? [];
   const topics = analytics.topics ?? [];
+  const attemptIds = attempts.map((attempt) => attempt.attempt_id);
+  const phoneByAttemptId = new Map<string, string>();
+
+  if (attemptIds.length > 0) {
+    const { data: attemptOwners } = await supabase
+      .from("attempts")
+      .select("id, student_id")
+      .in("id", attemptIds);
+    const ownerRows = (attemptOwners ?? []) as AttemptOwnerRow[];
+
+    const studentIds = Array.from(
+      new Set(ownerRows.map((attempt) => attempt.student_id))
+    );
+
+    if (studentIds.length > 0) {
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, phone")
+        .in("id", studentIds);
+      const profileRows = (profiles ?? []) as StudentPhoneRow[];
+      const phoneByStudentId = new Map(
+        profileRows.map((profile) => [profile.id, profile.phone])
+      );
+
+      ownerRows.forEach((attempt) => {
+        const phone = normalizePhoneNumber(phoneByStudentId.get(attempt.student_id));
+        if (phone) phoneByAttemptId.set(attempt.id, phone);
+      });
+    }
+  }
   const passRate =
     summary.total_attempts > 0
       ? Math.round((summary.pass_count / summary.total_attempts) * 100)
@@ -175,11 +279,23 @@ export default async function ExamResultsPage({
                   <th>Student</th>
                   <th>Score</th>
                   <th>Result</th>
+                  <th>WhatsApp</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                 {attempts.map((a, i) => {
                   const pass = (a.score ?? 0) >= summary.pass_marks;
+                  const phone = phoneByAttemptId.get(a.attempt_id);
+                  const whatsappMessage = buildWhatsAppMessage({
+                    studentName: a.student_name,
+                    examName: exam.title,
+                    score: a.score ?? 0,
+                    totalMarks: summary.total_marks,
+                    examMode: exam.exam_mode ?? "standard",
+                  });
+                  const whatsappUrl = phone
+                    ? `https://wa.me/${phone.replace(/\D/g, "")}?text=${encodeURIComponent(whatsappMessage)}`
+                    : null;
                   return (
                     <tr key={a.attempt_id} className="transition-colors hover:bg-slate-50/50 dark:hover:bg-slate-700/30">
                       <td className="font-medium text-slate-400">{i + 1}</td>
@@ -194,6 +310,24 @@ export default async function ExamResultsPage({
                         <span className={`badge ${pass ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"}`}>
                           {pass ? "Pass" : "Fail"}
                         </span>
+                      </td>
+                      <td>
+                        {whatsappUrl ? (
+                          <a
+                            href={whatsappUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-emerald-700"
+                            aria-label={`Send WhatsApp result to ${a.student_name}`}
+                          >
+                            <MessageCircle className="h-4 w-4" />
+                            Send WhatsApp
+                          </a>
+                        ) : (
+                          <span className="text-xs text-slate-400" title="Add a mobile number to the student's profile">
+                            Mobile unavailable
+                          </span>
+                        )}
                       </td>
                     </tr>
                   );
