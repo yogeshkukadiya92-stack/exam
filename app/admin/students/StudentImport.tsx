@@ -95,6 +95,7 @@ export default function StudentImport({ batches }: { batches: BatchOption[] }) {
         <input
           ref={fileRef}
           type="file"
+          aria-label="Student spreadsheet file"
           accept=".xlsx,.xls,.csv"
           onChange={onFile}
           className="text-sm text-slate-600 file:mr-3 file:rounded-lg file:border file:border-slate-200 file:bg-slate-50 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-slate-700 hover:file:bg-slate-100 dark:text-slate-300 dark:file:border-slate-600 dark:file:bg-slate-800 dark:file:text-slate-200"
@@ -106,6 +107,7 @@ export default function StudentImport({ batches }: { batches: BatchOption[] }) {
           Enroll in batch (optional)
         </label>
         <select
+          aria-label="Enrollment batch"
           value={batchId}
           onChange={(e) => setBatchId(e.target.value)}
           className={input}

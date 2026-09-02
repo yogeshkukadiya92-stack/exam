@@ -56,7 +56,14 @@ export default async function AttemptControlsPage({
   const studentRows = (students as StudentEnrollmentRow[] | null) ?? [];
   const attemptRows = (attempts as AttemptRow[] | null) ?? [];
   const overrideRows = (overrides as OverrideRow[] | null) ?? [];
-  const attemptByStudent = new Map(attemptRows.map((a) => [a.student_id, a]));
+  // Rows are newest-first. Keep the first attempt for each student instead of
+  // allowing older rows later in the array to overwrite it in a Map.
+  const attemptByStudent = new Map<string, AttemptRow>();
+  attemptRows.forEach((attempt) => {
+    if (!attemptByStudent.has(attempt.student_id)) {
+      attemptByStudent.set(attempt.student_id, attempt);
+    }
+  });
   const overrideByStudent = new Map(overrideRows.map((o) => [o.student_id, o]));
 
   return (
@@ -83,7 +90,7 @@ export default async function AttemptControlsPage({
                   <form action={grantExtraAttempt} className="flex gap-2">
                     <input type="hidden" name="exam_id" value={examId} />
                     <input type="hidden" name="student_id" value={student.id} />
-                    <input name="extra_attempts" type="number" min={1} defaultValue={1} className="input w-20" />
+                    <input name="extra_attempts" aria-label={`Extra attempts for ${student.full_name || student.email}`} type="number" min={1} defaultValue={1} className="input w-20" />
                     <button className="btn-secondary">Grant</button>
                   </form>
                   {attempt && (

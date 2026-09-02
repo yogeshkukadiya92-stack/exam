@@ -142,6 +142,7 @@ export default function StudentSearch({
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
         <input
           type="text"
+          aria-label="Search students"
           placeholder="Search by name, email or mobile..."
           value={term}
           onChange={(e) => setTerm(e.target.value)}
@@ -180,12 +181,14 @@ export default function StudentSearch({
                     {isEditing ? (
                       <div className="space-y-2">
                         <input
+                          aria-label={`Full name for ${s.full_name || s.email || "student"}`}
                           value={editValues.full_name}
                           onChange={(e) => setEditValue("full_name", e.target.value)}
                           placeholder="Full name"
                           className={editInput}
                         />
                         <input
+                          aria-label={`New password for ${s.full_name || s.email || "student"}`}
                           value={editValues.password}
                           onChange={(e) => setEditValue("password", e.target.value)}
                           type="password"
@@ -210,6 +213,7 @@ export default function StudentSearch({
                     {isEditing ? (
                       <div className="space-y-2">
                         <input
+                          aria-label={`Email for ${s.full_name || s.email || "student"}`}
                           value={editValues.email}
                           onChange={(e) => setEditValue("email", e.target.value)}
                           type="email"
@@ -218,6 +222,7 @@ export default function StudentSearch({
                           className={editInput}
                         />
                         <input
+                          aria-label={`Mobile number for ${s.full_name || s.email || "student"}`}
                           value={editValues.phone}
                           onChange={(e) => setEditValue("phone", e.target.value)}
                           type="tel"
@@ -291,6 +296,7 @@ export default function StudentSearch({
                     ) : openFor === s.id ? (
                       <div className="flex flex-wrap items-center justify-end gap-2">
                         <select
+                          aria-label={`Assign batch to ${s.full_name || s.email || "student"}`}
                           value={selectedBatch}
                           onChange={(e) => setSelectedBatch(e.target.value)}
                           className="input max-w-[200px] py-1.5 text-xs"

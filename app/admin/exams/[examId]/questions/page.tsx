@@ -162,7 +162,7 @@ export default async function ExamQuestionsPage({
                   <form action={deleteQuestion}>
                     <input type="hidden" name="id" value={q.id} />
                     <input type="hidden" name="exam_id" value={examId} />
-                    <button className="rounded-lg border border-red-200 p-1.5 text-red-500 transition-colors hover:bg-red-50 hover:text-red-600">
+                    <button className="rounded-lg border border-red-200 p-1.5 text-red-500 transition-colors hover:bg-red-50 hover:text-red-600" aria-label={`Delete question ${idx + 1}`} title={`Delete question ${idx + 1}`}>
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
                   </form>

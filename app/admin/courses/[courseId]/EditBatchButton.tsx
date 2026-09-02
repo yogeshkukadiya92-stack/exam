@@ -16,7 +16,10 @@ export default function EditBatchButton({ id, courseId, name }: Props) {
   if (!open) {
     return (
       <button
+        type="button"
         onClick={() => setOpen(true)}
+        aria-label={`Edit ${name}`}
+        title={`Edit ${name}`}
         className="rounded-lg border border-slate-200 p-1.5 text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-700"
       >
         <Pencil className="h-3.5 w-3.5" />
@@ -36,6 +39,7 @@ export default function EditBatchButton({ id, courseId, name }: Props) {
       <input type="hidden" name="course_id" value={courseId} />
       <input
         name="name"
+        aria-label="Batch name"
         required
         defaultValue={name}
         className="input py-1.5 text-sm"

@@ -33,12 +33,14 @@ export default async function CoursesPage() {
         <div className="flex flex-col gap-3 sm:flex-row">
           <input
             name="name"
+            aria-label="Course name"
             required
             placeholder="Course name (e.g. NEET 2025)"
             className="input flex-1"
           />
           <input
             name="description"
+            aria-label="Course description"
             placeholder="Description (optional)"
             className="input flex-1"
           />
@@ -88,7 +90,7 @@ export default async function CoursesPage() {
                 </Link>
                 <form action={deleteCourse}>
                   <input type="hidden" name="id" value={c.id} />
-                  <button className="btn-danger flex items-center gap-1">
+                  <button className="btn-danger flex items-center gap-1" aria-label={`Delete ${c.name}`} title={`Delete ${c.name}`}>
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
                 </form>

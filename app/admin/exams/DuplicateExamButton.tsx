@@ -34,6 +34,7 @@ export default function DuplicateExamButton({
       <input type="hidden" name="exam_id" value={examId} />
       <select
         name="batch_id"
+        aria-label="Destination batch"
         defaultValue={currentBatchId}
         className="input py-1.5 text-xs"
       >

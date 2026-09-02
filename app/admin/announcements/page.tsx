@@ -38,6 +38,7 @@ export default async function AnnouncementsPage() {
             </label>
             <input
               name="title"
+              aria-label="Announcement title"
               type="text"
               required
               placeholder="Announcement title"
@@ -50,6 +51,7 @@ export default async function AnnouncementsPage() {
             </label>
             <textarea
               name="content"
+              aria-label="Announcement content"
               rows={3}
               placeholder="Write your announcement details here..."
               className="input resize-none"
@@ -120,7 +122,7 @@ export default async function AnnouncementsPage() {
                 </form>
                 <form action={deleteAnnouncement}>
                   <input type="hidden" name="id" value={a.id} />
-                  <button className="btn-danger flex items-center gap-1 text-xs">
+                  <button className="btn-danger flex items-center gap-1 text-xs" aria-label={`Delete ${a.title}`} title={`Delete ${a.title}`}>
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
                 </form>

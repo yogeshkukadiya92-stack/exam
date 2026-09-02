@@ -95,6 +95,7 @@ export default function CaseStudyExcelUpload({ examId }: { examId: string }) {
         <input
           ref={fileRef}
           type="file"
+          aria-label="Case study spreadsheet file"
           accept=".xlsx,.xls,.csv"
           onChange={onFile}
           className="text-sm file:mr-3 file:rounded-md file:border file:bg-slate-50 file:px-3 file:py-1.5 file:text-sm"

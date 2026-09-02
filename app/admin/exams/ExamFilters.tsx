@@ -83,6 +83,7 @@ export default function ExamFilters({ exams, courses, batches }: Props) {
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
+            aria-label="Search exams"
             placeholder="Search exams..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -90,6 +91,7 @@ export default function ExamFilters({ exams, courses, batches }: Props) {
           />
         </div>
         <select
+          aria-label="Filter by course"
           value={courseFilter}
           onChange={(e) => setCourseFilter(e.target.value)}
           className="input min-w-[160px] py-2.5"
@@ -250,7 +252,7 @@ export default function ExamFilters({ exams, courses, batches }: Props) {
                 </form>
                 <form action={deleteExam}>
                   <input type="hidden" name="id" value={e.id} />
-                  <button className="btn-danger flex items-center gap-1 text-xs">
+                  <button className="btn-danger flex items-center gap-1 text-xs" aria-label={`Move ${e.title} to trash`} title={`Move ${e.title} to trash`}>
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
                 </form>

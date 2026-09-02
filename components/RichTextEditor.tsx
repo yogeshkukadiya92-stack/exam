@@ -58,6 +58,9 @@ export default function RichTextEditor({
       <div
         ref={editorRef}
         contentEditable
+        role="textbox"
+        aria-multiline="true"
+        aria-label={placeholder || name.replaceAll("_", " ")}
         suppressContentEditableWarning
         onInput={sync}
         onBlur={sync}

@@ -41,6 +41,10 @@ interface CaseGroup {
   questions: Question[];
 }
 
+type SaveOperation = () => PromiseLike<{
+  error: { message: string } | null;
+}>;
+
 const GENERAL_CASE_ID = "__general__";
 
 function seeded(seedStr: string) {
@@ -181,6 +185,7 @@ export default function ExamRunner({
   const [textAnswers, setTextAnswers] = useState<Record<string, string>>(initialTextAnswers);
   const [flags, setFlags] = useState<Record<string, boolean>>(initialFlags);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [violations, setViolations] = useState(0);
   const [autoSubmitting, setAutoSubmitting] = useState(false);
   const [confirmSubmit, setConfirmSubmit] = useState(false);
@@ -191,6 +196,9 @@ export default function ExamRunner({
   const startingSessionRef = useRef(false);
   const lastTickRef = useRef(Date.now());
   const activeElapsedRef = useRef(Math.max(0, initialActiveSeconds));
+  const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
+  const pendingSaveCountRef = useRef(0);
+  const failedSavesRef = useRef(new Map<string, SaveOperation>());
 
   const continuousDeadline = Math.min(
     new Date(startedAt).getTime() + durationMinutes * 60000,
@@ -209,6 +217,56 @@ export default function ExamRunner({
 
   const MAX_VIOLATIONS = 3;
 
+  const queueSave = useCallback((questionId: string, operation: SaveOperation) => {
+    if (preview || submittedRef.current) return;
+
+    pendingSaveCountRef.current += 1;
+    setSaving(true);
+    setSaveError(null);
+
+    saveQueueRef.current = saveQueueRef.current
+      .then(async () => {
+        try {
+          const { error } = await operation();
+          if (error) throw error;
+          failedSavesRef.current.delete(questionId);
+        } catch {
+          failedSavesRef.current.set(questionId, operation);
+          setSaveError("Some changes could not be saved. They will be retried before submission.");
+        }
+      })
+      .finally(() => {
+        pendingSaveCountRef.current = Math.max(0, pendingSaveCountRef.current - 1);
+        if (pendingSaveCountRef.current === 0) setSaving(false);
+      });
+  }, [preview]);
+
+  const flushPendingSaves = useCallback(async () => {
+    await saveQueueRef.current;
+    if (failedSavesRef.current.size === 0) return true;
+
+    setSaving(true);
+    const failed = [...failedSavesRef.current.entries()];
+    for (const [questionId, operation] of failed) {
+      try {
+        const { error } = await operation();
+        if (error) throw error;
+        failedSavesRef.current.delete(questionId);
+      } catch {
+        failedSavesRef.current.set(questionId, operation);
+      }
+    }
+    setSaving(false);
+
+    if (failedSavesRef.current.size > 0) {
+      setSaveError("Your latest answers could not be saved. Check your connection and submit again.");
+      return false;
+    }
+
+    setSaveError(null);
+    return true;
+  }, []);
+
   const doSubmit = useCallback(() => {
     if (submittedRef.current) return;
     if (preview) {
@@ -218,8 +276,15 @@ export default function ExamRunner({
     submittedRef.current = true;
     setConfirmSubmit(false);
     setAutoSubmitting(true);
-    startTransition(() => submitAttempt(attemptId));
-  }, [attemptId, preview]);
+    void flushPendingSaves().then((saved) => {
+      if (!saved) {
+        submittedRef.current = false;
+        setAutoSubmitting(false);
+        return;
+      }
+      startTransition(() => submitAttempt(attemptId));
+    });
+  }, [attemptId, flushPendingSaves, preview]);
 
   const startSession = useCallback(async () => {
     if (!isPausable || submittedRef.current || sessionIdRef.current || startingSessionRef.current) {
@@ -426,12 +491,9 @@ export default function ExamRunner({
     if (firstQuestion) goToQuestion(firstQuestion.id);
   };
 
-  const save = async (qid: string, optionIds: string[], flag: boolean) => {
-    if (submittedRef.current) return;
-    if (preview) return;
-    setSaving(true);
-    try {
-      await supabase.from("answers").upsert(
+  const save = (qid: string, optionIds: string[], flag: boolean) => {
+    queueSave(qid, () =>
+      supabase.from("answers").upsert(
         {
           attempt_id: attemptId,
           question_id: qid,
@@ -439,18 +501,13 @@ export default function ExamRunner({
           marked_for_review: flag,
         },
         { onConflict: "attempt_id,question_id" }
-      );
-    } finally {
-      setSaving(false);
-    }
+      )
+    );
   };
 
-  const saveText = async (qid: string, value: string, flag: boolean) => {
-    if (submittedRef.current) return;
-    if (preview) return;
-    setSaving(true);
-    try {
-      await supabase.from("answers").upsert(
+  const saveText = (qid: string, value: string, flag: boolean) => {
+    queueSave(qid, () =>
+      supabase.from("answers").upsert(
         {
           attempt_id: attemptId,
           question_id: qid,
@@ -459,10 +516,8 @@ export default function ExamRunner({
           marked_for_review: flag,
         },
         { onConflict: "attempt_id,question_id" }
-      );
-    } finally {
-      setSaving(false);
-    }
+      )
+    );
   };
 
   const pick = (optionId: string) => {
@@ -492,10 +547,20 @@ export default function ExamRunner({
         <span className="text-sm text-slate-500 dark:text-slate-400">
           Question {idx + 1} of {questions.length}
         </span>
-        <span className={`text-xs transition-colors ${saving ? "text-amber-500" : "text-emerald-500 dark:text-emerald-400"}`}>
-          {preview ? "preview" : saving ? "saving..." : "saved"}
+        <span
+          className={`text-xs transition-colors ${saveError ? "text-red-600 dark:text-red-400" : saving ? "text-amber-500" : "text-emerald-500 dark:text-emerald-400"}`}
+          role="status"
+          aria-live="polite"
+        >
+          {preview ? "preview" : saveError ? "save failed" : saving ? "saving..." : "saved"}
         </span>
       </div>
+
+      {saveError && (
+        <p className="mb-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950/30 dark:text-red-400" role="alert">
+          {saveError}
+        </p>
+      )}
 
       {isPractical && (
         <div className="mb-3 rounded-xl bg-cyan-50 px-3 py-2 text-xs font-medium text-cyan-700 dark:bg-cyan-950/30 dark:text-cyan-300">
@@ -515,6 +580,7 @@ export default function ExamRunner({
       <div className="mt-4 space-y-2">
         {isTextQuestion(q.type) ? (
           <textarea
+            aria-label={`Answer for question ${idx + 1}`}
             value={textAnswers[q.id] ?? ""}
             onChange={(e) => {
               const value = e.target.value;

@@ -53,6 +53,7 @@ export default async function CourseBatchesPage({
         <div className="flex flex-col gap-3 sm:flex-row">
           <input
             name="name"
+            aria-label="Batch name"
             required
             placeholder="Batch name (e.g. 2025 Morning)"
             className="input flex-1"
@@ -86,7 +87,7 @@ export default async function CourseBatchesPage({
                 <form action={deleteBatch}>
                   <input type="hidden" name="id" value={b.id} />
                   <input type="hidden" name="course_id" value={courseId} />
-                  <button className="btn-danger flex items-center gap-1">
+                  <button className="btn-danger flex items-center gap-1" aria-label={`Delete ${b.name}`} title={`Delete ${b.name}`}>
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
                 </form>

@@ -87,11 +87,11 @@ export default async function CaseStudiesPage({
         <div className="grid gap-4 sm:grid-cols-[1fr_140px]">
           <div>
             <label className={label}>Title</label>
-            <input name="title" required placeholder="Case Study 1" className="input" />
+            <input name="title" aria-label="Case study title" required placeholder="Case Study 1" className="input" />
           </div>
           <div>
             <label className={label}>Order</label>
-            <input name="position" type="number" defaultValue={rows.length + 1} className="input" />
+            <input name="position" aria-label="Case study order" type="number" defaultValue={rows.length + 1} className="input" />
           </div>
         </div>
         <div>
@@ -150,11 +150,11 @@ export default async function CaseStudiesPage({
                   <div className="grid gap-4 sm:grid-cols-[1fr_140px]">
                     <div>
                       <label className={label}>Title</label>
-                      <input name="title" required defaultValue={study.title} className="input" />
+                      <input name="title" aria-label={`Title for ${study.title}`} required defaultValue={study.title} className="input" />
                     </div>
                     <div>
                       <label className={label}>Order</label>
-                      <input name="position" type="number" defaultValue={study.position ?? 0} className="input" />
+                      <input name="position" aria-label={`Order for ${study.title}`} type="number" defaultValue={study.position ?? 0} className="input" />
                     </div>
                   </div>
                   <div>

@@ -31,10 +31,11 @@ export default async function SignupPage({
 
           <form action={signup} className="space-y-4">
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-slate-700">
+              <label htmlFor="signup-name" className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">
                 Full name
               </label>
               <input
+                id="signup-name"
                 name="full_name"
                 type="text"
                 required
@@ -43,10 +44,11 @@ export default async function SignupPage({
               />
             </div>
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-slate-700">
+              <label htmlFor="signup-phone" className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">
                 Mobile Number
               </label>
               <input
+                id="signup-phone"
                 name="phone"
                 type="tel"
                 placeholder="+91 9876543210"
@@ -54,10 +56,11 @@ export default async function SignupPage({
               />
             </div>
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-slate-700">
+              <label htmlFor="signup-email" className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">
                 Email
               </label>
               <input
+                id="signup-email"
                 name="email"
                 type="email"
                 required
@@ -66,10 +69,11 @@ export default async function SignupPage({
               />
             </div>
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-slate-700">
+              <label htmlFor="signup-password" className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">
                 Password
               </label>
               <input
+                id="signup-password"
                 name="password"
                 type="password"
                 required

@@ -65,15 +65,15 @@ export default async function QuestionBankPage({
         <div className="grid gap-4 md:grid-cols-3">
           <div>
             <label className={label}>Subject</label>
-            <input name="subject" placeholder="Physics" className={input} />
+            <input name="subject" aria-label="Subject" placeholder="Physics" className={input} />
           </div>
           <div>
             <label className={label}>Topic</label>
-            <input name="topic" placeholder="Motion" className={input} />
+            <input name="topic" aria-label="Topic" placeholder="Motion" className={input} />
           </div>
           <div>
             <label className={label}>Difficulty</label>
-            <select name="difficulty" className={input} defaultValue="medium">
+            <select name="difficulty" aria-label="Difficulty" className={input} defaultValue="medium">
               <option value="easy">Easy</option>
               <option value="medium">Medium</option>
               <option value="hard">Hard</option>
@@ -84,12 +84,13 @@ export default async function QuestionBankPage({
         <div className="grid gap-4 md:grid-cols-[1fr_180px]">
           <textarea
             name="question_text"
+            aria-label="Question text"
             required
             rows={2}
             placeholder="Question text"
             className={input}
           />
-          <select name="type" className={input} defaultValue="single">
+          <select name="type" aria-label="Question type" className={input} defaultValue="single">
             <option value="single">Single MCQ</option>
             <option value="multiple">Multiple MCQ</option>
             <option value="true_false">True / False</option>
@@ -102,26 +103,26 @@ export default async function QuestionBankPage({
         <div className="grid gap-3 md:grid-cols-4">
           {[0, 1, 2, 3].map((i) => (
             <div key={i} className="flex gap-2">
-              <input type="checkbox" name={`correct_${i}`} className="mt-3 h-4 w-4" />
-              <input name={`option_${i}`} placeholder={`Option ${i + 1}`} className={input} />
+              <input type="checkbox" name={`correct_${i}`} aria-label={`Mark option ${i + 1} as correct`} className="mt-3 h-4 w-4" />
+              <input name={`option_${i}`} aria-label={`Option ${i + 1}`} placeholder={`Option ${i + 1}`} className={input} />
             </div>
           ))}
         </div>
 
         <div className="grid gap-4 md:grid-cols-4">
-          <input name="correct_text" placeholder="Correct text / number" className={input} />
-          <input name="marks" type="number" min={0} step="0.01" defaultValue={1} className={input} />
-          <input name="negative_marks" type="number" min={0} step="0.01" defaultValue={0} className={input} />
+          <input name="correct_text" aria-label="Correct text or number" placeholder="Correct text / number" className={input} />
+          <input name="marks" aria-label="Marks" type="number" min={0} step="0.01" defaultValue={1} className={input} />
+          <input name="negative_marks" aria-label="Negative marks" type="number" min={0} step="0.01" defaultValue={0} className={input} />
           <button className="btn-primary">Add to bank</button>
         </div>
 
-        <textarea name="explanation" rows={2} placeholder="Explanation" className={input} />
+        <textarea name="explanation" aria-label="Explanation" rows={2} placeholder="Explanation" className={input} />
       </form>
 
       <form className="mb-5 grid gap-3 md:grid-cols-4">
-        <input name="subject" defaultValue={filters.subject ?? ""} placeholder="Filter subject" className={input} />
-        <input name="topic" defaultValue={filters.topic ?? ""} placeholder="Filter topic" className={input} />
-        <select name="difficulty" defaultValue={filters.difficulty ?? ""} className={input}>
+        <input name="subject" aria-label="Filter by subject" defaultValue={filters.subject ?? ""} placeholder="Filter subject" className={input} />
+        <input name="topic" aria-label="Filter by topic" defaultValue={filters.topic ?? ""} placeholder="Filter topic" className={input} />
+        <select name="difficulty" aria-label="Filter by difficulty" defaultValue={filters.difficulty ?? ""} className={input}>
           <option value="">All difficulty</option>
           <option value="easy">Easy</option>
           <option value="medium">Medium</option>
@@ -151,7 +152,7 @@ export default async function QuestionBankPage({
             </div>
             <form action={deleteBankQuestion} className="shrink-0">
               <input type="hidden" name="id" value={q.id} />
-              <button className="btn-danger p-2" title="Delete">
+              <button className="btn-danger p-2" title="Delete question" aria-label="Delete question">
                 <Trash2 className="h-4 w-4" />
               </button>
             </form>

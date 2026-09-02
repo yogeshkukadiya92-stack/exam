@@ -37,6 +37,7 @@ export default function EditCourseButton({ id, name, description }: Props) {
       <div className="flex flex-col gap-3 sm:flex-row">
         <input
           name="name"
+          aria-label="Course name"
           required
           defaultValue={name}
           placeholder="Course name"
@@ -45,6 +46,7 @@ export default function EditCourseButton({ id, name, description }: Props) {
         />
         <input
           name="description"
+          aria-label="Course description"
           defaultValue={description ?? ""}
           placeholder="Description (optional)"
           className="input flex-1"

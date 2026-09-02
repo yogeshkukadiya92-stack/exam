@@ -50,6 +50,7 @@ export default async function ProfilePage({
               </label>
               <input
                 name="full_name"
+                aria-label="Full name"
                 type="text"
                 defaultValue={profile.full_name ?? ""}
                 placeholder="Your full name"
@@ -62,6 +63,7 @@ export default async function ProfilePage({
               </label>
               <input
                 name="phone"
+                aria-label="Mobile number"
                 type="tel"
                 defaultValue={profile.phone ?? ""}
                 placeholder="+91 9876543210"
@@ -74,6 +76,7 @@ export default async function ProfilePage({
               </label>
               <input
                 type="email"
+                aria-label="Email"
                 value={profile.email ?? ""}
                 disabled
                 className="input opacity-60 cursor-not-allowed"
@@ -107,6 +110,7 @@ export default async function ProfilePage({
               </label>
               <input
                 name="password"
+                aria-label="New password"
                 type="password"
                 required
                 minLength={6}
@@ -120,6 +124,7 @@ export default async function ProfilePage({
               </label>
               <input
                 name="confirm_password"
+                aria-label="Confirm password"
                 type="password"
                 required
                 placeholder="Re-enter password"

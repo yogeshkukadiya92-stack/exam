@@ -37,10 +37,11 @@ export default async function LoginPage({
           <form action={login} className="space-y-4">
             {next && <input type="hidden" name="next" value={next} />}
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-slate-700">
+              <label htmlFor="login-identifier" className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">
                 Email or mobile number
               </label>
               <input
+                id="login-identifier"
                 name="identifier"
                 type="text"
                 required
@@ -49,10 +50,11 @@ export default async function LoginPage({
               />
             </div>
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-slate-700">
+              <label htmlFor="login-password" className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">
                 Password
               </label>
               <input
+                id="login-password"
                 name="password"
                 type="password"
                 required

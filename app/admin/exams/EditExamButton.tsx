@@ -100,6 +100,8 @@ export default function EditExamButton({
               <button
                 type="button"
                 onClick={() => setOpen(false)}
+                aria-label="Close edit exam dialog"
+                title="Close"
                 className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
               >
                 <X className="h-5 w-5" />
@@ -111,7 +113,7 @@ export default function EditExamButton({
             <div className="space-y-5">
               <div>
                 <label className={label}>Exam title</label>
-                <input name="title" required defaultValue={exam.title} className="input" />
+                <input name="title" aria-label="Exam title" required defaultValue={exam.title} className="input" />
               </div>
 
               <div className="grid gap-4 sm:grid-cols-3">
@@ -119,6 +121,7 @@ export default function EditExamButton({
                   <label className={label}>Exam type</label>
                   <select
                     name="exam_mode"
+                    aria-label="Exam type"
                     value={examMode}
                     onChange={(e) => {
                       const next = e.target.value === "practical" ? "practical" : "standard";
@@ -135,12 +138,13 @@ export default function EditExamButton({
                   <label className={label}>
                     {examMode === "practical" ? "Active duration (min)" : "Duration (min)"}
                   </label>
-                  <input name="duration_minutes" type="number" min={1} defaultValue={exam.duration_minutes} className="input" />
+                  <input name="duration_minutes" aria-label={examMode === "practical" ? "Active duration in minutes" : "Duration in minutes"} type="number" min={1} defaultValue={exam.duration_minutes} className="input" />
                 </div>
                 <div>
                   <label className={label}>Timer</label>
                   <select
                     name="timer_mode"
+                    aria-label="Timer mode"
                     value={timerMode}
                     onChange={(e) =>
                       setTimerMode(e.target.value === "continuous" ? "continuous" : "pausable")
@@ -159,6 +163,7 @@ export default function EditExamButton({
                   <label className={label}>Course</label>
                   <select
                     name="course_id"
+                    aria-label="Course"
                     required
                     value={courseId}
                     onChange={(e) => {
@@ -181,6 +186,7 @@ export default function EditExamButton({
                   <label className={label}>Batch</label>
                   <select
                     name="batch_id"
+                    aria-label="Batch"
                     required
                     value={batchId}
                     onChange={(e) => setBatchId(e.target.value)}
@@ -198,28 +204,28 @@ export default function EditExamButton({
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <label className={label}>Pass marks</label>
-                  <input name="pass_marks" type="number" min={0} step="0.01" defaultValue={exam.pass_marks} className="input" />
+                  <input name="pass_marks" aria-label="Pass marks" type="number" min={0} step="0.01" defaultValue={exam.pass_marks} className="input" />
                 </div>
                 <div>
                   <label className={label}>Max attempts</label>
-                  <input name="max_attempts" type="number" min={1} defaultValue={exam.max_attempts} className="input" />
+                  <input name="max_attempts" aria-label="Max attempts" type="number" min={1} defaultValue={exam.max_attempts} className="input" />
                 </div>
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <label className={label}>Start time</label>
-                  <input name="start_time" type="datetime-local" defaultValue={toDateTimeLocal(exam.start_time)} className="input" />
+                  <input name="start_time" aria-label="Start time" type="datetime-local" defaultValue={toDateTimeLocal(exam.start_time)} className="input" />
                 </div>
                 <div>
                   <label className={label}>End time</label>
-                  <input name="end_time" type="datetime-local" defaultValue={toDateTimeLocal(exam.end_time)} className="input" />
+                  <input name="end_time" aria-label="End time" type="datetime-local" defaultValue={toDateTimeLocal(exam.end_time)} className="input" />
                 </div>
               </div>
 
               <div>
                 <label className={label}>Instructions</label>
-                <textarea name="instructions" rows={2} defaultValue={exam.instructions ?? ""} className="input" />
+                <textarea name="instructions" aria-label="Instructions" rows={2} defaultValue={exam.instructions ?? ""} className="input" />
               </div>
 
               <div className="flex flex-wrap gap-5 rounded-xl bg-slate-50 p-4">

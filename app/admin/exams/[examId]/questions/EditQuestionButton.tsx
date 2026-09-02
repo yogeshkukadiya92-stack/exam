@@ -66,6 +66,7 @@ export default function EditQuestionButton({
       <button
         type="button"
         onClick={openModal}
+        aria-label="Edit question"
         className="rounded-lg border border-slate-200 p-1.5 text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-700"
         title="Edit"
       >
@@ -93,6 +94,8 @@ export default function EditQuestionButton({
               <button
                 type="button"
                 onClick={() => setOpen(false)}
+                aria-label="Close edit question dialog"
+                title="Close"
                 className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
               >
                 <X className="h-5 w-5" />
@@ -107,6 +110,7 @@ export default function EditQuestionButton({
                 <label className="mb-1 block text-sm font-medium">Case study</label>
                 <select
                   name="case_study_id"
+                  aria-label="Case study"
                   defaultValue={question.case_study_id ?? ""}
                   className={input}
                 >
@@ -122,6 +126,7 @@ export default function EditQuestionButton({
 
             <textarea
               name="question_text"
+              aria-label="Question text"
               required
               rows={2}
               defaultValue={question.question_text}
@@ -133,6 +138,7 @@ export default function EditQuestionButton({
               <span className="text-gray-500">Type:</span>
               <select
                 name="type"
+                aria-label="Question type"
                 value={type}
                 onChange={(e) => setType(e.target.value)}
                 className="rounded-md border px-2 py-1.5 text-sm"
@@ -155,12 +161,14 @@ export default function EditQuestionButton({
                       <input
                         type="checkbox"
                         name={`correct_${i}`}
+                        aria-label={`Mark option ${String.fromCharCode(65 + i)} as correct`}
                         defaultChecked={o?.is_correct ?? false}
                         className="h-4 w-4 shrink-0"
                         title="Correct?"
                       />
                       <input
                         name={`option_${i}`}
+                        aria-label={`Option ${String.fromCharCode(65 + i)}`}
                         defaultValue={o?.option_text ?? ""}
                         placeholder={`Option ${String.fromCharCode(65 + i)}`}
                         className={input}
@@ -181,6 +189,7 @@ export default function EditQuestionButton({
                 </label>
                 <input
                   name="correct_text"
+                  aria-label="Correct answer or grading note"
                   defaultValue={question.correct_text ?? ""}
                   placeholder={type === "descriptive" ? "Manual grading note" : "Correct answer"}
                   className={input}
@@ -193,6 +202,7 @@ export default function EditQuestionButton({
                 <label className="mb-1 block text-sm font-medium">Marks</label>
                 <input
                   name="marks"
+                  aria-label="Marks"
                   type="number"
                   min={0}
                   step="0.01"
@@ -204,6 +214,7 @@ export default function EditQuestionButton({
                 <label className="mb-1 block text-sm font-medium">Negative marks</label>
                 <input
                   name="negative_marks"
+                  aria-label="Negative marks"
                   type="number"
                   min={0}
                   step="0.01"
@@ -219,6 +230,7 @@ export default function EditQuestionButton({
               </label>
               <textarea
                 name="explanation"
+                aria-label="Explanation"
                 rows={2}
                 defaultValue={question.explanation ?? ""}
                 placeholder="Shown during review..."

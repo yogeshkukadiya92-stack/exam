@@ -36,6 +36,7 @@ export default async function SettingsPage() {
               </label>
               <input
                 name="name"
+                aria-label="Academy name"
                 type="text"
                 defaultValue={settings.name}
                 required
@@ -50,6 +51,7 @@ export default async function SettingsPage() {
               </label>
               <input
                 name="tagline"
+                aria-label="Tagline"
                 type="text"
                 defaultValue={settings.tagline}
                 className="input"
@@ -63,6 +65,7 @@ export default async function SettingsPage() {
               </label>
               <input
                 name="logo_url"
+                aria-label="Logo URL"
                 type="url"
                 defaultValue={settings.logo_url ?? ""}
                 className="input"
@@ -80,6 +83,7 @@ export default async function SettingsPage() {
               <div className="flex items-center gap-3">
                 <input
                   name="primary_color"
+                  aria-label="Primary color"
                   type="text"
                   defaultValue={settings.primary_color}
                   className="input"
@@ -114,6 +118,7 @@ export default async function SettingsPage() {
               </label>
               <input
                 name="website_url"
+                aria-label="Website URL"
                 type="url"
                 defaultValue={settings.website_url ?? ""}
                 className="input"
@@ -127,6 +132,7 @@ export default async function SettingsPage() {
               </label>
               <input
                 name="support_email"
+                aria-label="Support email"
                 type="email"
                 defaultValue={settings.support_email ?? ""}
                 className="input"
@@ -140,6 +146,7 @@ export default async function SettingsPage() {
               </label>
               <textarea
                 name="footer_text"
+                aria-label="Footer text"
                 rows={3}
                 defaultValue={settings.footer_text ?? ""}
                 className="input resize-none"

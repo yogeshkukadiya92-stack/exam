@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { normalizePhoneNumber, phoneLookupValues } from "@/lib/phone";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 
 export async function login(formData: FormData) {
   const identifier = ((formData.get("identifier") || formData.get("email")) as string)?.trim();
@@ -128,10 +129,14 @@ export async function forgotPassword(formData: FormData) {
   const email = formData.get("email") as string;
   const supabase = await createClient();
 
-  const origin = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3005";
+  const requestHeaders = await headers();
+  const origin =
+    process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
+    requestHeaders.get("origin") ||
+    "http://localhost:3000";
 
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${origin}/reset-password`,
+    redirectTo: `${origin}/auth/callback?next=/reset-password`,
   });
 
   if (error) {

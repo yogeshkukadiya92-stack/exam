@@ -84,6 +84,7 @@ export default function WordPracticalUpload({ examId }: { examId: string }) {
         <input
           ref={fileRef}
           type="file"
+          aria-label="Practical exam Word file"
           accept=".docx"
           onChange={(event) => {
             setResult(null);

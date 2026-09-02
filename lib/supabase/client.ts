@@ -33,6 +33,7 @@ function createMissingBrowserClient() {
 
   return {
     auth: {
+      getSession: async () => ({ data: { session: null }, error: missingError }),
       onAuthStateChange: () => ({
         data: {
           subscription: {
@@ -41,6 +42,7 @@ function createMissingBrowserClient() {
         },
       }),
       updateUser: async () => ({ data: null, error: missingError }),
+      signInWithOAuth: async () => ({ data: null, error: missingError }),
     },
     from() {
       return emptyQuery;

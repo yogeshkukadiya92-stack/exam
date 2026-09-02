@@ -26,15 +26,15 @@ export default async function NotificationsPage() {
       <p className="mt-1 text-sm text-slate-500">Email outbox and manual notification queue.</p>
 
       <form action={queueNotification} className="card my-6 grid gap-3 p-5 md:grid-cols-2">
-        <select name="event_type" className="input" defaultValue="manual">
+        <select name="event_type" aria-label="Notification type" className="input" defaultValue="manual">
           <option value="manual">Manual</option>
           <option value="exam_published">Exam published</option>
           <option value="result_declared">Result declared</option>
           <option value="student_added">Student added</option>
         </select>
-        <input name="recipient" placeholder="Recipient email" className="input" />
-        <input name="subject" placeholder="Subject" className="input md:col-span-2" />
-        <textarea name="body" rows={3} placeholder="Message body" className="input md:col-span-2" />
+        <input name="recipient" aria-label="Recipient email" placeholder="Recipient email" className="input" />
+        <input name="subject" aria-label="Notification subject" placeholder="Subject" className="input md:col-span-2" />
+        <textarea name="body" aria-label="Message body" rows={3} placeholder="Message body" className="input md:col-span-2" />
         <button className="btn-primary md:col-span-2">Queue notification</button>
       </form>
 

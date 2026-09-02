@@ -39,10 +39,10 @@ export default async function SectionsPage({
 
       <form action={addSection} className="card mb-6 grid gap-3 p-5 md:grid-cols-5">
         <input type="hidden" name="exam_id" value={examId} />
-        <input name="name" required placeholder="Section name" className="input md:col-span-2" />
-        <input name="position" type="number" placeholder="Order" className="input" />
-        <input name="marks" type="number" placeholder="Marks" className="input" />
-        <input name="duration_minutes" type="number" placeholder="Timer min" className="input" />
+        <input name="name" aria-label="Section name" required placeholder="Section name" className="input md:col-span-2" />
+        <input name="position" aria-label="Section order" type="number" placeholder="Order" className="input" />
+        <input name="marks" aria-label="Section marks" type="number" placeholder="Marks" className="input" />
+        <input name="duration_minutes" aria-label="Section timer in minutes" type="number" placeholder="Timer min" className="input" />
         <button className="btn-primary md:col-span-5">Add section</button>
       </form>
 
@@ -58,7 +58,7 @@ export default async function SectionsPage({
             <form action={deleteSection}>
               <input type="hidden" name="exam_id" value={examId} />
               <input type="hidden" name="id" value={s.id} />
-              <button className="btn-danger p-2"><Trash2 className="h-4 w-4" /></button>
+              <button className="btn-danger p-2" aria-label={`Delete ${s.name}`} title={`Delete ${s.name}`}><Trash2 className="h-4 w-4" /></button>
             </form>
           </div>
         ))}

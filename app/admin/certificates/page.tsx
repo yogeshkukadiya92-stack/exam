@@ -26,12 +26,12 @@ export default async function CertificateTemplatesPage() {
       <p className="mt-1 text-sm text-slate-500">Create reusable certificate branding.</p>
 
       <form action={saveCertificateTemplate} className="card my-6 grid gap-3 p-5 md:grid-cols-2">
-        <input name="name" required placeholder="Template name" className="input" />
-        <input name="primary_color" type="color" defaultValue="#4f46e5" className="input h-11" />
-        <input name="logo_url" placeholder="Logo URL" className="input" />
-        <input name="signature_url" placeholder="Signature URL" className="input" />
-        <input name="signer_name" placeholder="Signer name" className="input" />
-        <input name="signer_title" placeholder="Signer title" className="input" />
+        <input name="name" aria-label="Template name" required placeholder="Template name" className="input" />
+        <input name="primary_color" aria-label="Primary color" type="color" defaultValue="#4f46e5" className="input h-11" />
+        <input name="logo_url" aria-label="Logo URL" placeholder="Logo URL" className="input" />
+        <input name="signature_url" aria-label="Signature URL" placeholder="Signature URL" className="input" />
+        <input name="signer_name" aria-label="Signer name" placeholder="Signer name" className="input" />
+        <input name="signer_title" aria-label="Signer title" placeholder="Signer title" className="input" />
         <button className="btn-primary md:col-span-2">Create template</button>
       </form>
 

@@ -63,12 +63,12 @@ export default async function LandingPage() {
     <div className="min-h-screen">
       {/* Header */}
       <header className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/80 backdrop-blur-xl dark:border-slate-700/80 dark:bg-slate-900/80">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-4 py-3 sm:px-6">
           <div className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-600 to-violet-600 shadow-sm shadow-indigo-200">
               <span className="text-sm font-bold text-white">E</span>
             </div>
-            <span className="text-lg font-bold tracking-tight">
+            <span className="text-base font-bold tracking-tight sm:text-lg">
               {settings.name === "ExamHub" ? (
                 <>Exam<span className="gradient-text">Hub</span></>
               ) : (
@@ -76,7 +76,7 @@ export default async function LandingPage() {
               )}
             </span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex shrink-0 items-center gap-1 sm:gap-3">
             {dashboardHref ? (
               <Link href={dashboardHref} className="btn-primary flex items-center gap-1.5 text-sm">
                 Go to Dashboard <ArrowRight className="h-4 w-4" />
@@ -85,11 +85,11 @@ export default async function LandingPage() {
               <>
                 <Link
                   href="/login"
-                  className="rounded-lg px-4 py-2 text-sm font-medium text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
+                  className="whitespace-nowrap rounded-lg px-2 py-2 text-sm font-medium text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-300 dark:hover:text-white sm:px-4"
                 >
                   Sign In
                 </Link>
-                <Link href="/signup" className="btn-primary text-sm">
+                <Link href="/signup" className="btn-primary whitespace-nowrap px-3 text-sm sm:px-5">
                   Get Started
                 </Link>
               </>
@@ -109,11 +109,11 @@ export default async function LandingPage() {
             Create, manage, and deliver secure online exams for your academy.
             Built for educators who demand reliability and simplicity.
           </p>
-          <div className="mt-8 flex items-center justify-center gap-4">
+          <div className="mx-auto mt-8 flex max-w-xs flex-col items-stretch justify-center gap-3 sm:max-w-none sm:flex-row sm:items-center sm:gap-4">
             {dashboardHref ? (
               <Link
                 href={dashboardHref}
-                className="inline-flex items-center gap-2 rounded-xl bg-white px-6 py-3 text-sm font-semibold text-indigo-700 shadow-lg shadow-indigo-900/20 transition-all hover:shadow-xl active:scale-[0.98]"
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-6 py-3 text-sm font-semibold text-indigo-700 shadow-lg shadow-indigo-900/20 transition-all hover:shadow-xl active:scale-[0.98]"
               >
                 Go to Dashboard <ArrowRight className="h-4 w-4" />
               </Link>
@@ -121,13 +121,13 @@ export default async function LandingPage() {
               <>
                 <Link
                   href="/signup"
-                  className="inline-flex items-center gap-2 rounded-xl bg-white px-6 py-3 text-sm font-semibold text-indigo-700 shadow-lg shadow-indigo-900/20 transition-all hover:shadow-xl active:scale-[0.98]"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-6 py-3 text-sm font-semibold text-indigo-700 shadow-lg shadow-indigo-900/20 transition-all hover:shadow-xl active:scale-[0.98]"
                 >
                   Get Started Free <ArrowRight className="h-4 w-4" />
                 </Link>
                 <Link
                   href="/login"
-                  className="rounded-xl border border-white/30 px-6 py-3 text-sm font-semibold text-white transition-all hover:bg-white/10"
+                  className="rounded-xl border border-white/30 px-6 py-3 text-center text-sm font-semibold text-white transition-all hover:bg-white/10"
                 >
                   Sign In
                 </Link>
@@ -190,7 +190,7 @@ export default async function LandingPage() {
         <p className="mx-auto mt-3 max-w-md text-slate-500 dark:text-slate-400">
           Join thousands of educators using {settings.name} to create and deliver secure online examinations.
         </p>
-        <div className="mt-8 flex items-center justify-center gap-4">
+        <div className="mx-auto mt-8 flex max-w-xs flex-col items-stretch justify-center gap-3 sm:max-w-none sm:flex-row sm:items-center sm:gap-4">
           {dashboardHref ? (
             <Link href={dashboardHref} className="btn-primary flex items-center gap-1.5">
               Go to Dashboard <ArrowRight className="h-4 w-4" />

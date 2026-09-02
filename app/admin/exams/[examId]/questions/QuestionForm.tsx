@@ -48,7 +48,7 @@ export default function QuestionForm({
       {caseStudies.length > 0 && (
         <div>
           <label className="mb-1 block text-sm font-medium">Case study</label>
-          <select name="case_study_id" className={input} defaultValue="">
+          <select name="case_study_id" aria-label="Case study" className={input} defaultValue="">
             <option value="">No case study</option>
             {caseStudies.map((study) => (
               <option key={study.id} value={study.id}>
@@ -61,6 +61,7 @@ export default function QuestionForm({
 
       <textarea
         name="question_text"
+        aria-label="Question text"
         required
         rows={2}
         placeholder="Write the question..."
@@ -71,6 +72,7 @@ export default function QuestionForm({
         <span className="text-gray-500">Type:</span>
         <select
           name="type"
+          aria-label="Question type"
           value={type}
           onChange={(e) => setType(e.target.value)}
           className="rounded-md border px-2 py-1.5 text-sm"
@@ -98,12 +100,14 @@ export default function QuestionForm({
             <input
               type="checkbox"
               name={`correct_${i}`}
+              aria-label={`Mark option ${String.fromCharCode(65 + i)} as correct`}
               defaultChecked={type === "true_false" && i === 0}
               className="h-4 w-4 shrink-0"
               title="Correct?"
             />
             <input
               name={`option_${i}`}
+              aria-label={`Option ${String.fromCharCode(65 + i)}`}
               defaultValue={type === "true_false" ? (i === 0 ? "True" : i === 1 ? "False" : "") : ""}
               placeholder={`Option ${String.fromCharCode(65 + i)}`}
               className={input}
@@ -123,6 +127,7 @@ export default function QuestionForm({
           </label>
           <input
             name="correct_text"
+            aria-label="Correct answer or grading note"
             placeholder={type === "descriptive" ? "Manual grading note" : "Correct answer"}
             className={input}
           />
@@ -134,6 +139,7 @@ export default function QuestionForm({
           <label className="mb-1 block text-sm font-medium">Marks</label>
           <input
             name="marks"
+            aria-label="Marks"
             type="number"
             min={0}
             step="0.01"
@@ -147,6 +153,7 @@ export default function QuestionForm({
           </label>
           <input
             name="negative_marks"
+            aria-label="Negative marks"
             type="number"
             min={0}
             step="0.01"
@@ -162,6 +169,7 @@ export default function QuestionForm({
         </label>
         <textarea
           name="explanation"
+          aria-label="Explanation"
           rows={2}
           placeholder="Shown during review..."
           className={input}

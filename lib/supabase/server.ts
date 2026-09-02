@@ -49,6 +49,9 @@ function createMissingClient() {
         error: new Error("Supabase env vars are missing."),
       }),
       signOut: async () => ({ error: null }),
+      resetPasswordForEmail: async () => ({ data: null, error: new Error("Supabase env vars are missing.") }),
+      updateUser: async () => ({ data: null, error: new Error("Supabase env vars are missing.") }),
+      exchangeCodeForSession: async () => ({ data: null, error: new Error("Supabase env vars are missing.") }),
     },
     from() {
       const empty = {

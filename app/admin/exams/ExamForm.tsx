@@ -46,6 +46,8 @@ export default function ExamForm({ courses }: { courses: Course[] }) {
         <button
           type="button"
           onClick={() => setOpen(false)}
+          aria-label="Close new exam form"
+          title="Close"
           className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
         >
           <X className="h-5 w-5" />
@@ -54,7 +56,7 @@ export default function ExamForm({ courses }: { courses: Course[] }) {
 
       <div>
         <label className={label}>Exam title</label>
-        <input name="title" required placeholder="e.g. Physics Unit Test 1" className="input" />
+        <input name="title" aria-label="Exam title" required placeholder="e.g. Physics Unit Test 1" className="input" />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
@@ -62,6 +64,7 @@ export default function ExamForm({ courses }: { courses: Course[] }) {
           <label className={label}>Exam type</label>
           <select
             name="exam_mode"
+            aria-label="Exam type"
             value={examMode}
             onChange={(e) => {
               const next = e.target.value === "practical" ? "practical" : "standard";
@@ -78,12 +81,13 @@ export default function ExamForm({ courses }: { courses: Course[] }) {
           <label className={label}>
             {examMode === "practical" ? "Active duration (min)" : "Duration (min)"}
           </label>
-          <input name="duration_minutes" type="number" min={1} defaultValue={60} className="input" />
+          <input name="duration_minutes" aria-label={examMode === "practical" ? "Active duration in minutes" : "Duration in minutes"} type="number" min={1} defaultValue={60} className="input" />
         </div>
         <div>
           <label className={label}>Timer</label>
           <select
             name="timer_mode"
+            aria-label="Timer mode"
             value={timerMode}
             onChange={(e) =>
               setTimerMode(e.target.value === "continuous" ? "continuous" : "pausable")
@@ -102,6 +106,7 @@ export default function ExamForm({ courses }: { courses: Course[] }) {
           <label className={label}>Course</label>
           <select
             name="course_id"
+            aria-label="Course"
             required
             value={courseId}
             onChange={(e) => setCourseId(e.target.value)}
@@ -117,7 +122,7 @@ export default function ExamForm({ courses }: { courses: Course[] }) {
         </div>
         <div>
           <label className={label}>Batch</label>
-          <select name="batch_id" required className="input" disabled={!courseId}>
+          <select name="batch_id" aria-label="Batch" required className="input" disabled={!courseId}>
             <option value="">Select batch</option>
             {batches.map((b) => (
               <option key={b.id} value={b.id}>
@@ -131,22 +136,22 @@ export default function ExamForm({ courses }: { courses: Course[] }) {
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label className={label}>Pass marks</label>
-          <input name="pass_marks" type="number" min={0} step="0.01" defaultValue={0} className="input" />
+          <input name="pass_marks" aria-label="Pass marks" type="number" min={0} step="0.01" defaultValue={0} className="input" />
         </div>
         <div>
           <label className={label}>Max attempts</label>
-          <input name="max_attempts" type="number" min={1} defaultValue={1} className="input" />
+          <input name="max_attempts" aria-label="Max attempts" type="number" min={1} defaultValue={1} className="input" />
         </div>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label className={label}>Start time (optional)</label>
-          <input name="start_time" type="datetime-local" className="input" />
+          <input name="start_time" aria-label="Start time" type="datetime-local" className="input" />
         </div>
         <div>
           <label className={label}>End time (optional)</label>
-          <input name="end_time" type="datetime-local" className="input" />
+          <input name="end_time" aria-label="End time" type="datetime-local" className="input" />
         </div>
       </div>
 
@@ -154,6 +159,7 @@ export default function ExamForm({ courses }: { courses: Course[] }) {
         <label className={label}>Instructions (optional)</label>
         <textarea
           name="instructions"
+          aria-label="Instructions"
           rows={2}
           placeholder="Instructions shown to students before the exam..."
           className="input"

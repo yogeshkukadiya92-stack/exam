@@ -36,10 +36,11 @@ export default async function ForgotPasswordPage({
 
           <form action={forgotPassword} className="space-y-4">
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-slate-700">
+              <label htmlFor="forgot-email" className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">
                 Email
               </label>
               <input
+                id="forgot-email"
                 name="email"
                 type="email"
                 required

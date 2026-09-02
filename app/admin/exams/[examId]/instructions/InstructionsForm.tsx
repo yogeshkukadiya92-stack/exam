@@ -39,6 +39,7 @@ export default function InstructionsForm({
           Write each point on a separate line.
         </p>
         <textarea
+          aria-label="Exam instructions"
           value={value}
           onChange={(e) => setValue(e.target.value)}
           rows={12}

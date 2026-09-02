@@ -3,6 +3,7 @@
 import { useMemo, useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState("");
@@ -10,19 +11,39 @@ export default function ResetPasswordPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [ready, setReady] = useState(false);
+  const [checking, setChecking] = useState(true);
   const router = useRouter();
 
   const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
+    let active = true;
+
+    void supabase.auth.getSession().then(({ data }: { data: { session: unknown } }) => {
+      if (active && data.session) {
+        setReady(true);
+        setChecking(false);
+      }
+    });
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event: string) => {
-        if (event === "PASSWORD_RECOVERY") {
+      (event: string, session: unknown) => {
+        if (event === "PASSWORD_RECOVERY" || (event === "SIGNED_IN" && session)) {
           setReady(true);
+          setChecking(false);
         }
       }
     );
-    return () => subscription.unsubscribe();
+
+    const timeout = window.setTimeout(() => {
+      if (active) setChecking(false);
+    }, 4000);
+
+    return () => {
+      active = false;
+      window.clearTimeout(timeout);
+      subscription.unsubscribe();
+    };
   }, [supabase]);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -61,7 +82,11 @@ export default function ResetPasswordPage() {
           </div>
           <h1 className="text-2xl font-bold tracking-tight">New Password</h1>
           <p className="mt-1 text-sm text-slate-500">
-            {ready ? "Enter your new password below" : "Verifying your reset link..."}
+            {ready
+              ? "Enter your new password below"
+              : checking
+                ? "Verifying your reset link..."
+                : "This reset link is invalid or has expired"}
           </p>
         </div>
 
@@ -72,20 +97,25 @@ export default function ResetPasswordPage() {
             </div>
           )}
 
-          {!ready ? (
+          {checking ? (
             <div className="py-8 text-center">
-              <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-indigo-200 border-t-indigo-600" />
+              <div
+                className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-indigo-200 border-t-indigo-600"
+                role="status"
+                aria-label="Verifying reset link"
+              />
               <p className="mt-4 text-sm text-slate-500">
                 Please wait while we verify your reset link...
               </p>
             </div>
-          ) : (
+          ) : ready ? (
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="mb-1.5 block text-sm font-medium text-slate-700">
+                <label htmlFor="new-password" className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">
                   New Password
                 </label>
                 <input
+                  id="new-password"
                   type="password"
                   required
                   minLength={6}
@@ -96,10 +126,11 @@ export default function ResetPasswordPage() {
                 />
               </div>
               <div>
-                <label className="mb-1.5 block text-sm font-medium text-slate-700">
+                <label htmlFor="confirm-password" className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">
                   Confirm Password
                 </label>
                 <input
+                  id="confirm-password"
                   type="password"
                   required
                   value={confirm}
@@ -116,6 +147,15 @@ export default function ResetPasswordPage() {
                 {loading ? "Updating..." : "Update Password"}
               </button>
             </form>
+          ) : (
+            <div className="py-6 text-center">
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                Request a new password reset email and open the latest link.
+              </p>
+              <Link href="/forgot-password" className="btn-primary mt-5 inline-flex">
+                Request new link
+              </Link>
+            </div>
           )}
         </div>
       </div>
