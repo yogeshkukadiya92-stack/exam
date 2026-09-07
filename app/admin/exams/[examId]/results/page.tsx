@@ -2,9 +2,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { normalizePhoneNumber } from "@/lib/phone";
-import { buildWhatsAppUrl } from "@/lib/whatsapp";
+import WhatsAppResult from "./WhatsAppResult";
 import ResultsExport from "./ResultsExport";
-import { ChevronRight, TrendingUp, Users, Award, Activity, MessageCircle } from "lucide-react";
+import { ChevronRight, TrendingUp, Users, Award, Activity } from "lucide-react";
 
 interface Analytics {
   summary: {
@@ -310,9 +310,6 @@ export default async function ExamResultsPage({
                     totalMarks: summary.total_marks,
                     examMode: exam.exam_mode ?? "standard",
                   });
-                  const whatsappUrl = phone
-                    ? buildWhatsAppUrl(phone, whatsappMessage)
-                    : null;
                   return (
                     <tr key={a.attempt_id} className="transition-colors hover:bg-slate-50/50 dark:hover:bg-slate-700/30">
                       <td className="font-medium text-slate-400">{i + 1}</td>
@@ -329,17 +326,8 @@ export default async function ExamResultsPage({
                         </span>
                       </td>
                       <td>
-                        {whatsappUrl ? (
-                          <a
-                            href={whatsappUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-emerald-700"
-                            aria-label={`Send WhatsApp result to ${a.student_name}`}
-                          >
-                            <MessageCircle className="h-4 w-4" />
-                            Send WhatsApp
-                          </a>
+                        {phone ? (
+                          <WhatsAppResult phone={phone} message={whatsappMessage} studentName={a.student_name} />
                         ) : (
                           <span className="text-xs text-slate-400" title="Add a mobile number to the student's profile">
                             Mobile unavailable
