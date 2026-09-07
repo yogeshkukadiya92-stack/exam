@@ -78,7 +78,7 @@ ${emoji.graduationCap} Final Nutrition Practical Exam Results ${emoji.leaf}
 
 You’ve successfully completed your *ISHF Final Practical Exam* — proving your skills, confidence, and real-world understanding of nutrition. ${emoji.flexedBiceps}${emoji.leaf}
 
-${emoji.chart} *Your Score:* ${percentage}% / 100%
+${emoji.chart} *Your Percentage:* ${percentage}%
 
 *This result isn’t just about marks* — it’s a reflection of your growth, dedication, and applied knowledge to transform lives. ${emoji.globe}${emoji.sparkles}
 
@@ -96,7 +96,7 @@ Today marks a *proud milestone* in your ISHF journey — a celebration of your h
 
 We are delighted to share that you have *successfully completed your ${examName}* and your performance truly reflects your *consistency, knowledge, and growth* as a future Health Coach.
 
-${emoji.chart} *Your Score: ${score} / ${totalMarks} (${percentage}%)*
+${emoji.chart} *Your Percentage: ${percentage}%*
 
 This *result is more than just numbers* — it represents your:
 
