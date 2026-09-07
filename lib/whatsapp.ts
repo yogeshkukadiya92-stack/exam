@@ -1,11 +1,17 @@
+type WhatsAppTarget = "app" | "business" | "mobile";
+
 /** Build a WhatsApp URL without losing Unicode characters such as emoji. */
-export function buildWhatsAppUrl(phone: string, message: string, mobile = false) {
+export function buildWhatsAppUrl(phone: string, message: string, target: WhatsAppTarget = "app") {
   const digits = phone.replace(/\D/g, "");
   if (!digits) return null;
 
   // NFC keeps visually identical Unicode sequences consistent before UTF-8 encoding.
   const text = encodeURIComponent(message.normalize("NFC"));
-  // Open Web directly on desktop, avoiding the short-link/app handoff.
-  const endpoint = mobile ? "https://api.whatsapp.com/send" : "https://web.whatsapp.com/send";
+  const endpoints: Record<WhatsAppTarget, string> = {
+    app: "whatsapp://send",
+    business: "whatsapp-business://send",
+    mobile: "https://api.whatsapp.com/send",
+  };
+  const endpoint = endpoints[target];
   return `${endpoint}?phone=${digits}&text=${text}`;
 }
