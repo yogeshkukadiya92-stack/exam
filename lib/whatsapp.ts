@@ -3,9 +3,7 @@ export function buildWhatsAppUrl(phone: string, message: string) {
   const digits = phone.replace(/\D/g, "");
   if (!digits) return null;
 
-  const url = new URL(`https://wa.me/${digits}`);
-  // NFC keeps visually identical Unicode sequences consistent. URLSearchParams
-  // then performs UTF-8 percent encoding exactly once for WhatsApp.
-  url.searchParams.set("text", message.normalize("NFC"));
-  return url.toString();
+  // NFC keeps visually identical Unicode sequences consistent before UTF-8 encoding.
+  const text = encodeURIComponent(message.normalize("NFC"));
+  return `https://wa.me/${digits}?text=${text}`;
 }

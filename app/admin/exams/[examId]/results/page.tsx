@@ -38,6 +38,22 @@ interface StudentPhoneRow {
   phone: string | null;
 }
 
+const emoji = {
+  leaf: "\u{1F33F}",
+  graduationCap: "\u{1F393}",
+  dizzy: "\u{1F4AB}",
+  sparkles: "\u{2728}",
+  flexedBiceps: "\u{1F4AA}",
+  chart: "\u{1F4CA}",
+  globe: "\u{1F30D}",
+  glowingStar: "\u{1F31F}",
+  smilingFace: "\u{1F60A}",
+  redHeart: "\u{2764}\u{FE0F}",
+  notebook: "\u{1F4D8}",
+  stopwatch: "\u{23F1}\u{FE0F}",
+  bouquet: "\u{1F490}",
+};
+
 function buildWhatsAppMessage({
   studentName,
   examName,
@@ -55,50 +71,50 @@ function buildWhatsAppMessage({
   const percentage = Number(rawPercentage.toFixed(2));
 
   if (examMode === "practical") {
-    return `🌿 *ISHF University*
-🎓 Final Nutrition Practical Exam Results 🌿
+    return `${emoji.leaf} *ISHF University*
+${emoji.graduationCap} Final Nutrition Practical Exam Results ${emoji.leaf}
 
-*Congratulations, ${studentName}*! 🎓💫
+*Congratulations, ${studentName}*! ${emoji.graduationCap}${emoji.dizzy}
 
-You’ve successfully completed your *ISHF Final Practical Exam* — proving your skills, confidence, and real-world understanding of nutrition. 💪🌱
+You’ve successfully completed your *ISHF Final Practical Exam* — proving your skills, confidence, and real-world understanding of nutrition. ${emoji.flexedBiceps}${emoji.leaf}
 
-📊 *Your Score:* ${percentage}% / 100%
+${emoji.chart} *Your Score:* ${percentage}% / 100%
 
-*This result isn’t just about marks* — it’s a reflection of your growth, dedication, and applied knowledge to transform lives. 🌍✨
+*This result isn’t just about marks* — it’s a reflection of your growth, dedication, and applied knowledge to transform lives. ${emoji.globe}${emoji.sparkles}
 
-*Keep applying. Keep evolving. Keep inspiring.* 🌟
+*Keep applying. Keep evolving. Keep inspiring.* ${emoji.glowingStar}
 
-Best regards, 😊
-*Team CFL* ❤️`;
+Best regards, ${emoji.smilingFace}
+*Team CFL* ${emoji.redHeart}`;
   }
 
-  return `🌿 *ISHF University – ${examName} Results* 🌿
+  return `${emoji.leaf} *ISHF University – ${examName} Results* ${emoji.leaf}
 
 Dear ${studentName},
 
-Today marks a *proud milestone* in your ISHF journey — a celebration of your hard work, focus, and *dedication to learning!* 🎓💫
+Today marks a *proud milestone* in your ISHF journey — a celebration of your hard work, focus, and *dedication to learning!* ${emoji.graduationCap}${emoji.dizzy}
 
 We are delighted to share that you have *successfully completed your ${examName}* and your performance truly reflects your *consistency, knowledge, and growth* as a future Health Coach.
 
-📊 *Your Score: ${score} / ${totalMarks} (${percentage}%)*
+${emoji.chart} *Your Score: ${score} / ${totalMarks} (${percentage}%)*
 
 This *result is more than just numbers* — it represents your:
 
-💪 *Discipline*
-📘 *Commitment*
-⏱️ *Consistency and countless hours of learning*
+${emoji.flexedBiceps} *Discipline*
+${emoji.notebook} *Commitment*
+${emoji.stopwatch} *Consistency and countless hours of learning*
 
-✨ *Always remember:*
+${emoji.sparkles} *Always remember:*
 “Grades don’t define you — your growth surely does.”
 
-Every effort you’ve made brings you one step closer to *transforming lives — starting with your own.* 🌱
+Every effort you’ve made brings you one step closer to *transforming lives — starting with your own.* ${emoji.leaf}
 
-💐 *Congratulations on your achievement!*
+${emoji.bouquet} *Congratulations on your achievement!*
 
-Keep learning, keep growing, and keep inspiring. 🌟
+Keep learning, keep growing, and keep inspiring. ${emoji.glowingStar}
 
-Best regards, 😊
-*Team CFL* ❤️`;
+Best regards, ${emoji.smilingFace}
+*Team CFL* ${emoji.redHeart}`;
 }
 
 export default async function ExamResultsPage({
