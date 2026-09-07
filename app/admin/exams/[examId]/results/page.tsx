@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { normalizePhoneNumber } from "@/lib/phone";
+import { buildWhatsAppUrl } from "@/lib/whatsapp";
 import ResultsExport from "./ResultsExport";
 import { ChevronRight, TrendingUp, Users, Award, Activity, MessageCircle } from "lucide-react";
 
@@ -294,7 +295,7 @@ export default async function ExamResultsPage({
                     examMode: exam.exam_mode ?? "standard",
                   });
                   const whatsappUrl = phone
-                    ? `https://wa.me/${phone.replace(/\D/g, "")}?text=${encodeURIComponent(whatsappMessage)}`
+                    ? buildWhatsAppUrl(phone, whatsappMessage)
                     : null;
                   return (
                     <tr key={a.attempt_id} className="transition-colors hover:bg-slate-50/50 dark:hover:bg-slate-700/30">
