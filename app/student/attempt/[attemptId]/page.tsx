@@ -74,7 +74,7 @@ export default async function AttemptPage({
   );
 
   if (!isPausablePractical && Date.now() >= continuousDeadline) {
-    await gradeAndSubmit(attemptId);
+    await gradeAndSubmit(attemptId, Date.now() >= windowDeadline ? "exam_window_expired" : "duration_expired");
     redirect(`/student/attempt/${attemptId}/result`);
   }
 
@@ -100,11 +100,13 @@ export default async function AttemptPage({
     (isPausablePractical && initialActiveSeconds >= exam.duration_minutes * 60) ||
     Date.now() >= windowDeadline
   ) {
-    await gradeAndSubmit(attemptId);
+    await gradeAndSubmit(attemptId, Date.now() >= windowDeadline ? "exam_window_expired" : "duration_expired");
     redirect(`/student/attempt/${attemptId}/result`);
   }
 
   const initialAnswers: Record<string, string[]> = {};
+  const { data: diagnostics } = await supabase.from("attempts")
+    .select("tab_switch_count").eq("id", attemptId).maybeSingle();
   const initialTextAnswers: Record<string, string> = {};
   const initialFlags: Record<string, boolean> = {};
   (saved as SavedAnswerRow[] | null)?.forEach((a) => {
@@ -138,6 +140,7 @@ export default async function AttemptPage({
           initialAnswers={initialAnswers}
           initialTextAnswers={initialTextAnswers}
           initialFlags={initialFlags}
+          initialTabSwitchCount={Number(diagnostics?.tab_switch_count) || 0}
         />
       </div>
     </div>

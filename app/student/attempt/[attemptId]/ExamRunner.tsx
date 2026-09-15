@@ -135,6 +135,7 @@ export default function ExamRunner({
   initialAnswers,
   initialTextAnswers,
   initialFlags,
+  initialTabSwitchCount = 0,
   preview = false,
 }: {
   attemptId: string;
@@ -153,6 +154,7 @@ export default function ExamRunner({
   initialAnswers: Record<string, string[]>;
   initialTextAnswers: Record<string, string>;
   initialFlags: Record<string, boolean>;
+  initialTabSwitchCount?: number;
   preview?: boolean;
 }) {
   const supabase = useMemo(() => createClient(), []);
@@ -186,7 +188,11 @@ export default function ExamRunner({
   const [flags, setFlags] = useState<Record<string, boolean>>(initialFlags);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const [violations, setViolations] = useState(0);
+  const [violations, setViolations] = useState(initialTabSwitchCount);
+  const violationsRef = useRef(initialTabSwitchCount);
+  const diagnosticsQueueRef = useRef<Promise<unknown>>(Promise.resolve());
+  const navigationUntilRef = useRef(0);
+  const submissionReasonRef = useRef("manual");
   const [autoSubmitting, setAutoSubmitting] = useState(false);
   const [confirmSubmit, setConfirmSubmit] = useState(false);
   const [pausing, setPausing] = useState(false);
@@ -267,22 +273,24 @@ export default function ExamRunner({
     return true;
   }, []);
 
-  const doSubmit = useCallback(() => {
+  const doSubmit = useCallback((reason = submissionReasonRef.current) => {
     if (submittedRef.current) return;
     if (preview) {
       setConfirmSubmit(false);
       return;
     }
     submittedRef.current = true;
+    submissionReasonRef.current = reason;
     setConfirmSubmit(false);
     setAutoSubmitting(true);
-    void flushPendingSaves().then((saved) => {
+    void flushPendingSaves().then(async (saved) => {
       if (!saved) {
         submittedRef.current = false;
         setAutoSubmitting(false);
         return;
       }
-      startTransition(() => submitAttempt(attemptId));
+      await diagnosticsQueueRef.current;
+      startTransition(() => submitAttempt(attemptId, submissionReasonRef.current));
     });
   }, [attemptId, flushPendingSaves, preview]);
 
@@ -383,7 +391,7 @@ export default function ExamRunner({
 
       if (nextWindowLeft !== null && nextWindowLeft <= 0) {
         clearInterval(t);
-        doSubmit();
+        doSubmit("exam_window_expired");
         return;
       }
 
@@ -402,7 +410,7 @@ export default function ExamRunner({
         setLeft(rem);
         if (rem <= 0) {
           clearInterval(t);
-          doSubmit();
+          doSubmit("duration_expired");
         }
         return;
       }
@@ -411,7 +419,7 @@ export default function ExamRunner({
       setLeft(rem);
       if (rem <= 0) {
         clearInterval(t);
-        doSubmit();
+        doSubmit("duration_expired");
       }
     }, 1000);
     return () => clearInterval(t);
@@ -420,17 +428,19 @@ export default function ExamRunner({
   useEffect(() => {
     if (!proctoringEnabled) return;
     const onHidden = () => {
-      if (document.visibilityState === "hidden") {
-        setViolations((v) => {
-          const nv = v + 1;
-          if (nv >= MAX_VIOLATIONS) doSubmit();
-          return nv;
-        });
+      if (document.visibilityState === "hidden" && !submittedRef.current) {
+        const nv = ++violationsRef.current;
+        setViolations(nv);
+        diagnosticsQueueRef.current = diagnosticsQueueRef.current.then(async () => {
+          const { error } = await supabase.rpc("record_attempt_tab_switch", { p_attempt_id: attemptId });
+          if (error) console.error("Tab switch logging failed", error.message);
+        }).catch((error) => console.error("Tab switch logging failed", error));
+        if (nv >= MAX_VIOLATIONS) doSubmit("tab_switch_limit");
       }
     };
     document.addEventListener("visibilitychange", onHidden);
     return () => document.removeEventListener("visibilitychange", onHidden);
-  }, [doSubmit, proctoringEnabled]);
+  }, [attemptId, doSubmit, proctoringEnabled, supabase]);
 
   const blockEvents = proctoringEnabled
     ? {
@@ -477,12 +487,20 @@ export default function ExamRunner({
   const nextQuestionCaseIndex = nextQuestion ? caseIndexByQuestionId.get(nextQuestion.id) ?? 0 : 0;
   const nextBlocked = Boolean(nextQuestion && !canEnterCase(nextQuestionCaseIndex));
 
+  // A ref blocks the second click even before React commits the next question.
+  const navigateToIndex = (nextIndex: number) => {
+    const now = Date.now();
+    if (submittedRef.current || now < navigationUntilRef.current || nextIndex === idx) return;
+    navigationUntilRef.current = now + 500;
+    setIdx(Math.max(0, Math.min(questions.length - 1, nextIndex)));
+  };
+
   const goToQuestion = (questionId: string) => {
     const nextIndex = questionIndexById.get(questionId);
     if (nextIndex == null) return;
     const nextCaseIndex = caseIndexByQuestionId.get(questionId) ?? 0;
     if (!canEnterCase(nextCaseIndex)) return;
-    setIdx(nextIndex);
+    navigateToIndex(nextIndex);
   };
 
   const goToCase = (caseIndex: number) => {
@@ -625,7 +643,7 @@ export default function ExamRunner({
       <div className="mt-5 flex flex-wrap items-center justify-between gap-2">
         <button
           disabled={idx === 0 || autoSubmitting}
-          onClick={() => setIdx((i) => Math.max(0, i - 1))}
+          onClick={() => navigateToIndex(idx - 1)}
           className="flex items-center gap-1 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-700 transition-all hover:bg-indigo-100 active:scale-[0.98] disabled:opacity-40 dark:border-indigo-800 dark:bg-indigo-950/40 dark:text-indigo-300 dark:hover:bg-indigo-900/50"
         >
           <ChevronLeft className="h-4 w-4" /> Prev
@@ -653,7 +671,7 @@ export default function ExamRunner({
           <button
             onClick={() => {
               if (nextBlocked) return;
-              setIdx((i) => Math.min(questions.length - 1, i + 1));
+              navigateToIndex(idx + 1);
             }}
             disabled={autoSubmitting || nextBlocked}
             className="flex items-center gap-1 rounded-xl bg-indigo-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:bg-indigo-700 active:scale-[0.98] disabled:opacity-50"
@@ -811,7 +829,7 @@ export default function ExamRunner({
               return (
                 <button
                   key={question.id}
-                  onClick={() => setIdx(i)}
+                  onClick={() => navigateToIndex(i)}
                   disabled={autoSubmitting}
                   className={`flex h-9 w-9 items-center justify-center rounded-lg border text-sm font-medium transition-all ${
                     i === idx ? "ring-2 ring-indigo-500 ring-offset-1 dark:ring-offset-slate-800" : ""
@@ -851,7 +869,13 @@ export default function ExamRunner({
       {autoSubmitting && (
         <div className="mb-3 flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-700 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-400">
           <AlertTriangle className="h-4 w-4 shrink-0" />
-          Time is up! Your exam is being submitted automatically...
+          {submissionReasonRef.current === "tab_switch_limit"
+            ? "Tab/app switch limit reached. Your exam is being submitted automatically..."
+            : submissionReasonRef.current === "exam_window_expired"
+            ? "Exam end time reached. Your exam is being submitted automatically..."
+            : submissionReasonRef.current === "duration_expired"
+            ? "Time is up! Your exam is being submitted automatically..."
+            : "Your exam is being submitted..."}
         </div>
       )}
       {proctoringEnabled && violations > 0 && (
@@ -906,7 +930,7 @@ export default function ExamRunner({
               </button>
               <button
                 type="button"
-                onClick={doSubmit}
+                onClick={() => doSubmit()}
                 disabled={pending || autoSubmitting}
                 className="rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-emerald-700 active:scale-[0.98] disabled:opacity-50"
               >

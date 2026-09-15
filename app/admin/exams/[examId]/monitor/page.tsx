@@ -37,6 +37,15 @@ export default async function LiveMonitorPage({
 
   const { data } = await supabase.rpc("get_live_exam_monitor", { p_exam_id: examId });
   const students = ((data as { students?: MonitorRow[] } | null)?.students ?? []) as MonitorRow[];
+  const { data: diagnostics } = await supabase.from("attempts")
+    .select("id, submission_reason").eq("exam_id", examId);
+  const reasons = new Map<string, string | null>((diagnostics ?? []).map((row: { id: string; submission_reason: string | null }) => [row.id, row.submission_reason]));
+  const reasonLabels: Record<string, string> = {
+    manual: "Student submitted",
+    duration_expired: "Duration expired",
+    exam_window_expired: "Exam end time reached",
+    tab_switch_limit: "Tab/app switch limit (client reported)",
+  };
   const attemptIds = students
     .filter((student) => student.status === "in_progress" && student.attempt_id)
     .map((student) => student.attempt_id as string);
@@ -87,6 +96,7 @@ export default async function LiveMonitorPage({
               <th>Status</th>
               <th>Time left</th>
               <th>Tab switches</th>
+              <th>Submission reason</th>
               <th>Last seen</th>
             </tr>
           </thead>
@@ -100,12 +110,15 @@ export default async function LiveMonitorPage({
                 <td><span className="badge bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200">{s.status}</span></td>
                 <td>{formatSeconds(s.display_time_left_seconds)}</td>
                 <td>{s.tab_switch_count ?? 0}</td>
+                <td>{s.attempt_id && reasons.get(s.attempt_id)
+                  ? reasonLabels[reasons.get(s.attempt_id)!] ?? "Unknown"
+                  : s.status === "graded" || s.status === "submitted" ? "Not recorded" : "-"}</td>
                 <td>{s.last_seen_at ? new Date(s.last_seen_at).toLocaleString("en-IN") : "-"}</td>
               </tr>
             ))}
             {students.length === 0 && (
               <tr>
-                <td colSpan={5} className="py-10 text-center text-sm text-slate-500">
+                <td colSpan={6} className="py-10 text-center text-sm text-slate-500">
                   No enrolled students are visible for this exam yet.
                 </td>
               </tr>

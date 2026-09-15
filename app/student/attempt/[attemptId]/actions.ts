@@ -5,7 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStudent } from "@/lib/auth";
 import { redirect } from "next/navigation";
 
-export async function submitAttempt(attemptId: string) {
+export async function submitAttempt(attemptId: string, reason = "manual") {
   const profile = await requireStudent();
 
   try {
@@ -24,7 +24,7 @@ export async function submitAttempt(attemptId: string) {
         .update({ ended_at: now, last_seen_at: now })
         .eq("attempt_id", attemptId)
         .is("ended_at", null);
-      await gradeAndSubmit(attemptId);
+      await gradeAndSubmit(attemptId, reason);
     }
   } catch (e) {
     console.error("submitAttempt failed:", e instanceof Error ? e.message : e, { attemptId });
@@ -35,7 +35,8 @@ export async function submitAttempt(attemptId: string) {
         .from("attempts")
         .update({ status: "submitted", submitted_at: new Date().toISOString() })
         .eq("id", attemptId)
-        .eq("student_id", profile.id);
+        .eq("student_id", profile.id)
+        .eq("status", "in_progress");
     } catch {
       // ignore — we still redirect to the result page below
     }
@@ -82,7 +83,7 @@ interface QuestionRow {
  * Runs with the service-role client so it can read option correctness
  * (which is RLS-locked for students) — independent of any DB RPC.
  */
-export async function gradeAndSubmit(attemptId: string) {
+export async function gradeAndSubmit(attemptId: string, reason = "manual") {
   const admin = createAdminClient();
 
   const { data: attempt } = await admin
@@ -204,12 +205,25 @@ export async function gradeAndSubmit(attemptId: string) {
 
   const hasDescriptive = qList.some((q) => q.type === "descriptive");
 
-  await admin
+  const submission = {
+    status: hasDescriptive ? "submitted" : "graded",
+    submitted_at: new Date().toISOString(),
+    total_score: total,
+  };
+  const allowedReasons = ["manual", "duration_expired", "exam_window_expired", "tab_switch_limit"];
+  const { error: submissionError } = await admin
     .from("attempts")
     .update({
-      status: hasDescriptive ? "submitted" : "graded",
-      submitted_at: new Date().toISOString(),
-      total_score: total,
+      ...submission,
+      submission_reason: allowedReasons.includes(reason) ? reason : "manual",
     })
-    .eq("id", attemptId);
+    .eq("id", attemptId)
+    .eq("status", "in_progress");
+  // Deploy compatibility: a missing diagnostics migration must not lose a grade.
+  if (submissionError) {
+    console.error("Submission diagnostics failed", submissionError.message);
+    const { error } = await admin.from("attempts").update(submission)
+      .eq("id", attemptId).eq("status", "in_progress");
+    if (error) throw new Error(error.message);
+  }
 }
