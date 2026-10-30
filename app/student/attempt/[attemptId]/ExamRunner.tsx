@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { withTimeout } from "@/lib/async/with-timeout";
+import { AnswerDraftStore, type AnswerDraft } from "@/lib/answer-drafts";
 import RichTextContent from "@/components/RichTextContent";
 import { pauseAttempt, submitAttempt } from "./actions";
 import {
@@ -205,6 +206,8 @@ export default function ExamRunner({
   const activeElapsedRef = useRef(Math.max(0, initialActiveSeconds));
   const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
   const pendingSaveCountRef = useRef(0);
+  const draftStoreRef = useRef<AnswerDraftStore | null>(null);
+  const restoredDraftsRef = useRef(false);
   const failedSavesRef = useRef(new Map<string, SaveOperation>());
 
   const continuousDeadline = Math.min(
@@ -224,12 +227,28 @@ export default function ExamRunner({
 
   const MAX_VIOLATIONS = 3;
 
-  const queueSave = useCallback((questionId: string, operation: SaveOperation) => {
+  const queueSave = useCallback((draft: AnswerDraft) => {
+    const questionId = draft.question_id;
     if (preview || submittedRef.current) return;
 
+    setSaveError(null);
+    try {
+      draftStoreRef.current?.put(draft);
+    } catch {
+      setSaveError("Browser backup is unavailable. Keep this page open until your answers are saved.");
+    }
+    const operation: SaveOperation = async (signal) => {
+      const result = await supabase.from("answers").upsert(
+        { ...draft, attempt_id: attemptId },
+        { onConflict: "attempt_id,question_id" }
+      ).abortSignal(signal);
+      if (!result.error) {
+        try { draftStoreRef.current?.acknowledge(draft); } catch { /* Retain backup on storage failure. */ }
+      }
+      return result;
+    };
     pendingSaveCountRef.current += 1;
     setSaving(true);
-    setSaveError(null);
 
     saveQueueRef.current = saveQueueRef.current
       .then(async () => {
@@ -246,6 +265,37 @@ export default function ExamRunner({
         pendingSaveCountRef.current = Math.max(0, pendingSaveCountRef.current - 1);
         if (pendingSaveCountRef.current === 0) setSaving(false);
       });
+  }, [attemptId, preview, supabase]);
+
+  useEffect(() => {
+    if (preview || restoredDraftsRef.current) return;
+    restoredDraftsRef.current = true;
+    try {
+      const store = new AnswerDraftStore(window.localStorage, attemptId);
+      draftStoreRef.current = store;
+      const questionIds = new Set(rawQuestions.map((question) => question.id));
+      for (const draft of store.entries()) {
+        if (!questionIds.has(draft.question_id)) continue;
+        setAnswers((current) => ({ ...current, [draft.question_id]: draft.selected_option_ids }));
+        setTextAnswers((current) => ({ ...current, [draft.question_id]: draft.text_answer ?? "" }));
+        setFlags((current) => ({ ...current, [draft.question_id]: draft.marked_for_review }));
+        queueSave(draft);
+      }
+    } catch {
+      setSaveError("Browser backup is unavailable. Keep this page open until your answers are saved.");
+    }
+  }, [attemptId, preview, queueSave, rawQuestions]);
+
+  useEffect(() => {
+    if (preview) return;
+    const warnBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (pendingSaveCountRef.current || failedSavesRef.current.size) {
+        event.preventDefault();
+        event.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", warnBeforeUnload);
+    return () => window.removeEventListener("beforeunload", warnBeforeUnload);
   }, [preview]);
 
   const flushPendingSaves = useCallback(async () => {
@@ -519,36 +569,27 @@ export default function ExamRunner({
   };
 
   const save = (qid: string, optionIds: string[], flag: boolean) => {
-    queueSave(qid, (signal) =>
-      supabase.from("answers").upsert(
-        {
-          attempt_id: attemptId,
-          question_id: qid,
-          selected_option_ids: optionIds,
-          marked_for_review: flag,
-        },
-        { onConflict: "attempt_id,question_id" }
-      ).abortSignal(signal)
-    );
+    queueSave({
+      question_id: qid,
+      selected_option_ids: optionIds,
+      text_answer: textAnswers[qid] ?? null,
+      marked_for_review: flag,
+    });
   };
 
   const saveText = (qid: string, value: string, flag: boolean) => {
-    queueSave(qid, (signal) =>
-      supabase.from("answers").upsert(
-        {
-          attempt_id: attemptId,
-          question_id: qid,
-          text_answer: value,
-          selected_option_ids: [],
-          marked_for_review: flag,
-        },
-        { onConflict: "attempt_id,question_id" }
-      ).abortSignal(signal)
-    );
+    queueSave({
+      question_id: qid,
+      selected_option_ids: [],
+      text_answer: value,
+      marked_for_review: flag,
+    });
   };
 
+  const answersLocked = autoSubmitting || (!preview && (left <= 0 || windowLeft === 0));
+
   const pick = (optionId: string) => {
-    if (submittedRef.current) return;
+    if (submittedRef.current || answersLocked) return;
     const cur = answers[q.id] ?? [];
     const next =
       q.type === "multiple"
@@ -562,7 +603,7 @@ export default function ExamRunner({
   };
 
   const toggleFlag = () => {
-    if (submittedRef.current) return;
+    if (submittedRef.current || answersLocked) return;
     const next = !flags[q.id];
     setFlags((p) => ({ ...p, [q.id]: next }));
     void save(q.id, answers[q.id] ?? [], next);
@@ -610,11 +651,12 @@ export default function ExamRunner({
             aria-label={`Answer for question ${idx + 1}`}
             value={textAnswers[q.id] ?? ""}
             onChange={(e) => {
+              if (submittedRef.current || answersLocked) return;
               const value = e.target.value;
               setTextAnswers((p) => ({ ...p, [q.id]: value }));
               void saveText(q.id, value, flags[q.id] ?? false);
             }}
-            disabled={autoSubmitting}
+            disabled={answersLocked}
             rows={q.type === "descriptive" ? 6 : 3}
             placeholder={q.type === "numerical" ? "Enter numerical answer" : "Enter answer"}
             className="input disabled:opacity-60"
@@ -626,7 +668,7 @@ export default function ExamRunner({
               <button
                 key={o.id}
                 onClick={() => pick(o.id)}
-                disabled={autoSubmitting}
+                disabled={answersLocked}
                 className={`flex w-full items-start gap-3 rounded-xl border px-4 py-3 text-left text-sm transition-all duration-200 ${
                   sel
                     ? "border-indigo-500 bg-indigo-600 text-white shadow-sm shadow-indigo-200 dark:shadow-indigo-900/30"
@@ -659,7 +701,7 @@ export default function ExamRunner({
         </button>
         <button
           onClick={toggleFlag}
-          disabled={autoSubmitting}
+          disabled={answersLocked}
           className={`flex items-center gap-1.5 rounded-xl border px-4 py-2 text-sm font-semibold transition-all active:scale-[0.98] ${
             flags[q.id]
               ? "border-amber-500 bg-amber-500 text-white shadow-sm hover:bg-amber-600 dark:border-amber-500"
@@ -730,7 +772,7 @@ export default function ExamRunner({
           <select
             value={q.id}
             onChange={(event) => goToQuestion(event.target.value)}
-            disabled={autoSubmitting}
+            disabled={answersLocked}
             className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm outline-none transition-colors focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
           >
             {questions.map((question, questionIndex) => {
@@ -839,7 +881,7 @@ export default function ExamRunner({
                 <button
                   key={question.id}
                   onClick={() => navigateToIndex(i)}
-                  disabled={autoSubmitting}
+                  disabled={answersLocked}
                   className={`flex h-9 w-9 items-center justify-center rounded-lg border text-sm font-medium transition-all ${
                     i === idx ? "ring-2 ring-indigo-500 ring-offset-1 dark:ring-offset-slate-800" : ""
                   } ${

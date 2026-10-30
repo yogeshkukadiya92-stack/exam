@@ -1,7 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import ExamRunner from "./ExamRunner";
-import { gradeAndSubmit } from "./actions";
 
 interface RawQuestion {
   id: string;
@@ -67,22 +66,11 @@ export default async function AttemptPage({
 
   const isPausablePractical =
     exam.exam_mode === "practical" && exam.timer_mode === "pausable";
-  const windowDeadline = exam.end_time ? new Date(exam.end_time).getTime() : Infinity;
-  const continuousDeadline = Math.min(
-    new Date(attempt.started_at as string).getTime() + exam.duration_minutes * 60000,
-    windowDeadline
-  );
-
-  if (!isPausablePractical && Date.now() >= continuousDeadline) {
-    await gradeAndSubmit(attemptId, Date.now() >= windowDeadline ? "exam_window_expired" : "duration_expired");
-    redirect(`/student/attempt/${attemptId}/result`);
-  }
-
   const activeSecondsPromise = isPausablePractical
     ? supabase.rpc("get_attempt_active_seconds", { p_attempt_id: attemptId })
-    : Promise.resolve({ data: 0 });
+    : Promise.resolve({ data: 0, error: null });
 
-  const [{ data: activeSeconds }, { data: questions }, { data: saved }] =
+  const [{ data: activeSeconds, error: activeSecondsError }, { data: questions, error: questionsError }, { data: saved, error: savedError }] =
     await Promise.all([
       activeSecondsPromise,
       supabase.rpc("get_attempt_questions", {
@@ -96,13 +84,11 @@ export default async function AttemptPage({
 
   const initialActiveSeconds = Math.max(0, Number(activeSeconds) || 0);
 
-  if (
-    (isPausablePractical && initialActiveSeconds >= exam.duration_minutes * 60) ||
-    Date.now() >= windowDeadline
-  ) {
-    await gradeAndSubmit(attemptId, Date.now() >= windowDeadline ? "exam_window_expired" : "duration_expired");
-    redirect(`/student/attempt/${attemptId}/result`);
+  // Never render an apparently blank attempt when a database read fails.
+  if (savedError || questionsError || activeSecondsError) {
+    throw new Error("Unable to load saved exam answers. Please retry loading this page.");
   }
+  // The runner restores pending browser drafts before its expired timer submits.
 
   const initialAnswers: Record<string, string[]> = {};
   const { data: diagnostics } = await supabase.from("attempts")
