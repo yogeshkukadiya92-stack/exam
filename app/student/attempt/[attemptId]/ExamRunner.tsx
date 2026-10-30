@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { withTimeout } from "@/lib/async/with-timeout";
 import RichTextContent from "@/components/RichTextContent";
 import { pauseAttempt, submitAttempt } from "./actions";
 import {
@@ -41,7 +42,7 @@ interface CaseGroup {
   questions: Question[];
 }
 
-type SaveOperation = () => PromiseLike<{
+type SaveOperation = (signal: AbortSignal) => PromiseLike<{
   error: { message: string } | null;
 }>;
 
@@ -233,7 +234,7 @@ export default function ExamRunner({
     saveQueueRef.current = saveQueueRef.current
       .then(async () => {
         try {
-          const { error } = await operation();
+          const { error } = await withTimeout(operation(AbortSignal.timeout(15000)), 16000);
           if (error) throw error;
           failedSavesRef.current.delete(questionId);
         } catch {
@@ -255,7 +256,7 @@ export default function ExamRunner({
     const failed = [...failedSavesRef.current.entries()];
     for (const [questionId, operation] of failed) {
       try {
-        const { error } = await operation();
+        const { error } = await withTimeout(operation(AbortSignal.timeout(15000)), 16000);
         if (error) throw error;
         failedSavesRef.current.delete(questionId);
       } catch {
@@ -283,14 +284,22 @@ export default function ExamRunner({
     submissionReasonRef.current = reason;
     setConfirmSubmit(false);
     setAutoSubmitting(true);
-    void flushPendingSaves().then(async (saved) => {
-      if (!saved) {
+    startTransition(async () => {
+      try {
+        const saved = await withTimeout(flushPendingSaves(), 30000);
+        if (!saved) return;
+        // Diagnostics must never prevent an otherwise valid submission.
+        await withTimeout(diagnosticsQueueRef.current, 2000).catch(() => undefined);
+        const result = await withTimeout(submitAttempt(attemptId, submissionReasonRef.current), 60000);
+        if (result.error) throw new Error(result.error);
+        window.location.assign(`/student/attempt/${attemptId}/result`);
+      } catch (error) {
+        console.error("Exam submission failed", error);
+        setSaveError("Submission could not be confirmed. Check your connection and submit again.");
+      } finally {
         submittedRef.current = false;
         setAutoSubmitting(false);
-        return;
       }
-      await diagnosticsQueueRef.current;
-      startTransition(() => submitAttempt(attemptId, submissionReasonRef.current));
     });
   }, [attemptId, flushPendingSaves, preview]);
 
@@ -510,7 +519,7 @@ export default function ExamRunner({
   };
 
   const save = (qid: string, optionIds: string[], flag: boolean) => {
-    queueSave(qid, () =>
+    queueSave(qid, (signal) =>
       supabase.from("answers").upsert(
         {
           attempt_id: attemptId,
@@ -519,12 +528,12 @@ export default function ExamRunner({
           marked_for_review: flag,
         },
         { onConflict: "attempt_id,question_id" }
-      )
+      ).abortSignal(signal)
     );
   };
 
   const saveText = (qid: string, value: string, flag: boolean) => {
-    queueSave(qid, () =>
+    queueSave(qid, (signal) =>
       supabase.from("answers").upsert(
         {
           attempt_id: attemptId,
@@ -534,7 +543,7 @@ export default function ExamRunner({
           marked_for_review: flag,
         },
         { onConflict: "attempt_id,question_id" }
-      )
+      ).abortSignal(signal)
     );
   };
 

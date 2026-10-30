@@ -11,38 +11,21 @@ export async function submitAttempt(attemptId: string, reason = "manual") {
   try {
     // Verify the attempt belongs to this student before grading.
     const admin = createAdminClient();
-    const { data: owner } = await admin
+    const { data: owner, error } = await admin
       .from("attempts")
       .select("student_id")
       .eq("id", attemptId)
       .maybeSingle();
-
-    if (owner && owner.student_id === profile.id) {
-      const now = new Date().toISOString();
-      await admin
-        .from("attempt_sessions")
-        .update({ ended_at: now, last_seen_at: now })
-        .eq("attempt_id", attemptId)
-        .is("ended_at", null);
-      await gradeAndSubmit(attemptId, reason);
+    if (error) throw error;
+    if (!owner || owner.student_id !== profile.id) {
+      return { error: "Attempt not found." };
     }
+    await gradeAndSubmit(attemptId, reason);
+    return { error: null };
   } catch (e) {
     console.error("submitAttempt failed:", e instanceof Error ? e.message : e, { attemptId });
-    // Last resort: at least mark it submitted so it isn't stuck "in progress".
-    try {
-      const supabase = await createClient();
-      await supabase
-        .from("attempts")
-        .update({ status: "submitted", submitted_at: new Date().toISOString() })
-        .eq("id", attemptId)
-        .eq("student_id", profile.id)
-        .eq("status", "in_progress");
-    } catch {
-      // ignore — we still redirect to the result page below
-    }
+    return { error: "Unable to submit the exam. Please try again." };
   }
-
-  redirect(`/student/attempt/${attemptId}/result`);
 }
 
 export async function pauseAttempt(attemptId: string) {
@@ -86,13 +69,15 @@ interface QuestionRow {
 export async function gradeAndSubmit(attemptId: string, reason = "manual") {
   const admin = createAdminClient();
 
-  const { data: attempt } = await admin
+  const { data: attempt, error: attemptError } = await admin
     .from("attempts")
     .select("id, exam_id, status")
     .eq("id", attemptId)
     .maybeSingle();
 
-  if (!attempt || attempt.status !== "in_progress") return; // already submitted / missing
+  if (attemptError) throw attemptError;
+  if (!attempt) throw new Error("Attempt not found");
+  if (attempt.status !== "in_progress") return; // already submitted
 
   const examId = attempt.exam_id as string;
   const now = new Date().toISOString();
@@ -103,7 +88,7 @@ export async function gradeAndSubmit(attemptId: string, reason = "manual") {
     .eq("attempt_id", attemptId)
     .is("ended_at", null);
 
-  const [{ data: exam }, { data: questions }, { data: answers }] = await Promise.all([
+  const [{ data: exam, error: examError }, { data: questions, error: questionsError }, { data: answers, error: answersError }] = await Promise.all([
     admin.from("exams").select("negative_marking").eq("id", examId).maybeSingle(),
     admin
       .from("questions")
@@ -115,16 +100,20 @@ export async function gradeAndSubmit(attemptId: string, reason = "manual") {
       .eq("attempt_id", attemptId),
   ]);
 
+  if (examError || questionsError || answersError) throw examError || questionsError || answersError;
+  if (!exam || !questions?.length) throw new Error("Exam questions unavailable");
+
   const negativeMarking = !!exam?.negative_marking;
   const qList = (questions as QuestionRow[]) ?? [];
   const qIds = qList.map((q) => q.id);
 
-  const { data: options } = qIds.length
+  const { data: options, error: optionsError } = qIds.length
     ? await admin
         .from("options")
         .select("question_id, id, is_correct")
         .in("question_id", qIds)
-    : { data: [] as { question_id: string; id: string; is_correct: boolean }[] };
+    : { data: [] as { question_id: string; id: string; is_correct: boolean }[], error: null };
+  if (optionsError) throw optionsError;
 
   // correct option ids per question
   const correctByQ = new Map<string, Set<string>>();
@@ -146,7 +135,7 @@ export async function gradeAndSubmit(attemptId: string, reason = "manual") {
     a.size === b.length && b.every((x) => a.has(x));
 
   let total = 0;
-  const updates: PromiseLike<unknown>[] = [];
+  const updates: PromiseLike<{ error: { message: string } | null }>[] = [];
 
   for (const q of qList) {
     const ans = answerByQ.get(q.id);
@@ -201,7 +190,9 @@ export async function gradeAndSubmit(attemptId: string, reason = "manual") {
     }
   }
 
-  await Promise.all(updates);
+  const results = await Promise.all(updates);
+  const gradingError = results.find((result) => result.error)?.error;
+  if (gradingError) throw new Error(gradingError.message);
 
   const hasDescriptive = qList.some((q) => q.type === "descriptive");
 
