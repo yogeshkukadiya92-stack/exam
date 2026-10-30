@@ -353,6 +353,38 @@ export default function ExamRunner({
     });
   }, [attemptId, flushPendingSaves, preview]);
 
+  // End the student session when an administrator submits the attempt remotely.
+  useEffect(() => {
+    if (preview) return;
+    let disposed = false;
+    let checking = false;
+    const checkStatus = async () => {
+      if (checking || submittedRef.current || document.visibilityState !== "visible") return;
+      checking = true;
+      try {
+        const { data, error } = await withTimeout<{ data: { status: string } | null; error: unknown }>(supabase.from("attempts")
+          .select("status").eq("id", attemptId).maybeSingle(), 4000);
+        if (!disposed && !error && data && data.status !== "in_progress") {
+          submittedRef.current = true;
+          setAutoSubmitting(true);
+          window.location.assign(`/student/attempt/${attemptId}/result`);
+        }
+      } catch {
+        // A monitor request must not interrupt answering or discard drafts.
+      } finally {
+        checking = false;
+      }
+    };
+    const timer = window.setInterval(() => void checkStatus(), 5000);
+    const onVisible = () => void checkStatus();
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      disposed = true;
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [attemptId, preview, supabase]);
+
   const startSession = useCallback(async () => {
     if (!isPausable || submittedRef.current || sessionIdRef.current || startingSessionRef.current) {
       return;

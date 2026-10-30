@@ -1,3 +1,8 @@
+import { requireAdmin } from "@/lib/auth";
+import { examProgress } from "@/lib/exam-progress";
+import { readMonitorAnswers, readMonitorQuestions } from "./data";
+import LiveRefresh from "./LiveRefresh";
+import AdminSubmitButton from "./AdminSubmitButton";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -26,6 +31,7 @@ export default async function LiveMonitorPage({
 }: {
   params: Promise<{ examId: string }>;
 }) {
+  await requireAdmin();
   const { examId } = await params;
   const supabase = await createClient();
   const { data: exam } = await supabase
@@ -35,13 +41,23 @@ export default async function LiveMonitorPage({
     .single();
   if (!exam) notFound();
 
-  const { data } = await supabase.rpc("get_live_exam_monitor", { p_exam_id: examId });
+  const { data, error: monitorError } = await supabase.rpc("get_live_exam_monitor", { p_exam_id: examId });
+  if (monitorError) throw new Error("Unable to load the live monitor. Please retry.");
+  const [answers, questions] = await Promise.all([readMonitorAnswers(examId), readMonitorQuestions(examId)]);
+  const questionIds = questions.map((question) => question.id);
+  const answersByAttempt = new Map<string, typeof answers>();
+  for (const answer of answers) {
+    const rows = answersByAttempt.get(answer.attempt_id) ?? [];
+    rows.push(answer);
+    answersByAttempt.set(answer.attempt_id, rows);
+  }
   const students = ((data as { students?: MonitorRow[] } | null)?.students ?? []) as MonitorRow[];
   const { data: diagnostics } = await supabase.from("attempts")
     .select("id, submission_reason").eq("exam_id", examId);
   const reasons = new Map<string, string | null>((diagnostics ?? []).map((row: { id: string; submission_reason: string | null }) => [row.id, row.submission_reason]));
   const reasonLabels: Record<string, string> = {
     manual: "Student submitted",
+    admin_submitted: "Admin submitted",
     duration_expired: "Duration expired",
     exam_window_expired: "Exam end time reached",
     tab_switch_limit: "Tab/app switch limit (client reported)",
@@ -68,6 +84,7 @@ export default async function LiveMonitorPage({
 
   const monitorRows = students.map((student) => ({
     ...student,
+    progress: examProgress(questionIds, answersByAttempt.get(student.attempt_id ?? "") ?? []),
     display_time_left_seconds:
       exam.timer_mode === "pausable"
         ? getPausableTimeLeft({
@@ -86,7 +103,8 @@ export default async function LiveMonitorPage({
     <div>
       <Link href="/admin/exams" className="text-sm text-slate-500 hover:text-indigo-600">Back to exams</Link>
       <h1 className="page-title mt-2">{exam.title} Live Monitor</h1>
-      <p className="mb-6 mt-1 text-sm text-slate-500">Refresh page for latest status.</p>
+      <LiveRefresh updatedAt={new Date().toISOString()} />
+      <p className="mb-5 text-sm text-slate-500">Saved answers only. Review can include answered questions. Skipped / unanswered includes questions not yet reached. Click a student to view question details.</p>
 
       <div className="table-shell">
         <table className="admin-table min-w-[760px]">
@@ -94,31 +112,39 @@ export default async function LiveMonitorPage({
             <tr>
               <th>Student</th>
               <th>Status</th>
+              <th>Answered</th>
+              <th>Review</th>
+              <th>Skipped / unanswered</th>
               <th>Time left</th>
               <th>Tab switches</th>
               <th>Submission reason</th>
               <th>Last seen</th>
+              <th>Action</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
             {monitorRows.map((s) => (
               <tr key={`${s.email}-${s.attempt_id ?? "none"}`} className="transition-colors hover:bg-slate-50/60 dark:hover:bg-slate-700/30">
                 <td>
-                  <p className="font-medium">{s.student_name}</p>
+                  {s.attempt_id ? <Link className="font-medium text-indigo-600 hover:underline" href={`/admin/exams/${examId}/monitor/${s.attempt_id}`}>{s.student_name}</Link> : <p className="font-medium">{s.student_name}</p>}
                   <p className="text-xs text-slate-400">{s.email}</p>
                 </td>
                 <td><span className="badge bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200">{s.status}</span></td>
+                <td>{s.attempt_id ? `${s.progress.answered} / ${s.progress.total}` : "–"}</td>
+                <td>{s.attempt_id ? s.progress.review : "–"}</td>
+                <td>{s.attempt_id ? s.progress.skipped : "–"}</td>
                 <td>{formatSeconds(s.display_time_left_seconds)}</td>
                 <td>{s.tab_switch_count ?? 0}</td>
                 <td>{s.attempt_id && reasons.get(s.attempt_id)
                   ? reasonLabels[reasons.get(s.attempt_id)!] ?? "Unknown"
                   : s.status === "graded" || s.status === "submitted" ? "Not recorded" : "-"}</td>
-                <td>{s.last_seen_at ? new Date(s.last_seen_at).toLocaleString("en-IN") : "-"}</td>
+                <td>{s.last_seen_at ? new Date(s.last_seen_at).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }) : "-"}</td>
+                <td>{s.attempt_id && s.status === "in_progress" ? <AdminSubmitButton examId={examId} attemptId={s.attempt_id} studentName={s.student_name} /> : "–"}</td>
               </tr>
             ))}
             {students.length === 0 && (
               <tr>
-                <td colSpan={6} className="py-10 text-center text-sm text-slate-500">
+                <td colSpan={10} className="py-10 text-center text-sm text-slate-500">
                   No enrolled students are visible for this exam yet.
                 </td>
               </tr>

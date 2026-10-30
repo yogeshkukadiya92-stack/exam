@@ -2,7 +2,7 @@
 -- Existing submissions remain unknown; never infer historical reasons from scores.
 begin;
 alter table public.attempts add column if not exists submission_reason text
-  check (submission_reason in ('manual', 'duration_expired', 'exam_window_expired', 'tab_switch_limit'));
+  check (submission_reason in ('manual', 'duration_expired', 'exam_window_expired', 'tab_switch_limit', 'admin_submitted'));
 alter table public.attempts add column if not exists tab_switch_count integer default 0;
 
 -- Atomic increment, restricted to the signed-in owner of an active attempt.
