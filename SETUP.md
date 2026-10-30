@@ -96,3 +96,18 @@ exam-platform/
 ## Optional next (Phase 7+)
 Sections, bilingual questions, email notifications, webcam proctoring,
 multi-role admin. Aa badha "nice-to-have" che — core platform complete che.
+
+## Automatic submission of expired attempts
+
+The Next.js Node server starts an expiry worker through `instrumentation.ts`.
+It checks active attempts every 15 seconds, grades their server-saved answers,
+and records `duration_expired` or `exam_window_expired`. Continuous deadlines
+include a 15-second allowance for final in-flight saves. Pausable practical exams
+use recorded active session time, while the exam end window still applies.
+Failed submissions remain eligible for the next sweep.
+
+Run this app as a persistent Node service (`npm run start`) with
+`NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` configured. The worker
+cannot run while the server is stopped or on a suspended/serverless instance.
+It starts checking existing expired attempts when the server starts. Browser-only
+unsynchronised answers cannot be recovered by the worker.
