@@ -53,9 +53,9 @@ export default async function ExamsPage() {
         .order("name"),
       supabase
         .from("exams")
-        .select(
-          "id, title, instructions, is_published, duration_minutes, pass_marks, negative_marking, shuffle_questions, proctoring, show_correct_answers, show_explanations, result_visible, exam_mode, timer_mode, allow_case_navigation, max_attempts, start_time, end_time, course_id, batch_id, batch_ids, courses(name), batches(name), questions(count)"
-        )
+        // Select existing exam columns so deployments remain readable before
+        // optional schema migrations (such as batch_ids) have been applied.
+        .select("*, courses(name), batches(name), questions(count)")
         .is("deleted_at", null)
         .order("created_at", { ascending: false }),
       supabase
@@ -63,18 +63,13 @@ export default async function ExamsPage() {
         .select("id", { count: "exact", head: true })
         .not("deleted_at", "is", null),
     ]);
-  const fallbackExamsQuery = examsQuery.error
-    ? await supabase
-        .from("exams")
-        .select(
-          "id, title, instructions, is_published, duration_minutes, pass_marks, negative_marking, shuffle_questions, proctoring, show_correct_answers, show_explanations, result_visible, max_attempts, start_time, end_time, course_id, batch_id, batch_ids, courses(name), batches(name), questions(count)"
-        )
-        .is("deleted_at", null)
-        .order("created_at", { ascending: false })
-    : null;
+  if (examsQuery.error) {
+    console.error("Unable to load admin exams", examsQuery.error);
+    throw new Error("Unable to load exams. Please retry or contact the administrator.");
+  }
 
   const courseRows = (courses as CourseRow[] | null) ?? [];
-  const examRows = ((examsQuery.data ?? fallbackExamsQuery?.data) as ExamRow[] | null) ?? [];
+  const examRows = (examsQuery.data as ExamRow[] | null) ?? [];
   const formCourses = courseRows.map((course) => ({
     id: course.id,
     name: course.name,
