@@ -33,14 +33,25 @@ function timerModeFromForm(formData: FormData, examMode: string) {
   return formData.get("timer_mode") === "continuous" ? "continuous" : "pausable";
 }
 
-function isMissingPracticalSchema(error: unknown) {
-  const message = toMessage(error, "").toLowerCase();
-  return (
-    message.includes("exam_mode") ||
-    message.includes("timer_mode") ||
-    message.includes("allow_case_navigation") ||
-    message.includes("schema cache")
-  );
+// Retry only a specifically missing optional column; never hide other write errors.
+async function writeExam<T extends { error: unknown }>(
+  payload: Record<string, unknown>,
+  write: (value: Record<string, unknown>) => PromiseLike<T>,
+): Promise<T> {
+  const compatible = { ...payload };
+  for (;;) {
+    const result = await write(compatible);
+    const error = result.error as { code?: string; message?: string } | null;
+    if (error?.code !== "PGRST204") return result;
+    const column = ["batch_ids", "exam_mode", "timer_mode", "allow_case_navigation"].find(
+      (name) => Object.prototype.hasOwnProperty.call(compatible, name) && error.message?.includes(`'${name}'`),
+    );
+    if (!column) return result;
+    if (column === "batch_ids" && (compatible.batch_ids as string[]).length > 1) {
+      throw new Error("Multiple batches require the database update in supabase/multiple_exam_batches.sql. Select one batch until that update is applied.");
+    }
+    delete compatible[column];
+  }
 }
 
 async function validateBatches(supabase: Awaited<ReturnType<typeof createClient>>, courseId: string, batchIds: string[]) {
@@ -88,12 +99,7 @@ export async function createExam(formData: FormData) {
     created_by: profile.id,
   };
 
-  let { error } = await supabase.from("exams").insert(payload);
-  if (error && isMissingPracticalSchema(error)) {
-    const { exam_mode, timer_mode, allow_case_navigation, ...fallbackPayload } = payload;
-    const retry = await supabase.from("exams").insert(fallbackPayload);
-    error = retry.error;
-  }
+  const { error } = await writeExam(payload, (value) => supabase.from("exams").insert(value));
 
   if (error) throw new Error(toMessage(error, "Unable to create exam."));
   revalidatePath("/admin/exams");
@@ -146,16 +152,8 @@ export async function updateExam(formData: FormData): Promise<{
       end_time: indiaDateTimeLocalToIso(endRaw),
     };
 
-    let { error } = await supabase
-      .from("exams")
-      .update(payload)
-      .eq("id", id);
-
-    if (error && isMissingPracticalSchema(error)) {
-      const { exam_mode, timer_mode, allow_case_navigation, ...fallbackPayload } = payload;
-      const retry = await supabase.from("exams").update(fallbackPayload).eq("id", id);
-      error = retry.error;
-    }
+    const { error } = await writeExam(payload, (value) =>
+      supabase.from("exams").update(value).eq("id", id));
 
     if (error) {
       return { ok: false, message: `Exam save failed: ${toMessage(error, "Unknown error")}` };
@@ -246,21 +244,9 @@ export async function duplicateExam(formData: FormData) {
     created_by: profile.id,
   };
 
-  let duplicateResult = await supabase
-    .from("exams")
-    .insert(duplicatePayload)
-    .select("id")
-    .single();
-
-  if (duplicateResult.error && isMissingPracticalSchema(duplicateResult.error)) {
-    const { exam_mode, timer_mode, allow_case_navigation, ...fallbackPayload } =
-      duplicatePayload;
-    duplicateResult = await supabase
-      .from("exams")
-      .insert(fallbackPayload)
-      .select("id")
-      .single();
-  }
+  const duplicateResult = await writeExam<{ error: unknown; data: { id: string } | null }>(duplicatePayload, (value) =>
+    supabase.from("exams").insert(value).select("id").single());
+  if (duplicateResult.error) throw new Error(toMessage(duplicateResult.error, "Unable to duplicate exam."));
 
   const newExam = duplicateResult.data;
 
