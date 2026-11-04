@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { createExam } from "./actions";
+import BatchPicker from "./BatchPicker";
 import { Plus, X } from "lucide-react";
 
 interface Batch {
@@ -16,7 +17,10 @@ interface Course {
 
 export default function ExamForm({ courses }: { courses: Course[] }) {
   const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
   const [courseId, setCourseId] = useState("");
+  const [batchIds, setBatchIds] = useState<string[]>([]);
   const [examMode, setExamMode] = useState<"standard" | "practical">("standard");
   const [timerMode, setTimerMode] = useState<"continuous" | "pausable">("continuous");
 
@@ -38,7 +42,18 @@ export default function ExamForm({ courses }: { courses: Course[] }) {
 
   return (
     <form
-      action={createExam}
+      action={async (formData) => {
+        setBusy(true);
+        setMessage(null);
+        try {
+          await createExam(formData);
+          setOpen(false);
+        } catch (error) {
+          setMessage(error instanceof Error ? error.message : "Unable to create exam.");
+        } finally {
+          setBusy(false);
+        }
+      }}
       className="card mb-8 space-y-5 p-6"
     >
       <div className="flex items-center justify-between">
@@ -109,7 +124,7 @@ export default function ExamForm({ courses }: { courses: Course[] }) {
             aria-label="Course"
             required
             value={courseId}
-            onChange={(e) => setCourseId(e.target.value)}
+            onChange={(e) => { setCourseId(e.target.value); setBatchIds([]); }}
             className="input"
           >
             <option value="">Select course</option>
@@ -121,15 +136,7 @@ export default function ExamForm({ courses }: { courses: Course[] }) {
           </select>
         </div>
         <div>
-          <label className={label}>Batch</label>
-          <select name="batch_id" aria-label="Batch" required className="input" disabled={!courseId}>
-            <option value="">Select batch</option>
-            {batches.map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.name}
-              </option>
-            ))}
-          </select>
+          <BatchPicker batches={batches} selected={batchIds} onChange={setBatchIds} />
         </div>
       </div>
 
@@ -199,7 +206,8 @@ export default function ExamForm({ courses }: { courses: Course[] }) {
         )}
       </div>
 
-      <button className="btn-primary">Create exam</button>
+      {message && <p role="alert" className="text-sm text-red-600">{message}</p>}
+      <button disabled={busy || batchIds.length === 0} className="btn-primary disabled:opacity-40">{busy ? "Creating..." : "Create exam"}</button>
     </form>
   );
 }

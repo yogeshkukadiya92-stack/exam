@@ -43,14 +43,21 @@ function isMissingPracticalSchema(error: unknown) {
   );
 }
 
+async function validateBatches(supabase: Awaited<ReturnType<typeof createClient>>, courseId: string, batchIds: string[]) {
+  const { data, error } = await supabase.from("batches").select("id").eq("course_id", courseId).in("id", batchIds);
+  if (error || data?.length !== batchIds.length) throw new Error("Select valid batches from the chosen course.");
+}
+
 export async function createExam(formData: FormData) {
   const profile = await requireAdmin();
   const supabase = await createClient();
 
   const title = (formData.get("title") as string)?.trim();
   const courseId = formData.get("course_id") as string;
-  const batchId = formData.get("batch_id") as string;
-  if (!title || !courseId || !batchId) return;
+  const batchIds = [...new Set(formData.getAll("batch_ids").map(String).filter(Boolean))];
+  const batchId = batchIds[0];
+  if (!title || !courseId || !batchId) throw new Error("Select at least one batch.");
+  await validateBatches(supabase, courseId, batchIds);
 
   const startRaw = formData.get("start_time") as string;
   const endRaw = formData.get("end_time") as string;
@@ -61,6 +68,7 @@ export async function createExam(formData: FormData) {
     title,
     course_id: courseId,
     batch_id: batchId,
+    batch_ids: batchIds,
     exam_mode: examMode,
     timer_mode: timerMode,
     allow_case_navigation:
@@ -80,12 +88,14 @@ export async function createExam(formData: FormData) {
     created_by: profile.id,
   };
 
-  const { error } = await supabase.from("exams").insert(payload);
+  let { error } = await supabase.from("exams").insert(payload);
   if (error && isMissingPracticalSchema(error)) {
     const { exam_mode, timer_mode, allow_case_navigation, ...fallbackPayload } = payload;
-    await supabase.from("exams").insert(fallbackPayload);
+    const retry = await supabase.from("exams").insert(fallbackPayload);
+    error = retry.error;
   }
 
+  if (error) throw new Error(toMessage(error, "Unable to create exam."));
   revalidatePath("/admin/exams");
 }
 
@@ -100,10 +110,13 @@ export async function updateExam(formData: FormData): Promise<{
     const id = formData.get("id") as string;
     const title = (formData.get("title") as string)?.trim();
     const courseId = formData.get("course_id") as string;
-    const batchId = formData.get("batch_id") as string;
+    const batchIds = [...new Set(formData.getAll("batch_ids").map(String).filter(Boolean))];
+    const batchId = batchIds[0];
     if (!id || !title || !courseId || !batchId) {
       return { ok: false, message: "Title, course, and batch are required." };
     }
+
+    await validateBatches(supabase, courseId, batchIds);
 
     const startRaw = formData.get("start_time") as string;
     const endRaw = formData.get("end_time") as string;
@@ -114,6 +127,7 @@ export async function updateExam(formData: FormData): Promise<{
       title,
       course_id: courseId,
       batch_id: batchId,
+      batch_ids: batchIds,
       exam_mode: examMode,
       timer_mode: timerMode,
       allow_case_navigation:
@@ -148,6 +162,7 @@ export async function updateExam(formData: FormData): Promise<{
     }
 
     revalidatePath("/admin/exams");
+    revalidatePath("/student");
     return { ok: true, message: "Exam updated successfully." };
   } catch (error) {
     return {
@@ -204,10 +219,18 @@ export async function duplicateExam(formData: FormData) {
     .single();
   if (!source) return;
 
+  let targetCourseId = source.course_id;
+  if (targetBatchId) {
+    const { data: targetBatch, error } = await supabase.from("batches").select("course_id").eq("id", targetBatchId).single();
+    if (error || !targetBatch) throw new Error("Destination batch not found.");
+    targetCourseId = targetBatch.course_id;
+  }
+
   const duplicatePayload = {
     title: source.title + " (Copy)",
-    course_id: source.course_id,
+    course_id: targetCourseId,
     batch_id: targetBatchId || source.batch_id,
+    batch_ids: targetBatchId ? [targetBatchId] : (source.batch_ids ?? [source.batch_id]),
     exam_mode: source.exam_mode ?? "standard",
     timer_mode: source.timer_mode ?? "continuous",
     allow_case_navigation: source.allow_case_navigation ?? true,

@@ -562,7 +562,8 @@ export default function ExamRunner({
       : (answers[question.id]?.length ?? 0) > 0;
   const isCaseComplete = (group: CaseGroup) => group.questions.every((question) => isAnswered(question));
   const canEnterCase = (caseIndex: number) => {
-    if (!isPractical || allowCaseNavigation) return true;
+    // Admin preview must allow inspecting every question without completing answers.
+    if (preview || !isPractical || allowCaseNavigation) return true;
     const currentCaseIndex = caseIndexByQuestionId.get(q.id) ?? 0;
     if (caseIndex <= currentCaseIndex) return true;
     return caseGroups.slice(0, caseIndex).every(isCaseComplete);

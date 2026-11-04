@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Pencil, X } from "lucide-react";
+import BatchPicker from "./BatchPicker";
 import { updateExam } from "./actions";
 
 interface Batch {
@@ -20,6 +21,7 @@ interface Exam {
   title: string;
   course_id: string;
   batch_id: string;
+  batch_ids: string[];
   instructions: string | null;
   duration_minutes: number;
   pass_marks: number;
@@ -46,7 +48,7 @@ export default function EditExamButton({
 }) {
   const [open, setOpen] = useState(false);
   const [courseId, setCourseId] = useState(exam.course_id);
-  const [batchId, setBatchId] = useState(exam.batch_id);
+  const [batchIds, setBatchIds] = useState(exam.batch_ids);
   const [examMode, setExamMode] = useState<"standard" | "practical">(
     exam.exam_mode === "practical" ? "practical" : "standard"
   );
@@ -60,7 +62,7 @@ export default function EditExamButton({
   const label = "block text-sm font-medium text-slate-700 mb-1.5";
   const openModal = () => {
     setCourseId(exam.course_id);
-    setBatchId(exam.batch_id);
+    setBatchIds(exam.batch_ids);
     setExamMode(exam.exam_mode === "practical" ? "practical" : "standard");
     setTimerMode(exam.timer_mode === "pausable" ? "pausable" : "continuous");
     setMessage(null);
@@ -171,7 +173,7 @@ export default function EditExamButton({
                       const nextBatches =
                         courses.find((c) => c.id === nextCourseId)?.batches ?? [];
                       setCourseId(nextCourseId);
-                      setBatchId(nextBatches[0]?.id ?? "");
+                      setBatchIds(nextBatches[0] ? [nextBatches[0].id] : []);
                     }}
                     className="input"
                   >
@@ -183,21 +185,7 @@ export default function EditExamButton({
                   </select>
                 </div>
                 <div>
-                  <label className={label}>Batch</label>
-                  <select
-                    name="batch_id"
-                    aria-label="Batch"
-                    required
-                    value={batchId}
-                    onChange={(e) => setBatchId(e.target.value)}
-                    className="input"
-                  >
-                    {batches.map((b) => (
-                      <option key={b.id} value={b.id}>
-                        {b.name}
-                      </option>
-                    ))}
-                  </select>
+                  <BatchPicker batches={batches} selected={batchIds} onChange={setBatchIds} />
                 </div>
               </div>
 
@@ -274,7 +262,7 @@ export default function EditExamButton({
                 <button type="button" onClick={() => setOpen(false)} className="btn-secondary">
                   Cancel
                 </button>
-                <button disabled={busy} className="btn-primary disabled:opacity-40">
+                <button disabled={busy || batchIds.length === 0} className="btn-primary disabled:opacity-40">
                   {busy ? "Saving..." : "Save changes"}
                 </button>
               </div>

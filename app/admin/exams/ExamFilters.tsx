@@ -52,6 +52,7 @@ interface Exam {
   end_time: string | null;
   course_id: string;
   batch_id: string;
+  batch_ids: string[];
   courseName: string;
   batchName: string;
   qCount: number;

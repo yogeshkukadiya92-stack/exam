@@ -36,6 +36,7 @@ interface ExamRow {
   end_time: string | null;
   course_id: string;
   batch_id: string;
+  batch_ids: string[];
   courses: { name: string } | null;
   batches: { name: string } | null;
   questions: { count: number }[] | null;
@@ -53,7 +54,7 @@ export default async function ExamsPage() {
       supabase
         .from("exams")
         .select(
-          "id, title, instructions, is_published, duration_minutes, pass_marks, negative_marking, shuffle_questions, proctoring, show_correct_answers, show_explanations, result_visible, exam_mode, timer_mode, allow_case_navigation, max_attempts, start_time, end_time, course_id, batch_id, courses(name), batches(name), questions(count)"
+          "id, title, instructions, is_published, duration_minutes, pass_marks, negative_marking, shuffle_questions, proctoring, show_correct_answers, show_explanations, result_visible, exam_mode, timer_mode, allow_case_navigation, max_attempts, start_time, end_time, course_id, batch_id, batch_ids, courses(name), batches(name), questions(count)"
         )
         .is("deleted_at", null)
         .order("created_at", { ascending: false }),
@@ -66,7 +67,7 @@ export default async function ExamsPage() {
     ? await supabase
         .from("exams")
         .select(
-          "id, title, instructions, is_published, duration_minutes, pass_marks, negative_marking, shuffle_questions, proctoring, show_correct_answers, show_explanations, result_visible, max_attempts, start_time, end_time, course_id, batch_id, courses(name), batches(name), questions(count)"
+          "id, title, instructions, is_published, duration_minutes, pass_marks, negative_marking, shuffle_questions, proctoring, show_correct_answers, show_explanations, result_visible, max_attempts, start_time, end_time, course_id, batch_id, batch_ids, courses(name), batches(name), questions(count)"
         )
         .is("deleted_at", null)
         .order("created_at", { ascending: false })
@@ -109,8 +110,11 @@ export default async function ExamsPage() {
     instructions: exam.instructions,
     course_id: exam.course_id,
     batch_id: exam.batch_id,
+    batch_ids: exam.batch_ids ?? [exam.batch_id],
     courseName: exam.courses?.name ?? "",
-    batchName: exam.batches?.name ?? "",
+    batchName: (exam.batch_ids ?? [exam.batch_id]).map((id) =>
+      courseRows.flatMap((course) => course.batches ?? []).find((batch) => batch.id === id)?.name
+    ).filter(Boolean).join(", "),
     qCount: exam.questions?.[0]?.count ?? 0,
   }));
 

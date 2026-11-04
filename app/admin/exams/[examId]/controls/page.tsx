@@ -34,14 +34,14 @@ export default async function AttemptControlsPage({
 }) {
   const { examId } = await params;
   const supabase = await createClient();
-  const { data: exam } = await supabase.from("exams").select("title, batch_id").eq("id", examId).single();
+  const { data: exam } = await supabase.from("exams").select("title, batch_id, batch_ids").eq("id", examId).single();
   if (!exam) notFound();
 
   const [{ data: students }, { data: attempts }, { data: overrides }] = await Promise.all([
     supabase
       .from("enrollments")
       .select("student_id, profiles(id, full_name, email)")
-      .eq("batch_id", exam.batch_id),
+      .in("batch_id", exam.batch_ids ?? [exam.batch_id]),
     supabase
       .from("attempts")
       .select("id, student_id, status, total_score, started_at, submitted_at")
@@ -53,7 +53,7 @@ export default async function AttemptControlsPage({
       .eq("exam_id", examId),
   ]);
 
-  const studentRows = (students as StudentEnrollmentRow[] | null) ?? [];
+  const studentRows = [...new Map(((students as StudentEnrollmentRow[] | null) ?? []).map((row) => [row.student_id, row])).values()];
   const attemptRows = (attempts as AttemptRow[] | null) ?? [];
   const overrideRows = (overrides as OverrideRow[] | null) ?? [];
   // Rows are newest-first. Keep the first attempt for each student instead of

@@ -111,3 +111,12 @@ Run this app as a persistent Node service (`npm run start`) with
 cannot run while the server is stopped or on a suspended/serverless instance.
 It starts checking existing expired attempts when the server starts. Browser-only
 unsynchronised answers cannot be recovered by the worker.
+
+## Multiple batches per exam
+
+Apply `supabase/multiple_exam_batches.sql` after the existing phase migrations,
+then deploy the app. It backfills existing exams, validates batch/course assignments,
+and updates student visibility, attempt eligibility, and live monitoring. The migration
+is transactional and stops if the installed enrollment functions differ unexpectedly.
+Create/Edit now accept multiple batches; Controls deduplicates students enrolled in
+more than one selected batch. Duplicating to a specific batch replaces the assignment.
