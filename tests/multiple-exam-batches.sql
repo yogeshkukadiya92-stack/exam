@@ -104,7 +104,7 @@ begin
   into v_data
   from exams e
   join enrollments en on en.batch_id = e.batch_id
-  join profiles p on p.id = en.student_id
+    join profiles p on p.id = en.student_id
   left join lateral (
     select *
     from attempts a

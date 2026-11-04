@@ -64,8 +64,8 @@ begin
   execute updated;
 
   definition := pg_get_functiondef('public.get_live_exam_monitor(uuid)'::regprocedure);
-  updated := replace(definition,
-    'join enrollments en on en.batch_id = e.batch_id' || chr(10) || '  join profiles p on p.id = en.student_id',
+  updated := regexp_replace(definition,
+    'join enrollments en on en[.]batch_id = e[.]batch_id[[:space:]]+join profiles p on p[.]id = en[.]student_id',
     'join profiles p on exists (select 1 from public.enrollments en where en.student_id = p.id and en.batch_id = any(e.batch_ids))');
   if updated = definition and position('any(e.batch_ids)' in definition) = 0 then
     raise exception 'Unrecognized live monitor enrollment check';
