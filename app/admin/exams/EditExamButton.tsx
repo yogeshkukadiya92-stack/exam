@@ -84,6 +84,10 @@ export default function EditExamButton({
       {open && (
         <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-900/30 px-4 py-8">
           <form
+            onChange={() => {
+              setMessage(null);
+              setOk(false);
+            }}
             action={async (formData) => {
               setBusy(true);
               setMessage(null);

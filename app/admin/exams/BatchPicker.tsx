@@ -13,6 +13,9 @@ export default function BatchPicker({ batches, selected, onChange }: {
     <fieldset>
       <legend className="mb-1.5 text-sm font-medium text-slate-700">Batches</legend>
       <p className="mb-2 text-xs text-slate-500">Select one or more batches for this exam.</p>
+      <p className="mb-2 text-xs font-medium text-slate-600" aria-live="polite">
+        {ids.length} {ids.length === 1 ? "batch" : "batches"} selected
+      </p>
       <div className="max-h-44 space-y-1 overflow-y-auto rounded-xl border border-slate-200 p-2">
         {batches.length === 0 && <p className="p-2 text-sm text-slate-500">Select a course to see its batches.</p>}
         {batches.map((batch) => (
